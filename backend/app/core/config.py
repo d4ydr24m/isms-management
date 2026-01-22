@@ -1,0 +1,79 @@
+"""
+환경 설정 및 설정 관리
+"""
+from typing import Optional
+from pydantic_settings import BaseSettings
+from functools import lru_cache
+
+
+class Settings(BaseSettings):
+    """애플리케이션 설정"""
+
+    # Application
+    APP_NAME: str = "ISMS Management System"
+    APP_VERSION: str = "1.0.0"
+    ENVIRONMENT: str = "development"
+    DEBUG: bool = True
+
+    # Security
+    SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # Database
+    DATABASE_URL: str
+
+    # Redis
+    REDIS_URL: str
+
+    # MinIO
+    MINIO_ENDPOINT: str
+    MINIO_ACCESS_KEY: str
+    MINIO_SECRET_KEY: str
+    MINIO_BUCKET_NAME: str = "isms-evidences"
+    MINIO_SECURE: bool = False
+
+    # SMTP (Email)
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM_EMAIL: Optional[str] = None
+
+    # Celery
+    CELERY_BROKER_URL: str
+    CELERY_RESULT_BACKEND: str
+
+    # CORS
+    BACKEND_CORS_ORIGINS: list = ["http://localhost:3000"]
+
+    # Password Policy
+    PASSWORD_MIN_LENGTH: int = 8
+    PASSWORD_REQUIRE_UPPERCASE: bool = True
+    PASSWORD_REQUIRE_LOWERCASE: bool = True
+    PASSWORD_REQUIRE_DIGIT: bool = True
+    PASSWORD_REQUIRE_SPECIAL: bool = True
+    PASSWORD_EXPIRY_DAYS: int = 90
+
+    # Account Security
+    MAX_LOGIN_ATTEMPTS: int = 5
+    ACCOUNT_LOCKOUT_DURATION_MINUTES: int = 30
+    SESSION_TIMEOUT_MINUTES: int = 30
+
+    # File Upload
+    MAX_UPLOAD_SIZE_MB: int = 100
+    ALLOWED_EXTENSIONS: list = [
+        "pdf", "doc", "docx", "xls", "xlsx",
+        "ppt", "pptx", "txt", "jpg", "jpeg", "png"
+    ]
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    """설정 인스턴스 반환 (캐싱)"""
+    return Settings()
