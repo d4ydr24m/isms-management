@@ -5,13 +5,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.v1 import api_router
+from app.core.config import settings
+
 app = FastAPI(
-    title="ISMS Management System",
+    title=settings.APP_NAME,
     description="ISMS-P 인증 관리 시스템 API",
-    version="1.0.0",
+    version=settings.APP_VERSION,
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# API 라우터 등록
+app.include_router(api_router, prefix="/api/v1")
 
 # CORS 설정
 app.add_middleware(

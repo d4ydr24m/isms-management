@@ -18,7 +18,7 @@ class Department(Base):
         Integer, ForeignKey("departments.id"), nullable=True, comment="상위 부서 ID"
     )
     manager_id = Column(
-        Integer, ForeignKey("users.id"), nullable=True, comment="부서장 ID"
+        Integer, nullable=True, comment="부서장 ID (순환 참조 방지를 위해 FK 제거)"
     )
     is_active = Column(Boolean, default=True, nullable=False, comment="활성 상태")
     description = Column(String(500), nullable=True, comment="부서 설명")
@@ -27,7 +27,7 @@ class Department(Base):
     parent = relationship(
         "Department", remote_side="Department.id", backref="children"
     )
-    manager = relationship("User", foreign_keys=[manager_id], backref="managed_dept")
+    # manager 관계는 순환 참조 방지를 위해 제거 (필요시 쿼리로 조회)
     users = relationship("User", foreign_keys="User.department_id", back_populates="department")
 
     def __repr__(self) -> str:

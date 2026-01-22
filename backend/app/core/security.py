@@ -2,31 +2,35 @@
 보안 유틸리티 함수
 JWT 토큰, 비밀번호 해싱, TOTP 등
 """
+import re
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 import pyotp
 
 from app.core.config import settings
-
-# 비밀번호 해싱 컨텍스트
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_password_hash(password: str) -> str:
     """
     비밀번호 해싱
+    bcrypt를 직접 사용하여 해싱
     """
-    return pwd_context.hash(password)
+    password_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     비밀번호 검증
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    password_bytes = plain_password.encode('utf-8')
+    hashed_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -87,3 +91,45 @@ def get_totp_uri(secret: str, email: str) -> str:
     """
     totp = pyotp.TOTP(secret)
     return totp.provisioning_uri(name=email, issuer_name="ISMS Management System")
+
+
+def validate_password_policy(password: str) -> Dict[str, Any]:
+    """
+    비밀번호 정책 검증
+
+    정책:
+    - 최소 8자 이상
+    - 대문자 포함
+    - 소문자 포함
+    - 숫자 포함
+    - 특수문자 포함
+
+    Returns:
+        Dict with 'valid' (bool) and 'errors' (List[str])
+    """
+    errors: List[str] = []
+
+    # 최소 길이 체크
+    if len(password) < settings.PASSWORD_MIN_LENGTH:
+        errors.append(f"비밀번호는 최소 8자 이상이어야 합니다.")
+
+    # 대문자 체크
+    if settings.PASSWORD_REQUIRE_UPPERCASE and not re.search(r"[A-Z]", password):
+        errors.append("비밀번호에 대문자가 포함되어야 합니다.")
+
+    # 소문자 체크
+    if settings.PASSWORD_REQUIRE_LOWERCASE and not re.search(r"[a-z]", password):
+        errors.append("비밀번호에 소문자가 포함되어야 합니다.")
+
+    # 숫자 체크
+    if settings.PASSWORD_REQUIRE_DIGIT and not re.search(r"\d", password):
+        errors.append("비밀번호에 숫자가 포함되어야 합니다.")
+
+    # 특수문자 체크
+    if settings.PASSWORD_REQUIRE_SPECIAL and not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        errors.append("비밀번호에 특수문자가 포함되어야 합니다.")
+
+    return {
+        "valid": len(errors) == 0,
+        "errors": errors
+    }

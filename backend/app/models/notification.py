@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -36,7 +36,7 @@ class Notification(Base):
 
     # 상태
     is_read = Column(Boolean, default=False, nullable=False, index=True, comment="읽음 여부")
-    read_at = Column("read_at", nullable=True, comment="읽은 일시")
+    read_at = Column(DateTime, nullable=True, comment="읽은 일시")
 
     # 관계
     user = relationship("User", backref="notifications")

@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     SMTP_USER: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     SMTP_FROM_EMAIL: Optional[str] = None
+    SMTP_FROM_NAME: Optional[str] = None
 
     # Celery
     CELERY_BROKER_URL: str
@@ -58,6 +59,7 @@ class Settings(BaseSettings):
 
     # Account Security
     MAX_LOGIN_ATTEMPTS: int = 5
+    ACCOUNT_LOCKOUT_DURATION: int = 30  # minutes
     ACCOUNT_LOCKOUT_DURATION_MINUTES: int = 30
     SESSION_TIMEOUT_MINUTES: int = 30
 
@@ -68,12 +70,20 @@ class Settings(BaseSettings):
         "ppt", "pptx", "txt", "jpg", "jpeg", "png"
     ]
 
+    # Logging
+    LOG_LEVEL: str = "INFO"
+
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # 추가 필드 허용
 
 
 @lru_cache()
 def get_settings() -> Settings:
     """설정 인스턴스 반환 (캐싱)"""
     return Settings()
+
+
+# 전역 settings 인스턴스
+settings = get_settings()
