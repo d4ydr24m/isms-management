@@ -164,6 +164,23 @@ services:
       - isms_network
     command: npm run dev -- --host
 
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: isms_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - isms_network
+
 volumes:
   postgres_data:
     driver: local
@@ -174,6 +191,8 @@ volumes:
   backend_logs:
     driver: local
   celery_logs:
+    driver: local
+  nginx_logs:
     driver: local
 
 networks:
