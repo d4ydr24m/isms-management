@@ -17,6 +17,8 @@ from app.core.deps import get_db
 from app.core.security import get_password_hash
 from app.models.user import User, Role, user_roles
 from app.models.department import Department
+from app.models.control import ControlDomain, ControlCategory, ControlItem
+from app.models.audit import AuditPlan, NonConformity
 
 
 # 테스트용 SQLite 인메모리 데이터베이스
@@ -226,3 +228,104 @@ def admin_auth_headers(client: TestClient, test_admin_user: User) -> Dict[str, s
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+# ========== 감사 관련 픽스처 ==========
+
+@pytest.fixture
+def sample_control_domain(db: Session) -> ControlDomain:
+    """테스트용 통제영역 생성"""
+    domain = ControlDomain(
+        code="1",
+        name="관리체계 수립 및 운영",
+        description="ISMS 관리체계 수립",
+        sort_order=1,
+    )
+    db.add(domain)
+    db.commit()
+    db.refresh(domain)
+    return domain
+
+
+@pytest.fixture
+def sample_control_category(db: Session, sample_control_domain: ControlDomain) -> ControlCategory:
+    """테스트용 통제항목 카테고리 생성"""
+    category = ControlCategory(
+        domain_id=sample_control_domain.id,
+        code="1.1",
+        name="관리체계 기반 마련",
+        description="관리체계 기반 마련",
+        sort_order=1,
+    )
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+@pytest.fixture
+def sample_control_items(db: Session, sample_control_category: ControlCategory) -> list:
+    """테스트용 통제항목 목록 생성"""
+    items = []
+    for i in range(1, 4):
+        item = ControlItem(
+            category_id=sample_control_category.id,
+            code=f"1.1.{i}",
+            title=f"통제항목 {i}",
+            description=f"통제항목 {i} 설명",
+            is_required=True,
+            sort_order=i,
+        )
+        db.add(item)
+        items.append(item)
+    db.commit()
+    for item in items:
+        db.refresh(item)
+    return items
+
+
+@pytest.fixture
+def sample_audit_plan(db: Session, test_admin_user: User) -> AuditPlan:
+    """테스트용 감사 계획 생성"""
+    from datetime import date
+    plan = AuditPlan(
+        title="2024년 1차 내부감사",
+        description="연간 내부감사",
+        audit_type="internal",
+        start_date=date(2024, 3, 1),
+        end_date=date(2024, 3, 15),
+        scope="전사 정보보호 관리체계",
+        control_domains="1,2",
+        lead_auditor_id=test_admin_user.id,
+        status="planning",
+    )
+    db.add(plan)
+    db.commit()
+    db.refresh(plan)
+    return plan
+
+
+@pytest.fixture
+def sample_non_conformity(
+    db: Session, sample_audit_plan: AuditPlan,
+    sample_control_items: list, test_user: User
+) -> NonConformity:
+    """테스트용 부적합 생성"""
+    from datetime import date
+    nc = NonConformity(
+        audit_plan_id=sample_audit_plan.id,
+        control_item_id=sample_control_items[0].id,
+        nc_type="major",
+        severity="high",
+        title="테스트 부적합",
+        description="테스트",
+        requirement="테스트",
+        responsible_person_id=test_user.id,
+        detected_at=date.today(),
+        due_date=date(2024, 4, 30),
+        status="open",
+    )
+    db.add(nc)
+    db.commit()
+    db.refresh(nc)
+    return nc

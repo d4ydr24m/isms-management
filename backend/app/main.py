@@ -1,12 +1,13 @@
 """
 ISMS 관리 시스템 FastAPI 애플리케이션 엔트리포인트
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.v1 import api_router
 from app.core.config import settings
+from app.websocket.handlers import websocket_endpoint
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -18,6 +19,9 @@ app = FastAPI(
 
 # API 라우터 등록
 app.include_router(api_router, prefix="/api/v1")
+
+# WebSocket 엔드포인트 등록 (7.3)
+app.websocket("/ws/notifications")(websocket_endpoint)
 
 # CORS 설정
 app.add_middleware(

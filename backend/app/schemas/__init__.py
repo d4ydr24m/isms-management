@@ -27,6 +27,22 @@ from app.schemas.department import (
     DepartmentResponse,
     DepartmentTree,
 )
+from app.schemas.control import (
+    ControlDomainResponse,
+    ControlCategoryResponse,
+    ControlItemResponse,
+    ControlItemList,
+    ControlProgressResponse,
+)
+from app.schemas.evidence import (
+    EvidenceCreate,
+    EvidenceUpdate,
+    EvidenceResponse,
+    EvidenceList,
+    EvidenceVersionResponse,
+    EvidenceTemplateResponse,
+    EvidenceMappingRequest,
+)
 
 __all__ = [
     # User
@@ -51,4 +67,18 @@ __all__ = [
     "DepartmentUpdate",
     "DepartmentResponse",
     "DepartmentTree",
+    # Control
+    "ControlDomainResponse",
+    "ControlCategoryResponse",
+    "ControlItemResponse",
+    "ControlItemList",
+    "ControlProgressResponse",
+    # Evidence
+    "EvidenceCreate",
+    "EvidenceUpdate",
+    "EvidenceResponse",
+    "EvidenceList",
+    "EvidenceVersionResponse",
+    "EvidenceTemplateResponse",
+    "EvidenceMappingRequest",
 ]

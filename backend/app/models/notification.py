@@ -54,10 +54,10 @@ class NotificationSetting(Base):
     __tablename__ = "notification_settings"
 
     user_id = Column(
-        Integer, ForeignKey("users.id"), nullable=False, unique=True, comment="사용자 ID"
+        Integer, ForeignKey("users.id"), nullable=False, index=True, comment="사용자 ID"
     )
     notification_type = Column(
-        String(50), nullable=False, comment="알림 유형"
+        String(50), nullable=False, index=True, comment="알림 유형"
     )
 
     # 채널 설정
