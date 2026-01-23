@@ -17,6 +17,7 @@ from app.api.v1.audit_logs import router as audit_logs_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.templates import router as templates_router
 from app.api.v1.migration import router as migration_router
+from app.api.v1.dashboard import router as dashboard_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth", tags=["인증"])
@@ -33,3 +34,4 @@ api_router.include_router(audit_logs_router)
 api_router.include_router(notifications_router, prefix="/notifications", tags=["알림"])
 api_router.include_router(templates_router, prefix="/templates", tags=["템플릿"])
 api_router.include_router(migration_router, prefix="/migration", tags=["마이그레이션"])
+api_router.include_router(dashboard_router)
