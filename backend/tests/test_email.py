@@ -4,6 +4,9 @@
 7.6.2 이메일 발송 테스트
 """
 import pytest
+
+# 비동기 테스트를 위한 pytest-asyncio 설정
+pytestmark = pytest.mark.asyncio
 from datetime import datetime, timedelta
 from typing import Dict
 from unittest.mock import MagicMock, patch, AsyncMock
