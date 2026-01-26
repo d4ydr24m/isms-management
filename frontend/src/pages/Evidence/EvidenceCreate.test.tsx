@@ -59,42 +59,39 @@ describe('EvidenceCreate', () => {
     it('should render title input field', () => {
       renderWithRouter()
 
-      const titleInput = screen.getByRole('textbox', { name: /title/i })
-      expect(titleInput).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Enter evidence title')).toBeInTheDocument()
     })
 
     it('should render description textarea', () => {
       renderWithRouter()
 
-      const descriptionTextarea = screen.getByRole('textbox', { name: /description/i })
-      expect(descriptionTextarea).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Enter description')).toBeInTheDocument()
     })
 
     it('should render file upload area', () => {
       renderWithRouter()
 
-      expect(screen.getByText(/click or drag file/i)).toBeInTheDocument()
+      expect(screen.getByText(/Click or drag file to this area to upload/i)).toBeInTheDocument()
     })
 
     it('should render date picker labels', () => {
       renderWithRouter()
 
-      expect(screen.getByText(/valid from/i)).toBeInTheDocument()
-      expect(screen.getByText(/valid until/i)).toBeInTheDocument()
+      expect(screen.getByText('Valid From')).toBeInTheDocument()
+      expect(screen.getByText('Valid Until')).toBeInTheDocument()
     })
 
     it('should render control items field', () => {
       renderWithRouter()
 
-      expect(screen.getByText(/control items/i)).toBeInTheDocument()
+      expect(screen.getByText('Control Items')).toBeInTheDocument()
     })
 
     it('should render submit and cancel buttons', () => {
       renderWithRouter()
 
-      const buttons = screen.getAllByRole('button')
-      expect(buttons.length).toBeGreaterThan(1)
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Create/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument()
     })
   })
 
@@ -102,18 +99,12 @@ describe('EvidenceCreate', () => {
     it('should show error when title is empty on submit', async () => {
       renderWithRouter()
 
-      const submitButtons = screen.getAllByRole('button')
-      const submitButton = submitButtons.find((btn) =>
-        btn.classList.contains('ant-btn-primary')
-      )
+      const submitButton = screen.getByRole('button', { name: /Create/i })
+      fireEvent.click(submitButton)
 
-      if (submitButton) {
-        fireEvent.click(submitButton)
-
-        await waitFor(() => {
-          expect(screen.getByText(/title is required/i)).toBeInTheDocument()
-        })
-      }
+      await waitFor(() => {
+        expect(screen.getByText(/Title is required/i)).toBeInTheDocument()
+      })
     })
   })
 
@@ -121,7 +112,7 @@ describe('EvidenceCreate', () => {
     it('should navigate back when cancel is clicked', async () => {
       renderWithRouter()
 
-      const cancelButton = screen.getByRole('button', { name: /cancel/i })
+      const cancelButton = screen.getByRole('button', { name: /Cancel/i })
       fireEvent.click(cancelButton)
 
       await waitFor(() => {
@@ -134,7 +125,7 @@ describe('EvidenceCreate', () => {
     it('should display file upload hint', () => {
       renderWithRouter()
 
-      expect(screen.getByText(/support for a single/i)).toBeInTheDocument()
+      expect(screen.getByText(/Support for a single file upload/i)).toBeInTheDocument()
     })
   })
 })
