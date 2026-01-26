@@ -247,6 +247,39 @@ npm run format             # Prettier
 - 파일 업로드 검증
 - 감사 로그 (해시 체인)
 
+## 문서
+
+상세 문서는 [docs/](./docs/) 디렉토리에서 확인하세요.
+
+| 문서 | 설명 |
+|------|------|
+| [DEVELOPMENT.md](./docs/DEVELOPMENT.md) | 개발 환경 설정 가이드 |
+| [API.md](./docs/API.md) | API 사용 가이드 |
+| [DATABASE.md](./docs/DATABASE.md) | 데이터베이스 스키마 문서 |
+| [DEPLOYMENT.md](./docs/DEPLOYMENT.md) | 배포 가이드 |
+| [CONFIGURATION.md](./docs/CONFIGURATION.md) | 환경 설정 가이드 |
+| [OPERATION.md](./docs/OPERATION.md) | 운영 매뉴얼 |
+| [USER_MANUAL.md](./docs/USER_MANUAL.md) | 사용자 매뉴얼 |
+
+## 테스트 현황
+
+### Backend (pytest)
+- **테스트**: 476개
+- **커버리지**: 80%
+
+### Frontend (vitest)
+- **테스트 파일**: 64개
+- **테스트**: 636개
+- **커버리지**: 70.66%
+
+```bash
+# Backend 테스트 실행
+cd backend && pytest --cov=app tests/
+
+# Frontend 테스트 실행
+cd frontend && npm test -- --coverage
+```
+
 ## 라이선스
 
 Proprietary - 모든 권리 보유
