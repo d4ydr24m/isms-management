@@ -11,10 +11,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
-from app.main import app
+from app.main import app as fastapi_app
 from app.db.base import Base
 from app.core.deps import get_db
 from app.core.security import get_password_hash
+# 모든 모델을 로드하여 테이블 생성
+import app.models  # noqa: F401 - 모든 모델 로드
 from app.models.user import User, Role, user_roles
 from app.models.department import Department
 from app.models.control import ControlDomain, ControlCategory, ControlItem
@@ -56,10 +58,10 @@ def db() -> Generator[Session, None, None]:
 @pytest.fixture(scope="function")
 def client(db: Session) -> Generator[TestClient, None, None]:
     """테스트용 FastAPI 클라이언트"""
-    app.dependency_overrides[get_db] = lambda: db
-    with TestClient(app) as test_client:
+    fastapi_app.dependency_overrides[get_db] = lambda: db
+    with TestClient(fastapi_app) as test_client:
         yield test_client
-    app.dependency_overrides.clear()
+    fastapi_app.dependency_overrides.clear()
 
 
 @pytest.fixture
@@ -329,3 +331,208 @@ def sample_non_conformity(
     db.commit()
     db.refresh(nc)
     return nc
+
+
+# ========== 자산 관련 픽스처 (Phase 2) ==========
+
+@pytest.fixture
+def test_asset_type(db: Session):
+    """테스트용 자산 유형 생성"""
+    from app.models.asset import AssetType
+
+    asset_type = AssetType(
+        code="SRV",
+        name="서버",
+        description="서버 자산",
+        is_custom=False,
+        is_active=True,
+        sort_order=1,
+    )
+    db.add(asset_type)
+    db.commit()
+    db.refresh(asset_type)
+    return asset_type
+
+
+@pytest.fixture
+def test_asset(db: Session, test_asset_type, test_department: Department, test_user: User):
+    """테스트용 자산 생성"""
+    from app.models.asset import Asset
+
+    asset = Asset(
+        asset_code="AST-SRV-2024-001",
+        name="테스트 서버",
+        description="테스트용 서버 자산",
+        asset_type_id=test_asset_type.id,
+        department_id=test_department.id,
+        owner_id=test_user.id,
+        location="서버실 A",
+        ip_address="192.168.1.100",
+        status="운영",
+        is_active=True,
+    )
+    db.add(asset)
+    db.commit()
+    db.refresh(asset)
+    return asset
+
+
+# ========== 위험 관련 픽스처 (Phase 2) ==========
+
+@pytest.fixture
+def test_threat_category(db: Session):
+    """테스트용 위협 분류 생성"""
+    from app.models.risk import ThreatCategory
+
+    category = ThreatCategory(
+        code="TC-TEST",
+        name="테스트 위협 분류",
+        description="테스트용 위협 분류",
+        sort_order=1,
+        is_active=True,
+    )
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+@pytest.fixture
+def test_threat(db: Session, test_threat_category):
+    """테스트용 위협 생성"""
+    from app.models.risk import Threat
+
+    threat = Threat(
+        code="T-TEST-001",
+        name="테스트 위협",
+        description="테스트용 위협",
+        category_id=test_threat_category.id,
+        threat_level=2,  # 중
+        is_custom=False,
+        is_active=True,
+    )
+    db.add(threat)
+    db.commit()
+    db.refresh(threat)
+    return threat
+
+
+@pytest.fixture
+def test_vulnerability_category(db: Session):
+    """테스트용 취약점 분류 생성"""
+    from app.models.risk import VulnerabilityCategory
+
+    category = VulnerabilityCategory(
+        code="VC-TEST",
+        name="테스트 취약점 분류",
+        description="테스트용 취약점 분류",
+        sort_order=1,
+        is_active=True,
+    )
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+@pytest.fixture
+def test_vulnerability(db: Session, test_vulnerability_category):
+    """테스트용 취약점 생성"""
+    from app.models.risk import Vulnerability
+
+    vulnerability = Vulnerability(
+        code="V-TEST-001",
+        name="테스트 취약점",
+        description="테스트용 취약점",
+        category_id=test_vulnerability_category.id,
+        vulnerability_level=2,  # 중
+        is_custom=False,
+        is_active=True,
+    )
+    db.add(vulnerability)
+    db.commit()
+    db.refresh(vulnerability)
+    return vulnerability
+
+
+@pytest.fixture
+def test_risk_scenario(db: Session, test_user: User):
+    """테스트용 위험 평가 시나리오 생성"""
+    from datetime import date
+    from app.models.risk import RiskScenario
+
+    scenario = RiskScenario(
+        name="테스트 위험 시나리오",
+        description="테스트용 위험 평가 시나리오",
+        start_date=date.today(),
+        end_date=date.today() + timedelta(days=30),
+        status="in_progress",
+        created_by=test_user.id,
+    )
+    db.add(scenario)
+    db.commit()
+    db.refresh(scenario)
+    return scenario
+
+
+@pytest.fixture
+def test_risk_assessment(
+    db: Session, test_risk_scenario, test_asset, test_threat, test_vulnerability
+):
+    """테스트용 위험 평가 생성"""
+    from app.models.risk import RiskAssessment
+
+    assessment = RiskAssessment(
+        scenario_id=test_risk_scenario.id,
+        asset_id=test_asset.id,
+        threat_id=test_threat.id,
+        vulnerability_id=test_vulnerability.id,
+        asset_value=2,  # 중
+        threat_level=2,  # 중
+        vulnerability_level=2,  # 중
+    )
+    db.add(assessment)
+    db.commit()
+    db.refresh(assessment)
+    return assessment
+
+
+@pytest.fixture
+def test_doa_config(db: Session, test_admin_user: User):
+    """테스트용 DoA 설정 생성"""
+    from datetime import date
+    from app.models.risk import DoAConfig
+
+    config = DoAConfig(
+        threshold_value=12,  # DoR >= 12인 경우 DoA 초과
+        effective_date=date.today(),
+        approved_by=test_admin_user.id,
+        approval_date=date.today(),
+        remarks="테스트 DoA 기준",
+        is_active=True,
+    )
+    db.add(config)
+    db.commit()
+    db.refresh(config)
+    return config
+
+
+@pytest.fixture
+def test_risk_treatment_plan(db: Session, test_risk_assessment, test_user: User):
+    """테스트용 위험 처리 계획 생성"""
+    from datetime import date
+    from app.models.risk import RiskTreatmentPlan
+
+    plan = RiskTreatmentPlan(
+        risk_assessment_id=test_risk_assessment.id,
+        strategy="reduce",
+        description="테스트 위험 처리 계획",
+        assignee_id=test_user.id,
+        due_date=date.today() + timedelta(days=90),
+        budget=1000000,
+        status="planned",
+    )
+    db.add(plan)
+    db.commit()
+    db.refresh(plan)
+    return plan

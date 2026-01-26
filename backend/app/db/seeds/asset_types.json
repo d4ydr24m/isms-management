@@ -1,0 +1,90 @@
+{
+  "description": "ISMS 정보자산 유형 기본 데이터",
+  "version": "1.0",
+  "asset_types": [
+    {
+      "code": "SRV",
+      "name": "서버",
+      "description": "물리/가상 서버 장비",
+      "icon": "server",
+      "sort_order": 1
+    },
+    {
+      "code": "NET",
+      "name": "네트워크장비",
+      "description": "라우터, 스위치, 방화벽 등 네트워크 장비",
+      "icon": "router",
+      "sort_order": 2
+    },
+    {
+      "code": "SEC",
+      "name": "보안장비",
+      "description": "IDS/IPS, WAF, DDoS 방어장비 등 보안 솔루션",
+      "icon": "shield",
+      "sort_order": 3
+    },
+    {
+      "code": "DB",
+      "name": "데이터베이스",
+      "description": "RDBMS, NoSQL 등 데이터베이스 시스템",
+      "icon": "database",
+      "sort_order": 4
+    },
+    {
+      "code": "APP",
+      "name": "애플리케이션",
+      "description": "업무용 소프트웨어 및 웹 애플리케이션",
+      "icon": "application",
+      "sort_order": 5
+    },
+    {
+      "code": "PC",
+      "name": "PC/노트북",
+      "description": "업무용 개인 컴퓨터 및 노트북",
+      "icon": "computer",
+      "sort_order": 6
+    },
+    {
+      "code": "MOB",
+      "name": "모바일기기",
+      "description": "태블릿, 스마트폰 등 모바일 기기",
+      "icon": "mobile",
+      "sort_order": 7
+    },
+    {
+      "code": "STG",
+      "name": "저장매체",
+      "description": "USB, 외장하드, 백업테이프 등",
+      "icon": "storage",
+      "sort_order": 8
+    },
+    {
+      "code": "DOC",
+      "name": "문서",
+      "description": "전자문서, 인쇄문서 등 문서 자산",
+      "icon": "document",
+      "sort_order": 9
+    },
+    {
+      "code": "HUM",
+      "name": "인력",
+      "description": "핵심 인력, 보안담당자 등 인적 자산",
+      "icon": "person",
+      "sort_order": 10
+    },
+    {
+      "code": "FAC",
+      "name": "시설",
+      "description": "전산실, 데이터센터 등 물리적 시설",
+      "icon": "building",
+      "sort_order": 11
+    },
+    {
+      "code": "SVC",
+      "name": "서비스",
+      "description": "클라우드 서비스, SaaS, 외부 서비스 등",
+      "icon": "cloud",
+      "sort_order": 12
+    }
+  ]
+}

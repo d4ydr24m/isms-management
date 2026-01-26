@@ -33,6 +33,29 @@ from app.models import (
     Notification,
     NotificationSetting,
     AuditLog,
+    # Phase 2 - Asset models
+    AssetType,
+    AssetCategory,
+    Asset,
+    AssetValuation,
+    AssetHistory,
+    AssetDisposal,
+    AssetAssignment,
+    AssetHandover,
+    # Phase 2 - Risk models
+    ThreatCategory,
+    Threat,
+    AssetTypeThreat,
+    VulnerabilityCategory,
+    Vulnerability,
+    VulnerabilityAssessment,
+    RiskScenario,
+    RiskAssessment,
+    DoAConfig,
+    DoAHistory,
+    RiskTreatmentPlan,
+    RiskTreatmentAction,
+    SOARecord,
 )
 
 # this is the Alembic Config object, which provides

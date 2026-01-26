@@ -23,6 +23,31 @@ from app.models.audit import (
 )
 from app.models.notification import Notification, NotificationSetting
 from app.models.audit_log import AuditLog
+from app.models.asset import (
+    AssetType,
+    AssetCategory,
+    Asset,
+    AssetValuation,
+    AssetHistory,
+    AssetDisposal,
+    AssetAssignment,
+    AssetHandover,
+)
+from app.models.risk import (
+    ThreatCategory,
+    Threat,
+    AssetTypeThreat,
+    VulnerabilityCategory,
+    Vulnerability,
+    VulnerabilityAssessment,
+    RiskScenario,
+    RiskAssessment,
+    DoAConfig,
+    DoAHistory,
+    RiskTreatmentPlan,
+    RiskTreatmentAction,
+    SOARecord,
+)
 
 __all__ = [
     "Base",
@@ -48,4 +73,27 @@ __all__ = [
     "Notification",
     "NotificationSetting",
     "AuditLog",
+    # Phase 2 - Asset models
+    "AssetType",
+    "AssetCategory",
+    "Asset",
+    "AssetValuation",
+    "AssetHistory",
+    "AssetDisposal",
+    "AssetAssignment",
+    "AssetHandover",
+    # Phase 2 - Risk models
+    "ThreatCategory",
+    "Threat",
+    "AssetTypeThreat",
+    "VulnerabilityCategory",
+    "Vulnerability",
+    "VulnerabilityAssessment",
+    "RiskScenario",
+    "RiskAssessment",
+    "DoAConfig",
+    "DoAHistory",
+    "RiskTreatmentPlan",
+    "RiskTreatmentAction",
+    "SOARecord",
 ]

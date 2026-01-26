@@ -1,0 +1,305 @@
+{
+  "description": "ISMS 정보자산 분류 계층 데이터 (대분류 → 중분류 → 소분류)",
+  "version": "1.0",
+  "categories": [
+    {
+      "code": "HW",
+      "name": "하드웨어",
+      "description": "물리적 IT 장비",
+      "level": 1,
+      "sort_order": 1,
+      "children": [
+        {
+          "code": "HW-SRV",
+          "name": "서버 장비",
+          "level": 2,
+          "sort_order": 1,
+          "children": [
+            {"code": "HW-SRV-PHYS", "name": "물리 서버", "level": 3, "sort_order": 1},
+            {"code": "HW-SRV-VIRT", "name": "가상 서버", "level": 3, "sort_order": 2},
+            {"code": "HW-SRV-CONT", "name": "컨테이너", "level": 3, "sort_order": 3}
+          ]
+        },
+        {
+          "code": "HW-NET",
+          "name": "네트워크 장비",
+          "level": 2,
+          "sort_order": 2,
+          "children": [
+            {"code": "HW-NET-RTR", "name": "라우터", "level": 3, "sort_order": 1},
+            {"code": "HW-NET-SW", "name": "스위치", "level": 3, "sort_order": 2},
+            {"code": "HW-NET-FW", "name": "방화벽", "level": 3, "sort_order": 3},
+            {"code": "HW-NET-LB", "name": "로드밸런서", "level": 3, "sort_order": 4}
+          ]
+        },
+        {
+          "code": "HW-SEC",
+          "name": "보안 장비",
+          "level": 2,
+          "sort_order": 3,
+          "children": [
+            {"code": "HW-SEC-IDS", "name": "IDS/IPS", "level": 3, "sort_order": 1},
+            {"code": "HW-SEC-WAF", "name": "WAF", "level": 3, "sort_order": 2},
+            {"code": "HW-SEC-DLP", "name": "DLP", "level": 3, "sort_order": 3},
+            {"code": "HW-SEC-HSM", "name": "HSM", "level": 3, "sort_order": 4}
+          ]
+        },
+        {
+          "code": "HW-STG",
+          "name": "스토리지",
+          "level": 2,
+          "sort_order": 4,
+          "children": [
+            {"code": "HW-STG-SAN", "name": "SAN 스토리지", "level": 3, "sort_order": 1},
+            {"code": "HW-STG-NAS", "name": "NAS", "level": 3, "sort_order": 2},
+            {"code": "HW-STG-BAK", "name": "백업 장비", "level": 3, "sort_order": 3}
+          ]
+        },
+        {
+          "code": "HW-END",
+          "name": "단말 장비",
+          "level": 2,
+          "sort_order": 5,
+          "children": [
+            {"code": "HW-END-PC", "name": "데스크탑 PC", "level": 3, "sort_order": 1},
+            {"code": "HW-END-NB", "name": "노트북", "level": 3, "sort_order": 2},
+            {"code": "HW-END-TAB", "name": "태블릿", "level": 3, "sort_order": 3},
+            {"code": "HW-END-MOB", "name": "스마트폰", "level": 3, "sort_order": 4}
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SW",
+      "name": "소프트웨어",
+      "description": "운영체제, 응용 소프트웨어, 개발도구 등",
+      "level": 1,
+      "sort_order": 2,
+      "children": [
+        {
+          "code": "SW-OS",
+          "name": "운영체제",
+          "level": 2,
+          "sort_order": 1,
+          "children": [
+            {"code": "SW-OS-WIN", "name": "Windows", "level": 3, "sort_order": 1},
+            {"code": "SW-OS-LNX", "name": "Linux", "level": 3, "sort_order": 2},
+            {"code": "SW-OS-UNX", "name": "Unix", "level": 3, "sort_order": 3}
+          ]
+        },
+        {
+          "code": "SW-DB",
+          "name": "데이터베이스",
+          "level": 2,
+          "sort_order": 2,
+          "children": [
+            {"code": "SW-DB-RDB", "name": "RDBMS", "level": 3, "sort_order": 1},
+            {"code": "SW-DB-NOS", "name": "NoSQL", "level": 3, "sort_order": 2},
+            {"code": "SW-DB-TSR", "name": "시계열 DB", "level": 3, "sort_order": 3}
+          ]
+        },
+        {
+          "code": "SW-APP",
+          "name": "애플리케이션",
+          "level": 2,
+          "sort_order": 3,
+          "children": [
+            {"code": "SW-APP-WEB", "name": "웹 애플리케이션", "level": 3, "sort_order": 1},
+            {"code": "SW-APP-MOB", "name": "모바일 앱", "level": 3, "sort_order": 2},
+            {"code": "SW-APP-DT", "name": "데스크탑 앱", "level": 3, "sort_order": 3},
+            {"code": "SW-APP-API", "name": "API 서비스", "level": 3, "sort_order": 4}
+          ]
+        },
+        {
+          "code": "SW-SEC",
+          "name": "보안 소프트웨어",
+          "level": 2,
+          "sort_order": 4,
+          "children": [
+            {"code": "SW-SEC-AV", "name": "안티바이러스", "level": 3, "sort_order": 1},
+            {"code": "SW-SEC-EDR", "name": "EDR", "level": 3, "sort_order": 2},
+            {"code": "SW-SEC-SIEM", "name": "SIEM", "level": 3, "sort_order": 3},
+            {"code": "SW-SEC-IAM", "name": "IAM", "level": 3, "sort_order": 4}
+          ]
+        }
+      ]
+    },
+    {
+      "code": "DATA",
+      "name": "데이터",
+      "description": "전자문서, 데이터베이스 데이터, 로그 등",
+      "level": 1,
+      "sort_order": 3,
+      "children": [
+        {
+          "code": "DATA-DOC",
+          "name": "전자문서",
+          "level": 2,
+          "sort_order": 1,
+          "children": [
+            {"code": "DATA-DOC-INT", "name": "내부 문서", "level": 3, "sort_order": 1},
+            {"code": "DATA-DOC-EXT", "name": "외부 문서", "level": 3, "sort_order": 2},
+            {"code": "DATA-DOC-SEC", "name": "기밀 문서", "level": 3, "sort_order": 3}
+          ]
+        },
+        {
+          "code": "DATA-DB",
+          "name": "데이터베이스 데이터",
+          "level": 2,
+          "sort_order": 2,
+          "children": [
+            {"code": "DATA-DB-CUS", "name": "고객 정보", "level": 3, "sort_order": 1},
+            {"code": "DATA-DB-PER", "name": "개인정보", "level": 3, "sort_order": 2},
+            {"code": "DATA-DB-FIN", "name": "재무 정보", "level": 3, "sort_order": 3},
+            {"code": "DATA-DB-OPR", "name": "운영 데이터", "level": 3, "sort_order": 4}
+          ]
+        },
+        {
+          "code": "DATA-LOG",
+          "name": "로그 데이터",
+          "level": 2,
+          "sort_order": 3,
+          "children": [
+            {"code": "DATA-LOG-SYS", "name": "시스템 로그", "level": 3, "sort_order": 1},
+            {"code": "DATA-LOG-SEC", "name": "보안 로그", "level": 3, "sort_order": 2},
+            {"code": "DATA-LOG-AUD", "name": "감사 로그", "level": 3, "sort_order": 3}
+          ]
+        },
+        {
+          "code": "DATA-BAK",
+          "name": "백업 데이터",
+          "level": 2,
+          "sort_order": 4,
+          "children": [
+            {"code": "DATA-BAK-FULL", "name": "전체 백업", "level": 3, "sort_order": 1},
+            {"code": "DATA-BAK-INCR", "name": "증분 백업", "level": 3, "sort_order": 2},
+            {"code": "DATA-BAK-ARCH", "name": "아카이브", "level": 3, "sort_order": 3}
+          ]
+        }
+      ]
+    },
+    {
+      "code": "SVC",
+      "name": "서비스",
+      "description": "클라우드, 외부 서비스, 아웃소싱 등",
+      "level": 1,
+      "sort_order": 4,
+      "children": [
+        {
+          "code": "SVC-CLD",
+          "name": "클라우드 서비스",
+          "level": 2,
+          "sort_order": 1,
+          "children": [
+            {"code": "SVC-CLD-IAAS", "name": "IaaS", "level": 3, "sort_order": 1},
+            {"code": "SVC-CLD-PAAS", "name": "PaaS", "level": 3, "sort_order": 2},
+            {"code": "SVC-CLD-SAAS", "name": "SaaS", "level": 3, "sort_order": 3}
+          ]
+        },
+        {
+          "code": "SVC-EXT",
+          "name": "외부 서비스",
+          "level": 2,
+          "sort_order": 2,
+          "children": [
+            {"code": "SVC-EXT-HOST", "name": "호스팅", "level": 3, "sort_order": 1},
+            {"code": "SVC-EXT-CDN", "name": "CDN", "level": 3, "sort_order": 2},
+            {"code": "SVC-EXT-DNS", "name": "DNS", "level": 3, "sort_order": 3}
+          ]
+        },
+        {
+          "code": "SVC-OUT",
+          "name": "아웃소싱",
+          "level": 2,
+          "sort_order": 3,
+          "children": [
+            {"code": "SVC-OUT-DEV", "name": "개발 위탁", "level": 3, "sort_order": 1},
+            {"code": "SVC-OUT-OPS", "name": "운영 위탁", "level": 3, "sort_order": 2},
+            {"code": "SVC-OUT-SEC", "name": "보안관제", "level": 3, "sort_order": 3}
+          ]
+        }
+      ]
+    },
+    {
+      "code": "FAC",
+      "name": "시설",
+      "description": "전산실, 데이터센터, 사무실 등 물리적 시설",
+      "level": 1,
+      "sort_order": 5,
+      "children": [
+        {
+          "code": "FAC-DC",
+          "name": "데이터센터",
+          "level": 2,
+          "sort_order": 1,
+          "children": [
+            {"code": "FAC-DC-MAIN", "name": "메인 데이터센터", "level": 3, "sort_order": 1},
+            {"code": "FAC-DC-DR", "name": "DR 센터", "level": 3, "sort_order": 2}
+          ]
+        },
+        {
+          "code": "FAC-OFF",
+          "name": "사무실",
+          "level": 2,
+          "sort_order": 2,
+          "children": [
+            {"code": "FAC-OFF-HQ", "name": "본사", "level": 3, "sort_order": 1},
+            {"code": "FAC-OFF-BR", "name": "지사", "level": 3, "sort_order": 2}
+          ]
+        },
+        {
+          "code": "FAC-SEC",
+          "name": "보안구역",
+          "level": 2,
+          "sort_order": 3,
+          "children": [
+            {"code": "FAC-SEC-SRV", "name": "서버실", "level": 3, "sort_order": 1},
+            {"code": "FAC-SEC-NET", "name": "통신실", "level": 3, "sort_order": 2},
+            {"code": "FAC-SEC-ARC", "name": "문서보관실", "level": 3, "sort_order": 3}
+          ]
+        }
+      ]
+    },
+    {
+      "code": "HUM",
+      "name": "인력",
+      "description": "핵심 인력, 보안 담당자 등 인적 자산",
+      "level": 1,
+      "sort_order": 6,
+      "children": [
+        {
+          "code": "HUM-KEY",
+          "name": "핵심 인력",
+          "level": 2,
+          "sort_order": 1,
+          "children": [
+            {"code": "HUM-KEY-MGT", "name": "경영진", "level": 3, "sort_order": 1},
+            {"code": "HUM-KEY-EXP", "name": "기술 전문가", "level": 3, "sort_order": 2}
+          ]
+        },
+        {
+          "code": "HUM-SEC",
+          "name": "보안 인력",
+          "level": 2,
+          "sort_order": 2,
+          "children": [
+            {"code": "HUM-SEC-CISO", "name": "CISO", "level": 3, "sort_order": 1},
+            {"code": "HUM-SEC-MGR", "name": "보안담당자", "level": 3, "sort_order": 2},
+            {"code": "HUM-SEC-OPS", "name": "보안운영자", "level": 3, "sort_order": 3}
+          ]
+        },
+        {
+          "code": "HUM-OPS",
+          "name": "운영 인력",
+          "level": 2,
+          "sort_order": 3,
+          "children": [
+            {"code": "HUM-OPS-SYS", "name": "시스템관리자", "level": 3, "sort_order": 1},
+            {"code": "HUM-OPS-NET", "name": "네트워크관리자", "level": 3, "sort_order": 2},
+            {"code": "HUM-OPS-DBA", "name": "DBA", "level": 3, "sort_order": 3}
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -16,6 +16,8 @@ from app.models import (
     Role,
     User,
     Department,
+    AssetType,
+    AssetCategory,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -73,6 +75,74 @@ def load_isms_controls(db: Session) -> None:
 
     db.commit()
     logger.info("ISMS-P control items loaded successfully!")
+
+
+def load_asset_types(db: Session) -> None:
+    """
+    자산 유형 시드 데이터 로딩 (Phase 2)
+    """
+    logger.info("Loading asset types...")
+
+    seeds_path = Path(__file__).parent / "seeds" / "asset_types.json"
+    with open(seeds_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    for type_data in data["asset_types"]:
+        asset_type = db.query(AssetType).filter_by(code=type_data["code"]).first()
+        if not asset_type:
+            asset_type = AssetType(
+                code=type_data["code"],
+                name=type_data["name"],
+                description=type_data.get("description"),
+                icon=type_data.get("icon"),
+                is_custom=False,
+                is_active=True,
+                sort_order=type_data.get("sort_order", 0),
+            )
+            db.add(asset_type)
+            logger.info(f"Created asset type: {asset_type.code} - {asset_type.name}")
+
+    db.commit()
+    logger.info("Asset types loaded successfully!")
+
+
+def load_asset_categories(db: Session) -> None:
+    """
+    자산 분류 계층 시드 데이터 로딩 (Phase 2)
+    """
+    logger.info("Loading asset categories...")
+
+    seeds_path = Path(__file__).parent / "seeds" / "asset_categories.json"
+    with open(seeds_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    def create_category(cat_data: dict, parent_id: int = None) -> None:
+        """재귀적으로 카테고리 생성"""
+        category = db.query(AssetCategory).filter_by(code=cat_data["code"]).first()
+        if not category:
+            category = AssetCategory(
+                code=cat_data["code"],
+                name=cat_data["name"],
+                description=cat_data.get("description"),
+                level=cat_data["level"],
+                parent_id=parent_id,
+                is_active=True,
+                sort_order=cat_data.get("sort_order", 0),
+            )
+            db.add(category)
+            db.flush()
+            logger.info(f"Created asset category: {category.code} - {category.name}")
+
+        # 하위 카테고리 처리
+        if "children" in cat_data:
+            for child_data in cat_data["children"]:
+                create_category(child_data, category.id)
+
+    for cat_data in data["categories"]:
+        create_category(cat_data)
+
+    db.commit()
+    logger.info("Asset categories loaded successfully!")
 
 
 def create_default_roles(db: Session) -> None:
@@ -203,6 +273,12 @@ def init_db() -> None:
 
         # 4. 관리자 계정 생성
         create_admin_user(db, dept)
+
+        # 5. 자산 유형 로딩 (Phase 2)
+        load_asset_types(db)
+
+        # 6. 자산 분류 로딩 (Phase 2)
+        load_asset_categories(db)
 
         logger.info("Database initialization completed successfully!")
 

@@ -1,0 +1,364 @@
+{
+  "description": "ISMS 취약점 DB 기본 데이터 - 자산 유형별 표준 취약점 목록",
+  "version": "1.0",
+  "vulnerability_categories": [
+    {
+      "code": "VC-TEC",
+      "name": "기술적 취약점",
+      "description": "기술적 보안 취약점",
+      "sort_order": 1,
+      "children": [
+        {
+          "code": "VC-TEC-NET",
+          "name": "네트워크 취약점",
+          "description": "네트워크 구성 및 통신 관련 취약점",
+          "sort_order": 1
+        },
+        {
+          "code": "VC-TEC-SYS",
+          "name": "시스템 취약점",
+          "description": "운영체제 및 시스템 관련 취약점",
+          "sort_order": 2
+        },
+        {
+          "code": "VC-TEC-APP",
+          "name": "애플리케이션 취약점",
+          "description": "애플리케이션 및 웹 서비스 취약점",
+          "sort_order": 3
+        },
+        {
+          "code": "VC-TEC-DB",
+          "name": "데이터베이스 취약점",
+          "description": "데이터베이스 관련 취약점",
+          "sort_order": 4
+        },
+        {
+          "code": "VC-TEC-CRY",
+          "name": "암호화 취약점",
+          "description": "암호화 및 키 관리 관련 취약점",
+          "sort_order": 5
+        }
+      ]
+    },
+    {
+      "code": "VC-PHY",
+      "name": "물리적 취약점",
+      "description": "물리적 보안 취약점",
+      "sort_order": 2,
+      "children": [
+        {
+          "code": "VC-PHY-ACC",
+          "name": "접근통제 취약점",
+          "description": "물리적 접근통제 관련 취약점",
+          "sort_order": 1
+        },
+        {
+          "code": "VC-PHY-ENV",
+          "name": "환경 취약점",
+          "description": "물리적 환경 관련 취약점",
+          "sort_order": 2
+        }
+      ]
+    },
+    {
+      "code": "VC-MNG",
+      "name": "관리적 취약점",
+      "description": "관리 및 운영 취약점",
+      "sort_order": 3,
+      "children": [
+        {
+          "code": "VC-MNG-POL",
+          "name": "정책/절차 취약점",
+          "description": "보안 정책 및 절차 관련 취약점",
+          "sort_order": 1
+        },
+        {
+          "code": "VC-MNG-OPR",
+          "name": "운영 취약점",
+          "description": "운영 및 유지보수 관련 취약점",
+          "sort_order": 2
+        },
+        {
+          "code": "VC-MNG-HUM",
+          "name": "인적 취약점",
+          "description": "인력 관리 관련 취약점",
+          "sort_order": 3
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "code": "V-NET-001",
+      "name": "불필요한 포트 오픈",
+      "description": "불필요한 서비스 포트가 외부에 노출됨",
+      "category_code": "VC-TEC-NET",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["SRV", "NET", "SEC"]
+    },
+    {
+      "code": "V-NET-002",
+      "name": "네트워크 분리 미흡",
+      "description": "DMZ, 내부망, 개발망 등 네트워크 분리 미흡",
+      "category_code": "VC-TEC-NET",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["NET"]
+    },
+    {
+      "code": "V-NET-003",
+      "name": "평문 통신 사용",
+      "description": "암호화되지 않은 통신 프로토콜 사용",
+      "category_code": "VC-TEC-NET",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["SRV", "NET", "APP", "SVC"]
+    },
+    {
+      "code": "V-NET-004",
+      "name": "방화벽 정책 미흡",
+      "description": "방화벽 정책이 과도하게 허용적이거나 관리되지 않음",
+      "category_code": "VC-TEC-NET",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["NET", "SEC"]
+    },
+    {
+      "code": "V-SYS-001",
+      "name": "보안 패치 미적용",
+      "description": "운영체제 또는 소프트웨어 보안 패치 미적용",
+      "category_code": "VC-TEC-SYS",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["SRV", "PC", "MOB", "NET", "SEC"]
+    },
+    {
+      "code": "V-SYS-002",
+      "name": "취약한 기본 설정",
+      "description": "시스템 기본 설정 그대로 사용 (기본 계정/비밀번호 등)",
+      "category_code": "VC-TEC-SYS",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB"]
+    },
+    {
+      "code": "V-SYS-003",
+      "name": "불필요한 서비스 실행",
+      "description": "사용하지 않는 서비스가 활성화되어 있음",
+      "category_code": "VC-TEC-SYS",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["SRV", "PC"]
+    },
+    {
+      "code": "V-SYS-004",
+      "name": "로그 관리 미흡",
+      "description": "시스템 로그 수집/저장/분석 체계 미흡",
+      "category_code": "VC-TEC-SYS",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "APP"]
+    },
+    {
+      "code": "V-SYS-005",
+      "name": "root/admin 계정 공유",
+      "description": "관리자 계정을 여러 사용자가 공유하여 사용",
+      "category_code": "VC-TEC-SYS",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB"]
+    },
+    {
+      "code": "V-APP-001",
+      "name": "입력값 검증 미흡",
+      "description": "사용자 입력에 대한 검증이 불충분함",
+      "category_code": "VC-TEC-APP",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["APP", "SVC"]
+    },
+    {
+      "code": "V-APP-002",
+      "name": "세션 관리 취약",
+      "description": "세션 타임아웃, 세션 고정 등 세션 관리 취약점",
+      "category_code": "VC-TEC-APP",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["APP", "SVC"]
+    },
+    {
+      "code": "V-APP-003",
+      "name": "에러 처리 미흡",
+      "description": "에러 메시지를 통한 시스템 정보 노출",
+      "category_code": "VC-TEC-APP",
+      "vulnerability_level": 1,
+      "applicable_asset_types": ["APP", "SVC"]
+    },
+    {
+      "code": "V-APP-004",
+      "name": "파일 업로드 취약점",
+      "description": "파일 업로드 시 검증 미흡으로 악성파일 업로드 가능",
+      "category_code": "VC-TEC-APP",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["APP", "SVC"]
+    },
+    {
+      "code": "V-APP-005",
+      "name": "인증 우회 취약점",
+      "description": "인증 절차를 우회할 수 있는 취약점 존재",
+      "category_code": "VC-TEC-APP",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["APP", "SVC"]
+    },
+    {
+      "code": "V-DB-001",
+      "name": "DB 계정 관리 미흡",
+      "description": "DB 계정 비밀번호 정책 미흡 또는 공유 계정 사용",
+      "category_code": "VC-TEC-DB",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["DB"]
+    },
+    {
+      "code": "V-DB-002",
+      "name": "DB 접근통제 미흡",
+      "description": "DB 접근 IP 제한 또는 권한 관리 미흡",
+      "category_code": "VC-TEC-DB",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["DB"]
+    },
+    {
+      "code": "V-DB-003",
+      "name": "민감정보 평문 저장",
+      "description": "개인정보, 비밀번호 등 민감정보가 암호화되지 않고 저장됨",
+      "category_code": "VC-TEC-DB",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["DB"]
+    },
+    {
+      "code": "V-DB-004",
+      "name": "DB 감사 로그 미흡",
+      "description": "DB 접근 및 조작에 대한 감사 로그 미수집",
+      "category_code": "VC-TEC-DB",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["DB"]
+    },
+    {
+      "code": "V-CRY-001",
+      "name": "취약한 암호화 알고리즘",
+      "description": "DES, MD5 등 취약한 암호화 알고리즘 사용",
+      "category_code": "VC-TEC-CRY",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["SRV", "APP", "DB", "SVC"]
+    },
+    {
+      "code": "V-CRY-002",
+      "name": "암호키 관리 미흡",
+      "description": "암호키가 안전하게 보관/관리되지 않음",
+      "category_code": "VC-TEC-CRY",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["SRV", "APP", "DB"]
+    },
+    {
+      "code": "V-CRY-003",
+      "name": "인증서 관리 미흡",
+      "description": "SSL/TLS 인증서 관리 미흡 (만료, 자체서명 등)",
+      "category_code": "VC-TEC-CRY",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["SRV", "NET", "APP", "SVC"]
+    },
+    {
+      "code": "V-PHY-001",
+      "name": "출입통제 미흡",
+      "description": "전산실/서버실 출입통제 시스템 미흡",
+      "category_code": "VC-PHY-ACC",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["FAC"]
+    },
+    {
+      "code": "V-PHY-002",
+      "name": "CCTV 사각지대",
+      "description": "주요 구역에 CCTV 미설치 또는 사각지대 존재",
+      "category_code": "VC-PHY-ACC",
+      "vulnerability_level": 1,
+      "applicable_asset_types": ["FAC"]
+    },
+    {
+      "code": "V-PHY-003",
+      "name": "장비 잠금장치 미흡",
+      "description": "서버, 네트워크 장비 등에 물리적 잠금장치 미적용",
+      "category_code": "VC-PHY-ACC",
+      "vulnerability_level": 1,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "STG"]
+    },
+    {
+      "code": "V-PHY-004",
+      "name": "재해 대비 미흡",
+      "description": "화재, 침수 등 재해에 대한 대비책 미흡",
+      "category_code": "VC-PHY-ENV",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["FAC"]
+    },
+    {
+      "code": "V-PHY-005",
+      "name": "환경 모니터링 미흡",
+      "description": "온습도, 전력 상태 등 환경 모니터링 미흡",
+      "category_code": "VC-PHY-ENV",
+      "vulnerability_level": 1,
+      "applicable_asset_types": ["FAC"]
+    },
+    {
+      "code": "V-MNG-001",
+      "name": "보안정책 미수립",
+      "description": "정보보호 정책/지침이 수립되지 않았거나 최신화되지 않음",
+      "category_code": "VC-MNG-POL",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["DOC"]
+    },
+    {
+      "code": "V-MNG-002",
+      "name": "접근권한 관리 미흡",
+      "description": "업무 변경/퇴직 시 접근권한 회수 미흡",
+      "category_code": "VC-MNG-POL",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["SRV", "DB", "APP", "HUM"]
+    },
+    {
+      "code": "V-MNG-003",
+      "name": "백업 체계 미흡",
+      "description": "정기적인 백업 수행 및 복구 테스트 미흡",
+      "category_code": "VC-MNG-OPR",
+      "vulnerability_level": 3,
+      "applicable_asset_types": ["SRV", "DB", "DOC"]
+    },
+    {
+      "code": "V-MNG-004",
+      "name": "변경관리 절차 미흡",
+      "description": "시스템 변경 시 영향분석/승인/테스트 절차 미흡",
+      "category_code": "VC-MNG-OPR",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "APP"]
+    },
+    {
+      "code": "V-MNG-005",
+      "name": "취약점 점검 미수행",
+      "description": "정기적인 취약점 점검이 수행되지 않음",
+      "category_code": "VC-MNG-OPR",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "APP"]
+    },
+    {
+      "code": "V-MNG-006",
+      "name": "보안인식 교육 미흡",
+      "description": "직원 대상 정보보호 인식교육 미수행",
+      "category_code": "VC-MNG-HUM",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["HUM"]
+    },
+    {
+      "code": "V-MNG-007",
+      "name": "비밀유지 서약 미흡",
+      "description": "직원/협력업체 비밀유지서약 미수행",
+      "category_code": "VC-MNG-HUM",
+      "vulnerability_level": 1,
+      "applicable_asset_types": ["HUM"]
+    },
+    {
+      "code": "V-MNG-008",
+      "name": "외부 저장매체 관리 미흡",
+      "description": "USB 등 외부 저장매체 사용 통제 미흡",
+      "category_code": "VC-MNG-OPR",
+      "vulnerability_level": 2,
+      "applicable_asset_types": ["PC", "STG"]
+    }
+  ]
+}

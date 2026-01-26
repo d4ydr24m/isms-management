@@ -1,0 +1,290 @@
+{
+  "description": "ISMS 위협 DB 기본 데이터 - 자산 유형별 표준 위협 목록",
+  "version": "1.0",
+  "threat_categories": [
+    {
+      "code": "TC-PHY",
+      "name": "물리적 위협",
+      "description": "물리적 접근 및 환경에 의한 위협",
+      "sort_order": 1,
+      "children": [
+        {
+          "code": "TC-PHY-ENV",
+          "name": "환경적 위협",
+          "description": "자연재해 및 환경 요인에 의한 위협",
+          "sort_order": 1
+        },
+        {
+          "code": "TC-PHY-ACC",
+          "name": "물리적 접근 위협",
+          "description": "비인가 물리적 접근에 의한 위협",
+          "sort_order": 2
+        }
+      ]
+    },
+    {
+      "code": "TC-TEC",
+      "name": "기술적 위협",
+      "description": "기술적 수단에 의한 위협",
+      "sort_order": 2,
+      "children": [
+        {
+          "code": "TC-TEC-MAL",
+          "name": "악성코드",
+          "description": "바이러스, 랜섬웨어 등 악성코드 위협",
+          "sort_order": 1
+        },
+        {
+          "code": "TC-TEC-NET",
+          "name": "네트워크 공격",
+          "description": "네트워크 기반 공격 위협",
+          "sort_order": 2
+        },
+        {
+          "code": "TC-TEC-APP",
+          "name": "애플리케이션 공격",
+          "description": "웹 애플리케이션 취약점 공격",
+          "sort_order": 3
+        },
+        {
+          "code": "TC-TEC-SYS",
+          "name": "시스템 장애",
+          "description": "하드웨어/소프트웨어 장애",
+          "sort_order": 4
+        }
+      ]
+    },
+    {
+      "code": "TC-HUM",
+      "name": "인적 위협",
+      "description": "인적 요인에 의한 위협",
+      "sort_order": 3,
+      "children": [
+        {
+          "code": "TC-HUM-INT",
+          "name": "내부자 위협",
+          "description": "내부 직원에 의한 의도적/비의도적 위협",
+          "sort_order": 1
+        },
+        {
+          "code": "TC-HUM-EXT",
+          "name": "외부자 위협",
+          "description": "외부 공격자에 의한 위협",
+          "sort_order": 2
+        },
+        {
+          "code": "TC-HUM-SOC",
+          "name": "사회공학 공격",
+          "description": "피싱, 스피어피싱 등 사회공학적 공격",
+          "sort_order": 3
+        }
+      ]
+    },
+    {
+      "code": "TC-OPR",
+      "name": "운영 위협",
+      "description": "운영 및 관리상의 위협",
+      "sort_order": 4,
+      "children": [
+        {
+          "code": "TC-OPR-CFG",
+          "name": "설정 오류",
+          "description": "시스템 설정 및 구성 오류",
+          "sort_order": 1
+        },
+        {
+          "code": "TC-OPR-CHG",
+          "name": "변경 관리 실패",
+          "description": "변경 관리 미흡으로 인한 위협",
+          "sort_order": 2
+        }
+      ]
+    }
+  ],
+  "threats": [
+    {
+      "code": "T-PHY-001",
+      "name": "화재/수해",
+      "description": "화재, 침수 등 자연재해로 인한 자산 피해",
+      "category_code": "TC-PHY-ENV",
+      "threat_level": 3,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "STG", "FAC"]
+    },
+    {
+      "code": "T-PHY-002",
+      "name": "정전/전력 장애",
+      "description": "전력 공급 중단 또는 품질 저하",
+      "category_code": "TC-PHY-ENV",
+      "threat_level": 2,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "FAC"]
+    },
+    {
+      "code": "T-PHY-003",
+      "name": "비인가 물리적 접근",
+      "description": "전산실, 서버실 등에 대한 비인가 접근",
+      "category_code": "TC-PHY-ACC",
+      "threat_level": 3,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "STG", "FAC"]
+    },
+    {
+      "code": "T-PHY-004",
+      "name": "장비 도난/분실",
+      "description": "IT 장비 또는 저장매체의 도난/분실",
+      "category_code": "TC-PHY-ACC",
+      "threat_level": 2,
+      "applicable_asset_types": ["PC", "MOB", "STG", "DOC"]
+    },
+    {
+      "code": "T-TEC-001",
+      "name": "악성코드 감염",
+      "description": "바이러스, 웜, 트로이목마 등 악성코드 감염",
+      "category_code": "TC-TEC-MAL",
+      "threat_level": 3,
+      "applicable_asset_types": ["SRV", "PC", "MOB", "APP"]
+    },
+    {
+      "code": "T-TEC-002",
+      "name": "랜섬웨어 공격",
+      "description": "랜섬웨어에 의한 데이터 암호화 및 금전 요구",
+      "category_code": "TC-TEC-MAL",
+      "threat_level": 3,
+      "applicable_asset_types": ["SRV", "DB", "PC", "STG"]
+    },
+    {
+      "code": "T-TEC-003",
+      "name": "DDoS 공격",
+      "description": "분산 서비스 거부 공격",
+      "category_code": "TC-TEC-NET",
+      "threat_level": 3,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "APP", "SVC"]
+    },
+    {
+      "code": "T-TEC-004",
+      "name": "네트워크 스니핑",
+      "description": "네트워크 트래픽 도청",
+      "category_code": "TC-TEC-NET",
+      "threat_level": 2,
+      "applicable_asset_types": ["NET", "SVC"]
+    },
+    {
+      "code": "T-TEC-005",
+      "name": "중간자 공격(MITM)",
+      "description": "통신 중간에서 데이터 변조/탈취",
+      "category_code": "TC-TEC-NET",
+      "threat_level": 3,
+      "applicable_asset_types": ["NET", "APP", "SVC"]
+    },
+    {
+      "code": "T-TEC-006",
+      "name": "SQL 인젝션",
+      "description": "SQL 쿼리 삽입을 통한 데이터베이스 공격",
+      "category_code": "TC-TEC-APP",
+      "threat_level": 3,
+      "applicable_asset_types": ["DB", "APP"]
+    },
+    {
+      "code": "T-TEC-007",
+      "name": "XSS 공격",
+      "description": "크로스 사이트 스크립팅 공격",
+      "category_code": "TC-TEC-APP",
+      "threat_level": 2,
+      "applicable_asset_types": ["APP", "SVC"]
+    },
+    {
+      "code": "T-TEC-008",
+      "name": "권한 상승 공격",
+      "description": "시스템 권한 탈취 및 상승",
+      "category_code": "TC-TEC-APP",
+      "threat_level": 3,
+      "applicable_asset_types": ["SRV", "DB", "APP"]
+    },
+    {
+      "code": "T-TEC-009",
+      "name": "하드웨어 장애",
+      "description": "서버, 스토리지 등 하드웨어 고장",
+      "category_code": "TC-TEC-SYS",
+      "threat_level": 2,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "STG"]
+    },
+    {
+      "code": "T-TEC-010",
+      "name": "소프트웨어 장애",
+      "description": "운영체제, 애플리케이션 오류",
+      "category_code": "TC-TEC-SYS",
+      "threat_level": 2,
+      "applicable_asset_types": ["SRV", "DB", "APP"]
+    },
+    {
+      "code": "T-HUM-001",
+      "name": "내부자 정보 유출",
+      "description": "내부 직원에 의한 의도적 정보 유출",
+      "category_code": "TC-HUM-INT",
+      "threat_level": 3,
+      "applicable_asset_types": ["DB", "DOC", "HUM"]
+    },
+    {
+      "code": "T-HUM-002",
+      "name": "운영 실수",
+      "description": "관리자/운영자의 실수로 인한 장애",
+      "category_code": "TC-HUM-INT",
+      "threat_level": 2,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "APP"]
+    },
+    {
+      "code": "T-HUM-003",
+      "name": "해킹 공격",
+      "description": "외부 해커에 의한 시스템 침입",
+      "category_code": "TC-HUM-EXT",
+      "threat_level": 3,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "APP", "SVC"]
+    },
+    {
+      "code": "T-HUM-004",
+      "name": "피싱 공격",
+      "description": "이메일/문자 등을 통한 피싱",
+      "category_code": "TC-HUM-SOC",
+      "threat_level": 2,
+      "applicable_asset_types": ["PC", "MOB", "HUM"]
+    },
+    {
+      "code": "T-HUM-005",
+      "name": "사회공학적 공격",
+      "description": "스피어피싱, 보이스피싱 등 사회공학 공격",
+      "category_code": "TC-HUM-SOC",
+      "threat_level": 3,
+      "applicable_asset_types": ["HUM"]
+    },
+    {
+      "code": "T-OPR-001",
+      "name": "보안 설정 미흡",
+      "description": "보안 설정 미적용 또는 취약한 설정",
+      "category_code": "TC-OPR-CFG",
+      "threat_level": 2,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "APP"]
+    },
+    {
+      "code": "T-OPR-002",
+      "name": "패치 미적용",
+      "description": "보안 패치 미적용으로 인한 취약점 노출",
+      "category_code": "TC-OPR-CFG",
+      "threat_level": 3,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "APP", "PC"]
+    },
+    {
+      "code": "T-OPR-003",
+      "name": "변경 관리 실패",
+      "description": "변경 관리 절차 미준수로 인한 장애",
+      "category_code": "TC-OPR-CHG",
+      "threat_level": 2,
+      "applicable_asset_types": ["SRV", "NET", "SEC", "DB", "APP"]
+    },
+    {
+      "code": "T-OPR-004",
+      "name": "백업 실패",
+      "description": "백업 미수행 또는 복구 불가",
+      "category_code": "TC-OPR-CHG",
+      "threat_level": 3,
+      "applicable_asset_types": ["SRV", "DB", "DOC"]
+    }
+  ]
+}
