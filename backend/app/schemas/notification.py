@@ -17,6 +17,10 @@ class NotificationType(str, Enum):
     CORRECTIVE_ACTION_DUE = "corrective_action_due"
     AUDIT_DDAY = "audit_dday"
     SYSTEM = "system"
+    # Phase 2 - 자산 관련 알림
+    ASSET_ASSIGNED = "asset_assigned"  # 자산 담당자로 지정됨
+    ASSET_ASSIGNMENT_CHANGED = "asset_assignment_changed"  # 담당자 변경됨
+    ASSET_HANDOVER = "asset_handover"  # 자산 인수인계
 
 
 class NotificationPriority(str, Enum):

@@ -18,6 +18,7 @@ from app.models.asset import (
 )
 from app.models.user import User
 from app.models.department import Department
+from app.schemas.notification import NotificationType, NotificationPriority
 
 
 def utc_now():
@@ -41,8 +42,40 @@ class AssetService:
     - 통계 조회
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, notification_service=None):
         self.db = db
+        self._notification_service = notification_service
+
+    def set_notification_service(self, notification_service):
+        """NotificationService 주입 (선택적)"""
+        self._notification_service = notification_service
+
+    def _send_assignment_notification(
+        self,
+        user_id: int,
+        asset: Asset,
+        notification_type: NotificationType,
+        title: str,
+        message: str,
+    ) -> None:
+        """담당자 관련 알림 발송 (내부 메서드)"""
+        if self._notification_service is None:
+            return  # NotificationService가 없으면 알림 생략
+
+        try:
+            self._notification_service.create_notification(
+                user_id=user_id,
+                notification_type=notification_type,
+                title=title,
+                message=message,
+                priority=NotificationPriority.NORMAL,
+                link_url=f"/assets/{asset.id}",
+                reference_type="asset",
+                reference_id=asset.id,
+            )
+        except Exception:
+            # 알림 실패해도 비즈니스 로직은 계속 진행
+            pass
 
     # =========================================================================
     # 자산 유형 관리 (FR-501)
@@ -686,6 +719,17 @@ class AssetService:
 
         self.db.commit()
         self.db.refresh(assignment)
+
+        # 담당자에게 알림 발송 (FR-505 3.7.5)
+        role_name = {"owner": "소유자", "manager": "관리자", "user": "사용자"}.get(role, role)
+        self._send_assignment_notification(
+            user_id=user_id,
+            asset=asset,
+            notification_type=NotificationType.ASSET_ASSIGNED,
+            title="자산 담당자 지정",
+            message=f"자산 '{asset.name}'의 {role_name}로 지정되었습니다.",
+        )
+
         return assignment
 
     def get_assignments(self, asset_id: int) -> List[AssetAssignment]:
@@ -715,6 +759,11 @@ class AssetService:
         if not assignment:
             raise ValueError("담당자 할당 정보를 찾을 수 없습니다.")
 
+        # 기존 담당자 정보 저장 (알림용)
+        old_user_id = assignment.user_id
+        new_user_id = kwargs.get("user_id")
+        asset = self.get_asset_by_id(assignment.asset_id)
+
         for key, value in kwargs.items():
             if value is not None and hasattr(assignment, key):
                 setattr(assignment, key, value)
@@ -729,6 +778,26 @@ class AssetService:
 
         self.db.commit()
         self.db.refresh(assignment)
+
+        # 담당자 변경 시 알림 발송 (FR-505 3.7.5)
+        if new_user_id and new_user_id != old_user_id and asset:
+            # 새 담당자에게 알림
+            self._send_assignment_notification(
+                user_id=new_user_id,
+                asset=asset,
+                notification_type=NotificationType.ASSET_ASSIGNED,
+                title="자산 담당자 지정",
+                message=f"자산 '{asset.name}'의 담당자로 지정되었습니다.",
+            )
+            # 기존 담당자에게 알림
+            self._send_assignment_notification(
+                user_id=old_user_id,
+                asset=asset,
+                notification_type=NotificationType.ASSET_ASSIGNMENT_CHANGED,
+                title="자산 담당자 변경",
+                message=f"자산 '{asset.name}'의 담당자가 변경되었습니다.",
+            )
+
         return assignment
 
     def delete_assignment(
@@ -745,6 +814,10 @@ class AssetService:
         if not assignment:
             raise ValueError("담당자 할당 정보를 찾을 수 없습니다.")
 
+        # 알림용 정보 저장
+        asset = self.get_asset_by_id(assignment.asset_id)
+        assignee_user_id = assignment.user_id
+
         assignment.is_active = False
 
         # 이력 기록
@@ -757,6 +830,16 @@ class AssetService:
         )
 
         self.db.commit()
+
+        # 담당 해제된 사용자에게 알림 (FR-505 3.7.5)
+        if asset:
+            self._send_assignment_notification(
+                user_id=assignee_user_id,
+                asset=asset,
+                notification_type=NotificationType.ASSET_ASSIGNMENT_CHANGED,
+                title="자산 담당 해제",
+                message=f"자산 '{asset.name}'의 담당자에서 해제되었습니다.",
+            )
 
     def get_handover_history(self, asset_id: int) -> List[AssetHandover]:
         """인수인계 이력 조회"""
