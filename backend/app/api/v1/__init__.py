@@ -19,6 +19,14 @@ from app.api.v1.templates import router as templates_router
 from app.api.v1.migration import router as migration_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.assets import router as assets_router
+from app.api.v1.threats import router as threats_router
+from app.api.v1.vulnerabilities import router as vulnerabilities_router
+from app.api.v1.risks import router as risks_router
+from app.api.v1.soa import router as soa_router
+from app.api.v1.asset_risk_mapping import router as asset_risk_mapping_router
+from app.api.v1.risk_calculation import router as risk_calculation_router
+from app.api.v1.asset_impact import router as asset_impact_router
+from app.api.v1.risk_control_linkage import router as risk_control_linkage_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth", tags=["인증"])
@@ -37,3 +45,11 @@ api_router.include_router(templates_router, prefix="/templates", tags=["템플�
 api_router.include_router(migration_router, prefix="/migration", tags=["마이그레이션"])
 api_router.include_router(dashboard_router)
 api_router.include_router(assets_router, prefix="/assets", tags=["자산"])
+api_router.include_router(threats_router, prefix="/threats", tags=["위협"])
+api_router.include_router(vulnerabilities_router, prefix="/vulnerabilities", tags=["취약점"])
+api_router.include_router(risks_router, prefix="/risks", tags=["위험평가"])
+api_router.include_router(soa_router, prefix="/soa", tags=["SOA"])
+api_router.include_router(asset_risk_mapping_router, tags=["자산-위험 매핑"])
+api_router.include_router(risk_calculation_router)
+api_router.include_router(asset_impact_router, tags=["자산 영향 분석"])
+api_router.include_router(risk_control_linkage_router, tags=["위험-통제 연계"])

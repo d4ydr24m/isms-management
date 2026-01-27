@@ -4,8 +4,13 @@ Phase 2: FR-601 ~ FR-606
 
 위협 DB, 취약점 DB, 위험 평가, DoA 관리, 위험 처리 계획, SOA 관리
 """
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Optional
+
+
+def utc_now():
+    """UTC 현재 시간 반환 (datetime.utcnow() deprecated 대체)"""
+    return datetime.now(timezone.utc)
 
 from sqlalchemy import (
     Boolean,
@@ -431,7 +436,7 @@ class DoAHistory(Base):
         Integer, ForeignKey("users.id"), nullable=False, comment="변경자 ID"
     )
     changed_at = Column(
-        DateTime, default=datetime.utcnow, nullable=False, comment="변경 일시"
+        DateTime(timezone=True), default=utc_now, nullable=False, comment="변경 일시"
     )
 
     # 관계
@@ -563,3 +568,77 @@ class SOARecord(Base):
 
     def __repr__(self) -> str:
         return f"<SOARecord(id={self.id}, control_item_id={self.control_item_id}, applicable={self.is_applicable})>"
+
+
+# ========== 위험-통제항목 연계 모델 (FR-607, 5.4) ==========
+
+
+class RiskTreatmentControlLink(Base):
+    """
+    위험 처리 계획-통제항목 연결 모델 (5.4.1)
+
+    위험 처리 계획과 통제항목 간의 N:M 관계를 관리합니다.
+
+    Attributes:
+        treatment_plan_id: 위험 처리 계획 ID
+        control_item_id: 통제항목 ID
+        link_type: 연결 유형 (primary: 주요, secondary: 부차적, related: 관련)
+        effectiveness_rating: 효과성 등급 (0.0 ~ 1.0)
+        created_by: 생성자 ID
+        remarks: 비고
+    """
+
+    __tablename__ = "risk_treatment_control_links"
+
+    treatment_plan_id = Column(
+        Integer,
+        ForeignKey("risk_treatment_plans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        comment="위험 처리 계획 ID",
+    )
+    control_item_id = Column(
+        Integer,
+        ForeignKey("control_items.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        comment="통제항목 ID",
+    )
+    link_type = Column(
+        String(20),
+        nullable=False,
+        default="primary",
+        comment="연결 유형 (primary: 주요, secondary: 부차적, related: 관련)",
+    )
+    effectiveness_rating = Column(
+        Float,
+        nullable=True,
+        default=None,
+        comment="효과성 등급 (0.0 ~ 1.0)",
+    )
+    created_by = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True,
+        comment="생성자 ID",
+    )
+    remarks = Column(Text, nullable=True, comment="비고")
+
+    # 관계
+    treatment_plan = relationship(
+        "RiskTreatmentPlan",
+        backref="control_links",
+    )
+    control_item = relationship(
+        "ControlItem",
+        backref="treatment_links",
+    )
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return (
+            f"<RiskTreatmentControlLink(id={self.id}, "
+            f"treatment_plan_id={self.treatment_plan_id}, "
+            f"control_item_id={self.control_item_id}, "
+            f"link_type={self.link_type})>"
+        )
