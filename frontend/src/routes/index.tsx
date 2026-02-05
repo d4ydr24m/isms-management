@@ -21,6 +21,11 @@ import NonConformities from '@/pages/Audit/NonConformities'
 import NonConformityDetail from '@/pages/Audit/NonConformityDetail'
 // Search
 import SearchResults from '@/pages/SearchResults'
+// Asset Management
+import AssetListPage from '@/pages/Assets'
+import AssetDetail from '@/pages/Assets/AssetDetail'
+import AssetCreate from '@/pages/Assets/AssetCreate'
+import AssetImport from '@/pages/Assets/AssetImport'
 
 const AppRouter = () => {
   const { isAuthenticated } = useAuthStore()
@@ -189,6 +194,48 @@ const AppRouter = () => {
         element={
           <PrivateRoute>
             <SearchResults />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Asset Management routes */}
+      <Route
+        path="/assets"
+        element={
+          <PrivateRoute>
+            <AssetListPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/assets/create"
+        element={
+          <PrivateRoute>
+            <AssetCreate />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/assets/import"
+        element={
+          <PrivateRoute>
+            <AssetImport />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/assets/:id"
+        element={
+          <PrivateRoute>
+            <AssetDetail />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/assets/:id/edit"
+        element={
+          <PrivateRoute>
+            <AssetCreate />
           </PrivateRoute>
         }
       />

@@ -1,0 +1,177 @@
+/**
+ * 자산 목록 페이지
+ * FR-502: 자산 등록 및 관리
+ */
+import { useState, useEffect, useCallback } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Card, Button, Space, message, Modal } from 'antd'
+import { PlusOutlined, UploadOutlined, DownloadOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
+import { AssetTable, AssetFilter } from './components'
+import { assetService } from '@/services/assets'
+import type { Asset, AssetType, AssetStatus, AssetFilterParams } from '@/types'
+import type { TableProps } from 'antd'
+
+const AssetListPage = () => {
+  const navigate = useNavigate()
+  const [assets, setAssets] = useState<Asset[]>([])
+  const [assetTypes, setAssetTypes] = useState<AssetType[]>([])
+  const [loading, setLoading] = useState(false)
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  })
+  const [filters, setFilters] = useState<AssetFilterParams>({
+    search: '',
+    assetTypeId: undefined,
+    status: undefined,
+    importanceLevel: undefined,
+  })
+
+  // 자산 유형 목록 조회
+  const fetchAssetTypes = useCallback(async () => {
+    try {
+      const response = await assetService.getAssetTypes()
+      setAssetTypes(response.items)
+    } catch {
+      message.error('자산 유형을 불러오는데 실패했습니다')
+    }
+  }, [])
+
+  // 자산 목록 조회
+  const fetchAssets = useCallback(async () => {
+    setLoading(true)
+    try {
+      const response = await assetService.getAssets({
+        page: pagination.current,
+        limit: pagination.pageSize,
+        ...filters,
+      })
+      setAssets(response.items)
+      setPagination((prev) => ({
+        ...prev,
+        total: response.total,
+      }))
+    } catch {
+      message.error('자산 목록을 불러오는데 실패했습니다')
+    } finally {
+      setLoading(false)
+    }
+  }, [pagination.current, pagination.pageSize, filters])
+
+  useEffect(() => {
+    fetchAssetTypes()
+  }, [fetchAssetTypes])
+
+  useEffect(() => {
+    fetchAssets()
+  }, [fetchAssets])
+
+  // 테이블 변경 핸들러
+  const handleTableChange: TableProps<Asset>['onChange'] = (paginationConfig) => {
+    setPagination((prev) => ({
+      ...prev,
+      current: paginationConfig.current || 1,
+      pageSize: paginationConfig.pageSize || 10,
+    }))
+  }
+
+  // 검색어 변경 핸들러
+  const handleSearchChange = (value: string) => {
+    setFilters((prev) => ({ ...prev, search: value }))
+    setPagination((prev) => ({ ...prev, current: 1 }))
+  }
+
+  // 자산 유형 필터 변경 핸들러
+  const handleAssetTypeChange = (value?: number) => {
+    setFilters((prev) => ({ ...prev, assetTypeId: value }))
+    setPagination((prev) => ({ ...prev, current: 1 }))
+  }
+
+  // 상태 필터 변경 핸들러
+  const handleStatusChange = (value?: AssetStatus) => {
+    setFilters((prev) => ({ ...prev, status: value }))
+    setPagination((prev) => ({ ...prev, current: 1 }))
+  }
+
+  // 중요도 필터 변경 핸들러
+  const handleImportanceChange = (value?: number) => {
+    setFilters((prev) => ({ ...prev, importanceLevel: value }))
+    setPagination((prev) => ({ ...prev, current: 1 }))
+  }
+
+  // 삭제 핸들러
+  const handleDelete = (id: number) => {
+    Modal.confirm({
+      title: '자산 삭제',
+      icon: <ExclamationCircleOutlined />,
+      content: '이 자산을 삭제하시겠습니까? 삭제된 자산은 복구할 수 없습니다.',
+      okText: '삭제',
+      okType: 'danger',
+      cancelText: '취소',
+      onOk: async () => {
+        try {
+          await assetService.deleteAsset(id)
+          message.success('자산이 삭제되었습니다')
+          fetchAssets()
+        } catch {
+          message.error('자산 삭제에 실패했습니다')
+        }
+      },
+    })
+  }
+
+  // 내보내기 핸들러
+  const handleExport = async () => {
+    try {
+      await assetService.exportAssets(filters)
+      message.success('자산 목록을 내보냈습니다')
+    } catch {
+      message.error('자산 내보내기에 실패했습니다')
+    }
+  }
+
+  return (
+    <div>
+      <Card
+        title="정보자산 관리"
+        extra={
+          <Space>
+            <Button icon={<DownloadOutlined />} onClick={handleExport}>
+              내보내기
+            </Button>
+            <Link to="/assets/import">
+              <Button icon={<UploadOutlined />}>일괄 등록</Button>
+            </Link>
+            <Link to="/assets/create">
+              <Button type="primary" icon={<PlusOutlined />}>
+                자산 등록
+              </Button>
+            </Link>
+          </Space>
+        }
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <AssetFilter
+            filters={filters}
+            assetTypes={assetTypes}
+            onSearchChange={handleSearchChange}
+            onAssetTypeChange={handleAssetTypeChange}
+            onStatusChange={handleStatusChange}
+            onImportanceChange={handleImportanceChange}
+          />
+
+          <AssetTable
+            data={assets}
+            loading={loading}
+            pagination={pagination}
+            onTableChange={handleTableChange}
+            onDelete={handleDelete}
+          />
+        </Space>
+      </Card>
+    </div>
+  )
+}
+
+export default AssetListPage
