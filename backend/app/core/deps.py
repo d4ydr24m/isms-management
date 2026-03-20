@@ -72,6 +72,14 @@ def get_current_user(
     if payload.get("type") != "access":
         raise credentials_exception
 
+    # 토큰 블랙리스트 확인 (Redis 연결 가능 시)
+    try:
+        from app.services.session_service import session_service
+        if session_service.is_token_blacklisted(access_token):
+            raise credentials_exception
+    except Exception:
+        pass  # Redis 연결 실패 시 블랙리스트 체크 건너뜀
+
     # 사용자 조회
     email: str = payload.get("sub")
     user_id: int = payload.get("user_id")
@@ -113,6 +121,19 @@ def get_current_active_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="계정이 잠겨 있습니다. 잠시 후 다시 시도해주세요.",
         )
+
+    # 비밀번호 만료 체크
+    if current_user.password_changed_at:
+        from datetime import timedelta
+        expiry_date = current_user.password_changed_at + timedelta(
+            days=settings.PASSWORD_EXPIRY_DAYS
+        )
+        if datetime.utcnow() > expiry_date:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="비밀번호가 만료되었습니다. 비밀번호를 변경해주세요.",
+                headers={"X-Password-Expired": "true"},
+            )
 
     return current_user
 

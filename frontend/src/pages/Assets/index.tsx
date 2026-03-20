@@ -3,7 +3,7 @@
  * FR-502: 자산 등록 및 관리
  */
 import { useState, useEffect, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Card, Button, Space, message, Modal } from 'antd'
 import { PlusOutlined, UploadOutlined, DownloadOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { AssetTable, AssetFilter } from './components'
@@ -12,7 +12,6 @@ import type { Asset, AssetType, AssetStatus, AssetFilterParams } from '@/types'
 import type { TableProps } from 'antd'
 
 const AssetListPage = () => {
-  const navigate = useNavigate()
   const [assets, setAssets] = useState<Asset[]>([])
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([])
   const [loading, setLoading] = useState(false)

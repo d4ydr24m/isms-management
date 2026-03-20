@@ -8,6 +8,8 @@
  * - DoA 초과 위험 하이라이트
  * - 대량 평가 생성
  * - 평가 수정/삭제
+ * - 위험 매트릭스 히트맵 시각화
+ * - 위험 분포 차트
  */
 import { useState, useEffect, useCallback } from 'react'
 import {
@@ -23,7 +25,6 @@ import {
   Tag,
   Badge,
   Tooltip,
-  InputNumber,
   Input,
   Statistic,
   Row,
@@ -38,7 +39,7 @@ import {
   ThunderboltOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import type { TableProps } from 'antd'
 import {
   getRiskScenario,
@@ -48,9 +49,13 @@ import {
   updateRiskAssessment,
   deleteRiskAssessment,
   getCurrentDoA,
+  getRiskMatrixData,
+  getRiskDistribution,
 } from '@/services/risks'
 import { assetService } from '@/services/assets'
 import { getThreats, getVulnerabilities } from '@/services/risks'
+import RiskMatrix from './components/RiskMatrix'
+import RiskDistributionChart from './components/RiskDistributionChart'
 import type {
   RiskScenario,
   RiskAssessment,
@@ -59,11 +64,13 @@ import type {
   RiskAssessmentBulkCreate,
   RiskLevel,
   DoAConfig,
+  RiskMatrixData,
+  RiskDistribution,
   Asset,
   Threat,
   Vulnerability,
 } from '@/types'
-import { calculateRiskScore, classifyRiskLevel, getRiskLevelLabel, RISK_LEVELS } from '@/types/risk'
+import { RISK_LEVELS } from '@/types/risk'
 
 const { Option } = Select
 
@@ -75,8 +82,6 @@ interface RiskAssessmentFilterParams {
 
 const RiskAssessmentPage = () => {
   const { scenarioId } = useParams<{ scenarioId: string }>()
-  const navigate = useNavigate()
-
   // 상태 관리
   const [scenario, setScenario] = useState<RiskScenario | null>(null)
   const [assessments, setAssessments] = useState<RiskAssessment[]>([])
@@ -88,6 +93,11 @@ const RiskAssessmentPage = () => {
   })
   const [filters, setFilters] = useState<RiskAssessmentFilterParams>({})
   const [doaConfig, setDoaConfig] = useState<DoAConfig | null>(null)
+
+  // 시각화 데이터
+  const [matrixData, setMatrixData] = useState<RiskMatrixData | null>(null)
+  const [distributionData, setDistributionData] = useState<RiskDistribution | null>(null)
+  const [matrixLoading, setMatrixLoading] = useState(false)
 
   // 선택 데이터
   const [assets, setAssets] = useState<Asset[]>([])
@@ -152,7 +162,7 @@ const RiskAssessmentPage = () => {
   const fetchSelectOptions = useCallback(async () => {
     try {
       const [assetsData, threatsData, vulnerabilitiesData] = await Promise.all([
-        assetService.getAssets({ status: 'active' }),
+        assetService.getAssets({ status: 'operating' as const }),
         getThreats(),
         getVulnerabilities(),
       ])
@@ -164,11 +174,32 @@ const RiskAssessmentPage = () => {
     }
   }, [])
 
+  // 매트릭스 및 분포 데이터 조회
+  const fetchVisualizationData = useCallback(async () => {
+    if (!scenarioId) return
+
+    setMatrixLoading(true)
+    try {
+      const [matrix, distribution] = await Promise.all([
+        getRiskMatrixData(parseInt(scenarioId)),
+        getRiskDistribution(parseInt(scenarioId)),
+      ])
+      setMatrixData(matrix)
+      setDistributionData(distribution)
+    } catch {
+      // 시각화 데이터 실패 시 테이블은 유지
+      console.warn('시각화 데이터를 불러올 수 없습니다')
+    } finally {
+      setMatrixLoading(false)
+    }
+  }, [scenarioId])
+
   useEffect(() => {
     fetchScenario()
     fetchDoA()
     fetchSelectOptions()
-  }, [fetchScenario, fetchDoA, fetchSelectOptions])
+    fetchVisualizationData()
+  }, [fetchScenario, fetchDoA, fetchSelectOptions, fetchVisualizationData])
 
   useEffect(() => {
     fetchAssessments()
@@ -237,6 +268,7 @@ const RiskAssessmentPage = () => {
           await deleteRiskAssessment(assessment.id)
           message.success('평가가 삭제되었습니다')
           fetchAssessments()
+          fetchVisualizationData()
         } catch {
           message.error('평가 삭제에 실패했습니다')
         }
@@ -277,6 +309,7 @@ const RiskAssessmentPage = () => {
       setModalVisible(false)
       form.resetFields()
       fetchAssessments()
+      fetchVisualizationData()
     } catch (error) {
       // 폼 검증 에러는 자동으로 표시됨
     }
@@ -328,6 +361,7 @@ const RiskAssessmentPage = () => {
       setBulkModalVisible(false)
       bulkForm.resetFields()
       fetchAssessments()
+      fetchVisualizationData()
     } catch (error) {
       // 폼 검증 에러는 자동으로 표시됨
     }
@@ -465,7 +499,6 @@ const RiskAssessmentPage = () => {
   // 통계 계산
   const highRiskCount = assessments.filter((a) => a.risk_level === 'high').length
   const mediumRiskCount = assessments.filter((a) => a.risk_level === 'medium').length
-  const lowRiskCount = assessments.filter((a) => a.risk_level === 'low').length
   const doaExceedingCount = assessments.filter((a) => a.exceeds_doa).length
 
   return (
@@ -505,6 +538,30 @@ const RiskAssessmentPage = () => {
           />
         )}
       </Card>
+
+      {/* 위험 매트릭스 + 분포 차트 */}
+      <Row gutter={16} style={{ marginBottom: 16 }}>
+        <Col span={12}>
+          <RiskMatrix
+            data={matrixData}
+            loading={matrixLoading}
+            doaThreshold={doaConfig?.threshold_value}
+            onCellClick={(threatLevel, vulnLevel) => {
+              setFilters({
+                ...filters,
+              })
+              message.info(`위협등급 ${threatLevel}, 취약점등급 ${vulnLevel} 필터 적용`)
+            }}
+          />
+        </Col>
+        <Col span={12}>
+          <RiskDistributionChart
+            data={distributionData}
+            loading={matrixLoading}
+            doaExceedingCount={doaExceedingCount}
+          />
+        </Col>
+      </Row>
 
       {/* 평가 목록 */}
       <Card
@@ -592,7 +649,7 @@ const RiskAssessmentPage = () => {
                 <Select placeholder="자산 선택" showSearch optionFilterProp="children">
                   {assets.map((asset) => (
                     <Option key={asset.id} value={asset.id}>
-                      {asset.name} ({asset.code})
+                      {asset.name} ({asset.assetCode})
                     </Option>
                   ))}
                 </Select>
@@ -701,7 +758,7 @@ const RiskAssessmentPage = () => {
             <Select mode="multiple" placeholder="자산 선택" showSearch optionFilterProp="children">
               {assets.map((asset) => (
                 <Option key={asset.id} value={asset.id}>
-                  {asset.name} ({asset.code})
+                  {asset.name} ({asset.assetCode})
                 </Option>
               ))}
             </Select>

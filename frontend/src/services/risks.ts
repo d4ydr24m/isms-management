@@ -63,7 +63,6 @@ import type {
   ExecutiveSummary,
 
   // 위험-통제 연계
-  RiskTreatmentControlLink,
   RiskTreatmentControlLinkCreate,
   LinkedControlDetail,
   ControlEffectivenessAnalysis,
@@ -77,6 +76,7 @@ interface ListParams {
   search?: string
   sort_by?: string
   sort_order?: 'asc' | 'desc'
+  [key: string]: unknown
 }
 
 // =============================================================================

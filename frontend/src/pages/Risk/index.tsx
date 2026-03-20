@@ -1,6 +1,12 @@
 /**
  * 위험 시나리오 목록 페이지
  * FR-703: 위험 시나리오 관리
+ *
+ * 기능:
+ * - 시나리오 목록 조회, 검색, 상태 필터
+ * - 시나리오 CRUD (추가/수정/삭제)
+ * - 시나리오 비교 (2개 선택)
+ * - 평가 현황 요약 (총 건수, 고위험, DoA 초과)
  */
 import { useState, useEffect, useCallback } from 'react'
 import {
@@ -17,8 +23,23 @@ import {
   Tooltip,
   DatePicker,
   Badge,
+  Descriptions,
+  Statistic,
+  Row,
+  Col,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, EyeOutlined, CheckCircleOutlined } from '@ant-design/icons'
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+  EyeOutlined,
+  CheckCircleOutlined,
+  SwapOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  MinusOutlined,
+} from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
 import type { TableProps } from 'antd'
 import dayjs from 'dayjs'
@@ -27,11 +48,17 @@ import {
   createRiskScenario,
   updateRiskScenario,
   deleteRiskScenario,
+  compareRiskScenarios,
 } from '@/services/risks'
-import type { RiskScenario, RiskScenarioCreate, RiskScenarioUpdate, RiskScenarioStatus } from '@/types'
+import type {
+  RiskScenario,
+  RiskScenarioCreate,
+  RiskScenarioUpdate,
+  RiskScenarioStatus,
+  ScenarioComparison,
+} from '@/types'
 
 const { Search } = Input
-const { RangePicker } = DatePicker
 
 interface RiskScenarioFilterParams {
   search?: string
@@ -63,6 +90,12 @@ const RiskIndexPage = () => {
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [editingScenario, setEditingScenario] = useState<RiskScenario | null>(null)
   const [form] = Form.useForm()
+
+  // 비교 관련 상태
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
+  const [compareModalVisible, setCompareModalVisible] = useState(false)
+  const [comparison, setComparison] = useState<ScenarioComparison | null>(null)
+  const [compareLoading, setCompareLoading] = useState(false)
 
   // 시나리오 목록 조회
   const fetchScenarios = useCallback(async () => {
@@ -183,7 +216,7 @@ const RiskIndexPage = () => {
       setModalVisible(false)
       form.resetFields()
       fetchScenarios()
-    } catch (error) {
+    } catch {
       // 폼 검증 에러는 자동으로 표시됨
     }
   }
@@ -193,6 +226,61 @@ const RiskIndexPage = () => {
     setModalVisible(false)
     form.resetFields()
     setEditingScenario(null)
+  }
+
+  // 시나리오 비교 핸들러
+  const handleCompare = async () => {
+    if (selectedRowKeys.length !== 2) {
+      message.warning('비교할 시나리오 2개를 선택해주세요')
+      return
+    }
+    setCompareLoading(true)
+    setCompareModalVisible(true)
+    try {
+      const result = await compareRiskScenarios(
+        selectedRowKeys[0] as number,
+        selectedRowKeys[1] as number
+      )
+      setComparison(result)
+    } catch {
+      message.error('시나리오 비교에 실패했습니다')
+    } finally {
+      setCompareLoading(false)
+    }
+  }
+
+  // 비교 차이 표시 헬퍼
+  const renderDiff = (value: number, label: string) => {
+    if (value > 0) {
+      return (
+        <Statistic
+          title={label}
+          value={value}
+          prefix={<ArrowUpOutlined />}
+          valueStyle={{ color: '#cf1322' }}
+          suffix="증가"
+        />
+      )
+    }
+    if (value < 0) {
+      return (
+        <Statistic
+          title={label}
+          value={Math.abs(value)}
+          prefix={<ArrowDownOutlined />}
+          valueStyle={{ color: '#3f8600' }}
+          suffix="감소"
+        />
+      )
+    }
+    return (
+      <Statistic
+        title={label}
+        value={0}
+        prefix={<MinusOutlined />}
+        suffix="변화 없음"
+      />
+    )
   }
 
   // 평가 수행 버튼 핸들러
@@ -227,6 +315,15 @@ const RiskIndexPage = () => {
         )}
       </Space>
     )
+  }
+
+  // 테이블 행 선택 설정
+  const rowSelection: TableProps<RiskScenario>['rowSelection'] = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+    getCheckboxProps: (record) => ({
+      disabled: record.assessment_count === 0,
+    }),
   }
 
   // 테이블 컬럼 정의
@@ -266,7 +363,7 @@ const RiskIndexPage = () => {
     {
       title: '작업',
       key: 'actions',
-      width: 250,
+      width: 280,
       align: 'center',
       render: (_: unknown, record: RiskScenario) => (
         <Space>
@@ -315,7 +412,7 @@ const RiskIndexPage = () => {
             onClick={() => handleAssessClick(record)}
             disabled={record.status === 'completed' || record.status === 'cancelled'}
           >
-            평가 수행
+            평가
           </Button>
         </Space>
       ),
@@ -327,9 +424,20 @@ const RiskIndexPage = () => {
       <Card
         title="위험 시나리오 관리"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddClick}>
-            시나리오 추가
-          </Button>
+          <Space>
+            <Tooltip title={selectedRowKeys.length !== 2 ? '비교할 시나리오 2개를 선택해주세요' : ''}>
+              <Button
+                icon={<SwapOutlined />}
+                onClick={handleCompare}
+                disabled={selectedRowKeys.length !== 2}
+              >
+                시나리오 비교
+              </Button>
+            </Tooltip>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddClick}>
+              시나리오 추가
+            </Button>
+          </Space>
         }
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -363,6 +471,7 @@ const RiskIndexPage = () => {
             dataSource={scenarios}
             loading={loading}
             rowKey="id"
+            rowSelection={rowSelection}
             pagination={{
               ...pagination,
               showSizeChanger: true,
@@ -420,6 +529,79 @@ const RiskIndexPage = () => {
             </Form.Item>
           )}
         </Form>
+      </Modal>
+
+      {/* 비교 모달 */}
+      <Modal
+        title="시나리오 비교"
+        open={compareModalVisible}
+        onCancel={() => {
+          setCompareModalVisible(false)
+          setComparison(null)
+        }}
+        footer={[
+          <Button key="close" onClick={() => {
+            setCompareModalVisible(false)
+            setComparison(null)
+          }}>
+            닫기
+          </Button>,
+        ]}
+        width={700}
+        loading={compareLoading}
+      >
+        {comparison && (
+          <div>
+            <Descriptions bordered size="small" column={2} style={{ marginBottom: 24 }}>
+              <Descriptions.Item label="시나리오 A" span={1}>
+                <strong>{comparison.scenario1_name}</strong>
+              </Descriptions.Item>
+              <Descriptions.Item label="시나리오 B" span={1}>
+                <strong>{comparison.scenario2_name}</strong>
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Row gutter={16}>
+              <Col span={8}>
+                {renderDiff(comparison.risk_count_diff, '총 위험 건수 변화')}
+              </Col>
+              <Col span={8}>
+                {renderDiff(comparison.high_risk_diff, '고위험 건수 변화')}
+              </Col>
+              <Col span={8}>
+                <Statistic
+                  title="평균 위험점수 변화"
+                  value={Math.abs(comparison.avg_risk_score_diff)}
+                  precision={1}
+                  prefix={
+                    comparison.avg_risk_score_diff > 0 ? (
+                      <ArrowUpOutlined />
+                    ) : comparison.avg_risk_score_diff < 0 ? (
+                      <ArrowDownOutlined />
+                    ) : (
+                      <MinusOutlined />
+                    )
+                  }
+                  valueStyle={{
+                    color:
+                      comparison.avg_risk_score_diff > 0
+                        ? '#cf1322'
+                        : comparison.avg_risk_score_diff < 0
+                          ? '#3f8600'
+                          : undefined,
+                  }}
+                  suffix={
+                    comparison.avg_risk_score_diff > 0
+                      ? '증가'
+                      : comparison.avg_risk_score_diff < 0
+                        ? '감소'
+                        : '동일'
+                  }
+                />
+              </Col>
+            </Row>
+          </div>
+        )}
       </Modal>
     </div>
   )

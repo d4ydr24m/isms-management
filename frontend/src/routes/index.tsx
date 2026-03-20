@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import PrivateRoute from './PrivateRoute'
-import LoginPage from '@/pages/auth/LoginPage'
+import LoginPage from '@/pages/Auth/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import UserList from '@/pages/Users'
@@ -26,6 +26,16 @@ import AssetListPage from '@/pages/Assets'
 import AssetDetail from '@/pages/Assets/AssetDetail'
 import AssetCreate from '@/pages/Assets/AssetCreate'
 import AssetImport from '@/pages/Assets/AssetImport'
+// Risk Management
+import RiskIndexPage from '@/pages/Risk'
+import RiskScenarioDetail from '@/pages/Risk/RiskScenarioDetail'
+import RiskAssessmentPage from '@/pages/Risk/RiskAssessment'
+import ThreatDBPage from '@/pages/Risk/ThreatDB'
+import VulnerabilityDBPage from '@/pages/Risk/VulnerabilityDB'
+import DoASettingsPage from '@/pages/Risk/DoASettings'
+import RiskTreatmentPage from '@/pages/Risk/RiskTreatment'
+import SOAManagementPage from '@/pages/Risk/SOAManagement'
+import RiskReportPage from '@/pages/Risk/RiskReport'
 
 const AppRouter = () => {
   const { isAuthenticated } = useAuthStore()
@@ -236,6 +246,80 @@ const AppRouter = () => {
         element={
           <PrivateRoute>
             <AssetCreate />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Risk Management routes */}
+      <Route
+        path="/risk"
+        element={
+          <PrivateRoute>
+            <RiskIndexPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/risk/scenarios/:scenarioId"
+        element={
+          <PrivateRoute>
+            <RiskScenarioDetail />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/risk/scenarios/:scenarioId/assessment"
+        element={
+          <PrivateRoute>
+            <RiskAssessmentPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/risk/doa"
+        element={
+          <PrivateRoute>
+            <DoASettingsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/risk/treatments"
+        element={
+          <PrivateRoute>
+            <RiskTreatmentPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/risk/soa"
+        element={
+          <PrivateRoute>
+            <SOAManagementPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/risk/report"
+        element={
+          <PrivateRoute>
+            <RiskReportPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/risk/threats"
+        element={
+          <PrivateRoute>
+            <ThreatDBPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/risk/vulnerabilities"
+        element={
+          <PrivateRoute>
+            <VulnerabilityDBPage />
           </PrivateRoute>
         }
       />

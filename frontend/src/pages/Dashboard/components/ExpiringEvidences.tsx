@@ -15,11 +15,6 @@ const ExpiringEvidences: React.FC<ExpiringEvidencesProps> = ({ data }) => {
     return 'processing'
   }
 
-  const getUrgencyColor = (days: number) => {
-    if (days <= 7) return '#ff4d4f'
-    if (days <= 14) return '#faad14'
-    return '#1890ff'
-  }
 
   // 남은 일수로 정렬 (긴급한 것이 위)
   const sortedData = [...data].sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry)

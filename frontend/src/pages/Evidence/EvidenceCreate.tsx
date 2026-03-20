@@ -11,17 +11,14 @@ import {
   message,
   Upload,
   Progress,
-  Typography,
 } from 'antd'
 import { InboxOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { evidenceService } from '@/services/evidences'
 import { controlService } from '@/services/controls'
 import type { ControlItem, EvidenceCreate as EvidenceCreateType } from '@/types'
-import dayjs from 'dayjs'
 
 const { TextArea } = Input
 const { Dragger } = Upload
-const { Text } = Typography
 
 const EvidenceCreate = () => {
   const navigate = useNavigate()

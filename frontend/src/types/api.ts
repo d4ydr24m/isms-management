@@ -6,13 +6,22 @@ export interface ApiResponse<T = any> {
   message?: string
 }
 
-export interface PaginatedResponse<T> extends ApiResponse<T[]> {
-  meta: {
+export interface PaginatedResponse<T> {
+  // Direct access pattern (Phase 2 style)
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  // Nested access pattern (Phase 1 style)
+  data?: T[]
+  meta?: {
     total: number
     page: number
     limit: number
     totalPages: number
   }
+  success?: boolean
 }
 
 export interface ApiError {

@@ -59,7 +59,6 @@ const NonConformitiesPage = () => {
       const response = await auditService.getNonConformities({
         page: pagination.current,
         limit: pagination.pageSize,
-        search: filters.search || undefined,
         status: filters.status,
       })
       setNonConformities(response.data || [])
@@ -78,7 +77,7 @@ const NonConformitiesPage = () => {
     fetchNonConformities()
   }, [fetchNonConformities])
 
-  const handleTableChange: TableProps<NonConformity>['onChange'] = (paginationConfig, _, sorter) => {
+  const handleTableChange: TableProps<NonConformity>['onChange'] = (paginationConfig) => {
     setPagination((prev) => ({
       ...prev,
       current: paginationConfig.current || 1,

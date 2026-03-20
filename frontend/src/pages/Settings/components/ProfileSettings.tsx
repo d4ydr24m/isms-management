@@ -37,7 +37,7 @@ const ProfileSettings: React.FC = () => {
       setSaving(true)
       await settingsService.updateProfile({
         name: values.name,
-        departmentId: user?.departmentId,
+        departmentId: user?.departmentId ?? undefined,
       })
       message.success('프로필이 성공적으로 업데이트되었습니다')
       await loadUserInfo()
@@ -51,7 +51,7 @@ const ProfileSettings: React.FC = () => {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" role="status" />
+        <Spin size="large" />
       </div>
     )
   }

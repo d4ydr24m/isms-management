@@ -68,7 +68,7 @@ export const useThemeStore = create<ThemeState>()(
 if (typeof window !== 'undefined') {
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
 
-  mediaQuery.addEventListener('change', (e) => {
+  mediaQuery.addEventListener('change', (_e) => {
     const state = useThemeStore.getState()
     if (state.mode === 'system') {
       state.setMode('system')

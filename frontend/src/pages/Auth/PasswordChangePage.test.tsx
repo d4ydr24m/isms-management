@@ -180,6 +180,7 @@ describe('PasswordChangePage', () => {
         expect(authService.changePassword).toHaveBeenCalledWith({
           currentPassword: 'oldpass123',
           newPassword: 'newpass123',
+          confirmPassword: 'newpass123',
         })
       })
     })

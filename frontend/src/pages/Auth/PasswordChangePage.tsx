@@ -25,6 +25,7 @@ const PasswordChangePage = () => {
       await authService.changePassword({
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
+        confirmPassword: values.confirmPassword,
       })
 
       setSuccess(true)

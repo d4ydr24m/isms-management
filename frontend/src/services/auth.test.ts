@@ -223,12 +223,12 @@ describe('authService', () => {
 
       vi.mocked(apiClient.post).mockResolvedValue(mockResponse)
 
-      const result = await authService.verifyMfa({
-        code: '123456',
+      await authService.verifyMfa({
+        token: '123456',
       })
 
       expect(apiClient.post).toHaveBeenCalledWith('/auth/mfa/verify', {
-        code: '123456',
+        token: '123456',
       })
       expect(localStorage.getItem('accessToken')).toBe('mfa-access-token')
       expect(localStorage.getItem('refreshToken')).toBe('mfa-refresh-token')

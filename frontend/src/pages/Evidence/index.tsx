@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Card, Button, Space, Select, Input, message, Modal, Row, Col } from 'antd'
 import { PlusOutlined, SearchOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { EvidenceTable } from './components'
@@ -10,7 +10,6 @@ import type { TableProps } from 'antd'
 const { Option } = Select
 
 const EvidenceListPage = () => {
-  const navigate = useNavigate()
   const [evidences, setEvidences] = useState<EvidenceListItem[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
@@ -50,8 +49,7 @@ const EvidenceListPage = () => {
 
   const handleTableChange: TableProps<EvidenceListItem>['onChange'] = (
     paginationConfig,
-    _tableFilters,
-    sorter
+    _tableFilters
   ) => {
     setPagination((prev) => ({
       ...prev,

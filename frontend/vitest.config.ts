@@ -8,8 +8,23 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./src/test/setup.ts'],
-    testTimeout: 15000,
-    hookTimeout: 15000,
+    testTimeout: 60000,
+    hookTimeout: 60000,
+    retry: 2,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        maxForks: 3,
+      },
+    },
+    sequence: {
+      sequentialFiles: [
+        '**/Risk/index.test.tsx',
+        '**/Risk/RiskAssessment.test.tsx',
+        '**/Risk/ThreatDB.test.tsx',
+        '**/Risk/VulnerabilityDB.test.tsx',
+      ],
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

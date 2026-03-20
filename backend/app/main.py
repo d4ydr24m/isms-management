@@ -1,13 +1,13 @@
 """
 ISMS 관리 시스템 FastAPI 애플리케이션 엔트리포인트
 """
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.openapi.utils import get_openapi
 
 from app.api.v1 import api_router
 from app.core.config import settings
+from app.core.middleware import AuditLogMiddleware
 from app.websocket.handlers import websocket_endpoint
 
 API_DESCRIPTION = """
@@ -111,8 +111,8 @@ app = FastAPI(
     title=settings.APP_NAME,
     description=API_DESCRIPTION,
     version=settings.APP_VERSION,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
     openapi_tags=TAGS_METADATA,
     contact={
         "name": "ISMS 관리 시스템 지원팀",
@@ -129,14 +129,32 @@ app.include_router(api_router, prefix="/api/v1")
 # WebSocket 엔드포인트 등록 (7.3)
 app.websocket("/ws/notifications")(websocket_endpoint)
 
-# CORS 설정
+# CORS 설정 - 환경 변수 기반
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Frontend URL
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
 )
+
+# 감사 로그 미들웨어
+app.add_middleware(AuditLogMiddleware)
+
+
+# 보안 헤더 미들웨어
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next) -> Response:
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    if not settings.DEBUG:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 
 @app.get("/")

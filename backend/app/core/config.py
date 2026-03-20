@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "ISMS Management System"
     APP_VERSION: str = "1.0.0"
     ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
     # Security
     SECRET_KEY: str

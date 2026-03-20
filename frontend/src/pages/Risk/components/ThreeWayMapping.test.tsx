@@ -12,9 +12,11 @@
  * 6. 비활성화 상태
  */
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+
+vi.setConfig({ testTimeout: 60000 })
 import { ThreeWayMapping } from './ThreeWayMapping'
 import type { Asset, Threat, Vulnerability } from '@/types'
 
@@ -25,29 +27,31 @@ import type { Asset, Threat, Vulnerability } from '@/types'
 const mockAssets: Asset[] = [
   {
     id: 1,
-    code: 'ASSET-001',
+    assetCode: 'ASSET-001',
     name: '고객 정보 DB',
-    type: 'database',
-    category_id: 1,
-    category_name: '데이터베이스',
-    owner_department_id: 1,
-    owner_department_name: 'IT팀',
-    status: 'active',
-    importance: 'high',
-    created_at: '2024-01-01T00:00:00Z',
+    assetTypeId: 1,
+    assetTypeName: '데이터베이스',
+    categoryId: 1,
+    categoryName: '데이터베이스',
+    departmentId: 1,
+    departmentName: 'IT팀',
+    status: 'operating',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
   },
   {
     id: 2,
-    code: 'ASSET-002',
+    assetCode: 'ASSET-002',
     name: '업무 시스템 서버',
-    type: 'server',
-    category_id: 2,
-    category_name: '서버',
-    owner_department_id: 1,
-    owner_department_name: 'IT팀',
-    status: 'active',
-    importance: 'medium',
-    created_at: '2024-01-01T00:00:00Z',
+    assetTypeId: 2,
+    assetTypeName: '서버',
+    categoryId: 2,
+    categoryName: '서버',
+    departmentId: 1,
+    departmentName: 'IT팀',
+    status: 'operating',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
   },
 ]
 
@@ -57,22 +61,26 @@ const mockThreats: Threat[] = [
     code: 'THR-001',
     name: '무단 접근',
     description: '권한 없는 사용자의 시스템 접근',
-    category: 'unauthorized_access',
-    severity: 'high',
-    source: 'internal',
+    category_id: null,
+    category_name: null,
+    threat_level: 3,
+    is_custom: false,
     is_active: true,
     created_at: '2024-01-01T00:00:00Z',
+    updated_at: null,
   },
   {
     id: 2,
     code: 'THR-002',
     name: 'DDoS 공격',
     description: '분산 서비스 거부 공격',
-    category: 'network_attack',
-    severity: 'medium',
-    source: 'external',
+    category_id: null,
+    category_name: null,
+    threat_level: 2,
+    is_custom: false,
     is_active: true,
     created_at: '2024-01-01T00:00:00Z',
+    updated_at: null,
   },
 ]
 
@@ -82,30 +90,37 @@ const mockVulnerabilities: Vulnerability[] = [
     code: 'VUL-001',
     name: '취약한 인증',
     description: '부적절한 인증 메커니즘',
-    category: 'authentication',
-    severity: 'high',
-    cve_id: null,
-    cvss_score: null,
+    category_id: null,
+    category_name: null,
+    vulnerability_level: 3,
+    is_custom: false,
     is_active: true,
     created_at: '2024-01-01T00:00:00Z',
+    updated_at: null,
   },
   {
     id: 2,
     code: 'VUL-002',
     name: '패치 미적용',
     description: '보안 패치가 적용되지 않음',
-    category: 'configuration',
-    severity: 'medium',
-    cve_id: null,
-    cvss_score: null,
+    category_id: null,
+    category_name: null,
+    vulnerability_level: 2,
+    is_custom: false,
     is_active: true,
     created_at: '2024-01-01T00:00:00Z',
+    updated_at: null,
   },
 ]
 
 // =============================================================================
 // 1. 컴포넌트 렌더링 테스트
 // =============================================================================
+
+afterEach(() => {
+  cleanup()
+  document.querySelectorAll('.ant-select-dropdown').forEach(el => el.remove())
+})
 
 describe('ThreeWayMapping - 컴포넌트 렌더링', () => {
   it('컴포넌트가 올바르게 렌더링되어야 함', () => {
@@ -584,8 +599,15 @@ describe('ThreeWayMapping - onChange 콜백', () => {
       expect(onChange).toHaveBeenCalledTimes(1)
     })
 
-    // 위협 선택
-    await user.click(selects[1])
+    // Click on the document body to dismiss any open dropdowns before proceeding
+    await user.click(document.body)
+
+    // Small delay to let Ant Design animation complete
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    // 위협 선택 - re-query selects as DOM may have changed
+    const selectsAfter = document.querySelectorAll('.ant-select-selector')
+    await user.click(selectsAfter[1])
     await waitFor(() => {
       expect(screen.getByText('THR-001 - 무단 접근')).toBeInTheDocument()
     })

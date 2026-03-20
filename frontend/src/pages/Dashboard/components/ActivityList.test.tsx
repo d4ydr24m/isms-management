@@ -175,7 +175,7 @@ describe('ActivityList Component', () => {
   })
 
   it('높은 우선순위를 빨간색으로 표시함', () => {
-    const { container } = render(
+    render(
       <BrowserRouter>
         <ActivityList data={mockActivities} />
       </BrowserRouter>
@@ -186,7 +186,7 @@ describe('ActivityList Component', () => {
   })
 
   it('중간 우선순위를 주황색으로 표시함', () => {
-    const { container } = render(
+    render(
       <BrowserRouter>
         <ActivityList data={mockActivities} />
       </BrowserRouter>
@@ -197,7 +197,7 @@ describe('ActivityList Component', () => {
   })
 
   it('낮은 우선순위를 기본 색상으로 표시함', () => {
-    const { container } = render(
+    render(
       <BrowserRouter>
         <ActivityList data={mockActivities} />
       </BrowserRouter>

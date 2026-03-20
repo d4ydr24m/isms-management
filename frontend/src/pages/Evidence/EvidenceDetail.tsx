@@ -22,7 +22,7 @@ import { FilePreview, ControlMapping, VersionHistory } from './components'
 import { evidenceService } from '@/services/evidences'
 import { controlService } from '@/services/controls'
 import dayjs from 'dayjs'
-import type { Evidence, EvidenceVersion, ControlItem, ControlItemMapping } from '@/types'
+import type { Evidence, EvidenceVersion, ControlItem } from '@/types'
 
 const { Title } = Typography
 

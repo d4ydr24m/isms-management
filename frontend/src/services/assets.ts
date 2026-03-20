@@ -49,7 +49,7 @@ export const assetService = {
       const response = await apiClient.get<AssetTypeList>('/assets/types')
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -61,7 +61,7 @@ export const assetService = {
       const response = await apiClient.post<ApiResponse<AssetType>>('/assets/types', data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -77,7 +77,7 @@ export const assetService = {
       const response = await apiClient.get<AssetCategoryList>('/assets/categories')
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -89,7 +89,7 @@ export const assetService = {
       const response = await apiClient.post<ApiResponse<AssetCategory>>('/assets/categories', data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -101,7 +101,7 @@ export const assetService = {
       const response = await apiClient.put<ApiResponse<AssetCategory>>(`/assets/categories/${id}`, data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -117,7 +117,7 @@ export const assetService = {
       const response = await apiClient.get<AssetList>('/assets', { params })
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -129,7 +129,7 @@ export const assetService = {
       const response = await apiClient.get<ApiResponse<Asset>>(`/assets/${id}`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -141,7 +141,7 @@ export const assetService = {
       const response = await apiClient.post<ApiResponse<Asset>>('/assets', data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -153,7 +153,7 @@ export const assetService = {
       const response = await apiClient.put<ApiResponse<Asset>>(`/assets/${id}`, data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -164,7 +164,7 @@ export const assetService = {
     try {
       await apiClient.delete(`/assets/${id}`)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -180,7 +180,7 @@ export const assetService = {
       const response = await apiClient.get<ApiResponse<AssetValuation>>(`/assets/${assetId}/valuation`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -192,7 +192,7 @@ export const assetService = {
       const response = await apiClient.post<ApiResponse<AssetValuation>>(`/assets/${assetId}/valuation`, data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -204,7 +204,7 @@ export const assetService = {
       const response = await apiClient.get<ApiResponse<AssetValuationHistory>>(`/assets/${assetId}/valuation/history`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -220,7 +220,7 @@ export const assetService = {
       const response = await apiClient.get<ApiResponse<AssetHistory[]>>(`/assets/${assetId}/history`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -232,7 +232,7 @@ export const assetService = {
       const response = await apiClient.post<ApiResponse<AssetDisposal>>(`/assets/${assetId}/dispose`, data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -244,7 +244,7 @@ export const assetService = {
       const response = await apiClient.get<ApiResponse<AssetLifecycleStats>>('/assets/lifecycle-stats')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -260,7 +260,7 @@ export const assetService = {
       const response = await apiClient.get<ApiResponse<AssetAssignment[]>>(`/assets/${assetId}/assignments`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -272,7 +272,7 @@ export const assetService = {
       const response = await apiClient.post<ApiResponse<AssetAssignment>>(`/assets/${assetId}/assignments`, data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -284,7 +284,7 @@ export const assetService = {
       const response = await apiClient.put<ApiResponse<AssetAssignment>>(`/assets/${assetId}/assignments/${assignmentId}`, data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -295,7 +295,7 @@ export const assetService = {
     try {
       await apiClient.delete(`/assets/${assetId}/assignments/${assignmentId}`)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -307,7 +307,7 @@ export const assetService = {
       const response = await apiClient.get<ApiResponse<AssetHandover>>(`/assets/${assetId}/handover`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -322,7 +322,7 @@ export const assetService = {
     try {
       await downloadFile('/assets/template', 'asset_import_template.xlsx')
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -339,7 +339,7 @@ export const assetService = {
       })
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -356,7 +356,7 @@ export const assetService = {
         : ''
       await downloadFile(`/assets/export${queryParams}`, 'assets_export.xlsx')
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -372,7 +372,7 @@ export const assetService = {
       const response = await apiClient.get<ApiResponse<AssetStats>>('/assets/stats')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -384,7 +384,7 @@ export const assetService = {
       const response = await apiClient.get<ApiResponse<AssetByTypeStats[]>>('/assets/by-type')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -396,7 +396,7 @@ export const assetService = {
       const response = await apiClient.get<ApiResponse<AssetByDepartmentStats[]>>('/assets/by-department')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -408,7 +408,7 @@ export const assetService = {
       const response = await apiClient.get<ApiResponse<AssetByImportanceStats[]>>('/assets/by-importance')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 }

@@ -37,7 +37,7 @@ describe('authStore', () => {
       email: 'test@example.com',
       name: 'Test User',
       departmentId: 1,
-      department: { id: 1, name: 'IT', code: 'IT', parentId: null, managerId: null, isActive: true, createdAt: '2024-01-01' },
+      department: 'IT',
       roles: ['CISO'],
       permissions: [],
       isActive: true,
@@ -98,6 +98,7 @@ describe('authStore', () => {
     const mockResponse = {
       accessToken: 'test-token',
       refreshToken: 'refresh-token',
+      tokenType: 'Bearer',
       requiresMfa: false,
       user: {
         id: 1,
@@ -207,6 +208,7 @@ describe('authStore', () => {
     const mockResponse = {
       accessToken: '',
       refreshToken: '',
+      tokenType: 'Bearer',
       requiresMfa: true,
       user: {
         id: 1,

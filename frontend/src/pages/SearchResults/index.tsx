@@ -217,7 +217,7 @@ const SearchResults = () => {
   if (loading) {
     return (
       <div style={{ padding: '24px', textAlign: 'center' }}>
-        <Spin size="large" role="status" />
+        <Spin size="large" />
       </div>
     )
   }

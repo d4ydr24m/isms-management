@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
 import NotificationDropdown from '@/components/Notification/NotificationDropdown'
@@ -189,7 +189,7 @@ describe('NotificationDropdown', () => {
       renderWithRouter(<NotificationDropdown {...defaultProps} />)
 
       // 읽은 알림 확인 (내부감사 예정)
-      const readNotification = screen.getByText('내부감사 예정').closest('div[class*="list-item"]')
+      screen.getByText('내부감사 예정').closest('div[class*="list-item"]')
       // 스타일 확인은 실제 DOM 검사가 필요하므로 존재 여부만 확인
       expect(screen.getByText('내부감사 예정')).toBeInTheDocument()
     })

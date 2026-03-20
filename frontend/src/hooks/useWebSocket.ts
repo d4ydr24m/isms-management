@@ -70,7 +70,7 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
       onConnect?.()
     }
 
-    ws.onclose = (event) => {
+    ws.onclose = (_event) => {
       setConnectionState('disconnected')
       onDisconnect?.()
 

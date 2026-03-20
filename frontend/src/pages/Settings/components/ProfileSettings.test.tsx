@@ -170,6 +170,6 @@ describe('ProfileSettings Component', () => {
       </BrowserRouter>
     )
 
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(document.querySelector('.ant-spin')).toBeInTheDocument()
   })
 })

@@ -3,7 +3,6 @@ import {
   FileProtectOutlined,
   ClockCircleOutlined,
   WarningOutlined,
-  CheckCircleOutlined,
   AuditOutlined,
   BellOutlined,
   ToolOutlined,
@@ -71,7 +70,7 @@ const typeLabels: Record<NotificationType, string> = {
   system: '시스템',
 }
 
-const NotificationItem = ({ notification, onClick, showActions = false }: NotificationItemProps) => {
+const NotificationItem = ({ notification, onClick, showActions: _showActions = false }: NotificationItemProps) => {
   const config = notificationConfig[notification.type] || notificationConfig.system
   const typeLabel = typeLabels[notification.type] || '알림'
   const timeAgo = dayjs(notification.createdAt).fromNow()

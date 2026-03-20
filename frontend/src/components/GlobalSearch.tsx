@@ -69,7 +69,7 @@ const GlobalSearch = () => {
     if (loading) {
       return (
         <div style={{ padding: '24px', textAlign: 'center' }}>
-          <Spin role="status" />
+          <Spin />
         </div>
       )
     }
@@ -200,7 +200,7 @@ const GlobalSearch = () => {
           }}
           onClick={handleViewAll}
         >
-          <Text type="link">모든 결과 보기</Text>
+          <Text type="secondary" style={{ color: '#1890ff' }}>모든 결과 보기</Text>
         </div>
       </div>
     )

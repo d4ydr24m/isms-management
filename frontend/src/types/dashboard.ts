@@ -1,6 +1,3 @@
-import { EvidenceStatus } from './control'
-import { CorrectiveActionStatus, NonConformityType } from './audit'
-
 // 대시보드 관련 타입
 export interface DashboardSummary {
   evidenceProgress: EvidenceProgress

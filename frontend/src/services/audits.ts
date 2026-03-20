@@ -24,7 +24,7 @@ export const auditService = {
       const response = await apiClient.get<PaginatedResponse<AuditPlan>>('/audits', { params })
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -34,7 +34,7 @@ export const auditService = {
       const response = await apiClient.get<ApiResponse<AuditPlan>>(`/audits/${id}`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -44,7 +44,7 @@ export const auditService = {
       const response = await apiClient.post<ApiResponse<AuditPlan>>('/audits', data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -54,7 +54,7 @@ export const auditService = {
       const response = await apiClient.put<ApiResponse<AuditPlan>>(`/audits/${id}`, data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -63,7 +63,7 @@ export const auditService = {
     try {
       await apiClient.delete(`/audits/${id}`)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -72,7 +72,7 @@ export const auditService = {
     try {
       await apiClient.put(`/audits/${id}/team`, { auditorIds })
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -82,7 +82,7 @@ export const auditService = {
       const response = await apiClient.get<ApiResponse<AuditChecklist[]>>(`/audits/${auditId}/checklist`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -91,7 +91,7 @@ export const auditService = {
     try {
       await apiClient.post(`/audits/${auditId}/checklist/generate`)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -100,7 +100,7 @@ export const auditService = {
     try {
       await apiClient.put(`/audits/${auditId}/checklist/${itemId}`, data)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -109,7 +109,7 @@ export const auditService = {
     try {
       await apiClient.post(`/audits/${auditId}/checklist/${itemId}/evidence`, { evidenceIds })
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -119,7 +119,7 @@ export const auditService = {
       const response = await apiClient.get<PaginatedResponse<NonConformity>>('/nonconformities', { params })
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -129,7 +129,7 @@ export const auditService = {
       const response = await apiClient.get<ApiResponse<NonConformity>>(`/nonconformities/${id}`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -139,7 +139,7 @@ export const auditService = {
       const response = await apiClient.post<ApiResponse<NonConformity>>('/nonconformities', data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -149,7 +149,7 @@ export const auditService = {
       const response = await apiClient.put<ApiResponse<NonConformity>>(`/nonconformities/${id}`, data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -162,7 +162,7 @@ export const auditService = {
       )
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -179,7 +179,7 @@ export const auditService = {
       )
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -188,7 +188,7 @@ export const auditService = {
     try {
       await apiClient.post(`/nonconformities/${nonConformityId}/corrective-actions/${actionId}/verify`, data)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 }

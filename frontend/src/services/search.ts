@@ -17,7 +17,7 @@ export const searchService = {
       })
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -29,7 +29,7 @@ export const searchService = {
       })
       return response.data.data!.controls
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -41,7 +41,7 @@ export const searchService = {
       })
       return response.data.data!.evidences
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -53,7 +53,7 @@ export const searchService = {
       })
       return response.data.data!.users
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 }

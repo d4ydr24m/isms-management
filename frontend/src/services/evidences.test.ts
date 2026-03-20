@@ -95,7 +95,7 @@ describe('evidenceService', () => {
         data: { id: 1 },
       }
 
-      vi.mocked(uploadFile).mockImplementation(async (url, file, data, progressCallback) => {
+      vi.mocked(uploadFile).mockImplementation(async (_url, _file, _data, progressCallback) => {
         if (progressCallback) {
           progressCallback({ loaded: 50, total: 100 })
           progressCallback({ loaded: 100, total: 100 })
@@ -103,7 +103,7 @@ describe('evidenceService', () => {
         return mockResponse
       })
 
-      await evidenceService.createEvidence({ title: 'Test', file: mockFile }, onProgress)
+      await evidenceService.createEvidence({ title: 'Test', description: 'Test description', controlItemIds: [], file: mockFile }, onProgress)
 
       expect(onProgress).toHaveBeenCalledWith(50)
       expect(onProgress).toHaveBeenCalledWith(100)

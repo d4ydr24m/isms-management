@@ -33,7 +33,7 @@ const ControlTree = ({
     selectable: true,
   }))
 
-  const handleSelect: TreeProps['onSelect'] = (selectedKeys, info) => {
+  const handleSelect: TreeProps['onSelect'] = (selectedKeys, _info) => {
     if (selectedKeys.length === 0) return
 
     const key = selectedKeys[0] as string

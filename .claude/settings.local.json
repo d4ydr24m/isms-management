@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/Aiden/workspace/isms-management -path */.github/workflows* -type f)",
+      "Bash(grep -E \"\\\\.py$\")",
+      "Bash(grep -E \"test_.*\\\\.py$\")",
+      "Bash(grep \"\\\\.py$\")",
+      "Bash(ls -la /c/Users/Aiden/workspace/isms-management/backend/app/services/*.py)",
+      "Read(//c/Users/Aiden/workspace/isms-management/**)",
+      "Bash(find /c/Users/Aiden/workspace/isms-management/frontend/src/pages/Risks -type f -name *.tsx)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(xargs cat:*)",
+      "Bash(xargs grep:*)",
+      "Bash(npx tsc:*)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(ls node_modules/.bin/tsc*)",
+      "Bash(npm install:*)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(wc -l /c/Users/Aiden/workspace/isms-management/frontend/src/pages/*/* /c/Users/Aiden/workspace/isms-management/backend/app/api/v1/*.py)",
+      "Bash(npx vitest:*)",
+      "Bash(grep -E \"^.*\\(FAIL|✗|×\\).*$\")",
+      "Bash(npm test:*)"
+    ]
+  }
+}

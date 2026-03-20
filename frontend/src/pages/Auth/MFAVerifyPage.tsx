@@ -28,9 +28,9 @@ const MFAVerifyPage = () => {
     setError(null)
 
     try {
-      const response = await authService.verifyMfa(verificationCode)
+      const response = await authService.verifyMfa({ token: verificationCode })
 
-      if (response.success && response.user) {
+      if (response.user) {
         setUser({
           id: response.user.id,
           email: response.user.email,

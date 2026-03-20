@@ -18,10 +18,9 @@ const mockNotifications = [
     type: 'evidence_expiring' as const,
     title: 'Evidence Expiring',
     message: 'Evidence will expire soon',
-    data: {},
+    link: null,
     isRead: false,
     createdAt: '2024-01-01T00:00:00Z',
-    readAt: null,
   },
   {
     id: 2,
@@ -29,10 +28,9 @@ const mockNotifications = [
     type: 'system' as const,
     title: 'System Update',
     message: 'System will be updated',
-    data: {},
+    link: null,
     isRead: true,
     createdAt: '2024-01-02T00:00:00Z',
-    readAt: '2024-01-02T01:00:00Z',
   },
 ]
 
@@ -58,8 +56,13 @@ describe('notificationStore', () => {
     const { result } = renderHook(() => useNotificationStore())
 
     vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: mockNotifications,
+      total: 2,
+      page: 1,
+      pageSize: 50,
+      totalPages: 1,
       data: mockNotifications,
-      meta: { total: 2, page: 1, limit: 50 },
+      meta: { total: 2, page: 1, limit: 50, totalPages: 1 },
     })
 
     await act(async () => {
@@ -87,8 +90,13 @@ describe('notificationStore', () => {
     const { result } = renderHook(() => useNotificationStore())
 
     vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: mockNotifications,
+      total: 2,
+      page: 1,
+      pageSize: 50,
+      totalPages: 1,
       data: mockNotifications,
-      meta: { total: 2, page: 1, limit: 50 },
+      meta: { total: 2, page: 1, limit: 50, totalPages: 1 },
     })
     vi.mocked(notificationService.markAsRead).mockResolvedValue(undefined)
 
@@ -112,8 +120,13 @@ describe('notificationStore', () => {
     const { result } = renderHook(() => useNotificationStore())
 
     vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: mockNotifications,
+      total: 2,
+      page: 1,
+      pageSize: 50,
+      totalPages: 1,
       data: mockNotifications,
-      meta: { total: 2, page: 1, limit: 50 },
+      meta: { total: 2, page: 1, limit: 50, totalPages: 1 },
     })
     vi.mocked(notificationService.markAllAsRead).mockResolvedValue(undefined)
 
@@ -141,10 +154,9 @@ describe('notificationStore', () => {
       type: 'audit_scheduled' as const,
       title: 'Audit Scheduled',
       message: 'New audit has been scheduled',
-      data: {},
+      link: null,
       isRead: false,
       createdAt: '2024-01-03T00:00:00Z',
-      readAt: null,
     }
 
     act(() => {
@@ -160,8 +172,13 @@ describe('notificationStore', () => {
     const { result } = renderHook(() => useNotificationStore())
 
     vi.mocked(notificationService.getNotifications).mockResolvedValue({
+      items: mockNotifications,
+      total: 2,
+      page: 1,
+      pageSize: 50,
+      totalPages: 1,
       data: mockNotifications,
-      meta: { total: 2, page: 1, limit: 50 },
+      meta: { total: 2, page: 1, limit: 50, totalPages: 1 },
     })
 
     // 먼저 알림 로드

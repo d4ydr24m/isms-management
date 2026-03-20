@@ -16,7 +16,7 @@ export const dashboardService = {
       const response = await apiClient.get<ApiResponse<DashboardSummary>>('/dashboard/summary')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -26,7 +26,7 @@ export const dashboardService = {
       const response = await apiClient.get<ApiResponse<EvidenceProgress>>('/dashboard/progress')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -38,7 +38,7 @@ export const dashboardService = {
       })
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -50,7 +50,7 @@ export const dashboardService = {
       })
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -60,7 +60,7 @@ export const dashboardService = {
       const response = await apiClient.get<ApiResponse<PendingTask[]>>('/dashboard/pending-tasks')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -70,7 +70,7 @@ export const dashboardService = {
       const response = await apiClient.get<ApiResponse<NonConformitySummary>>('/dashboard/nonconformities')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 }

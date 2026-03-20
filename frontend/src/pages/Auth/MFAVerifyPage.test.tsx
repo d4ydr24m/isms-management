@@ -11,6 +11,13 @@ vi.mock('@/services', () => ({
   },
 }))
 
+// Mock auth store
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => ({
+    setUser: vi.fn(),
+  }),
+}))
+
 // Mock react-router-dom navigate
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -131,7 +138,7 @@ describe('MFAVerifyPage', () => {
       fireEvent.click(submitButton)
 
       await waitFor(() => {
-        expect(authService.verifyMfa).toHaveBeenCalledWith('123456')
+        expect(authService.verifyMfa).toHaveBeenCalledWith({ token: '123456' })
       })
     })
 
@@ -260,7 +267,7 @@ describe('MFAVerifyPage', () => {
       fireEvent.change(codeInput, { target: { value: '123456' } })
 
       await waitFor(() => {
-        expect(authService.verifyMfa).toHaveBeenCalledWith('123456')
+        expect(authService.verifyMfa).toHaveBeenCalledWith({ token: '123456' })
       })
     })
   })

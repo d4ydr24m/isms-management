@@ -18,7 +18,7 @@ export const controlService = {
       const response = await apiClient.get<PaginatedResponse<ControlItem>>('/controls', { params })
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -28,7 +28,7 @@ export const controlService = {
       const response = await apiClient.get<ApiResponse<ControlItemDetail>>(`/controls/${id}`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -38,7 +38,7 @@ export const controlService = {
       const response = await apiClient.get<ApiResponse<any[]>>(`/controls/${id}/evidences`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -48,7 +48,7 @@ export const controlService = {
       const response = await apiClient.get<ApiResponse<ControlDomain[]>>('/controls/domains')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -58,7 +58,7 @@ export const controlService = {
       const response = await apiClient.get<ApiResponse<ControlProgress>>('/controls/progress')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 }

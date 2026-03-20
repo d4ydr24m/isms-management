@@ -15,7 +15,7 @@ export const notificationService = {
       const response = await apiClient.get<PaginatedResponse<Notification>>('/notifications', { params })
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -24,7 +24,7 @@ export const notificationService = {
     try {
       await apiClient.put(`/notifications/${id}/read`)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -33,7 +33,7 @@ export const notificationService = {
     try {
       await apiClient.put('/notifications/read-all')
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -43,7 +43,7 @@ export const notificationService = {
       const response = await apiClient.get<ApiResponse<NotificationSetting[]>>('/notifications/settings')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -52,7 +52,7 @@ export const notificationService = {
     try {
       await apiClient.put(`/notifications/settings/${setting.type}`, setting)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -61,7 +61,7 @@ export const notificationService = {
     try {
       await apiClient.put('/notifications/settings', { settings })
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 }

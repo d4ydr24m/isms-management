@@ -43,7 +43,7 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" role="status" />
+        <Spin size="large" />
       </div>
     )
   }
@@ -67,11 +67,6 @@ const Dashboard: React.FC = () => {
   if (!data) {
     return null
   }
-
-  const hasData =
-    data.upcomingActivities.length > 0 ||
-    data.expiringEvidences.length > 0 ||
-    data.pendingTasks.length > 0
 
   return (
     <div style={{ padding: '24px' }}>

@@ -119,7 +119,7 @@ describe('Dashboard Page', () => {
       </BrowserRouter>
     )
 
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(document.querySelector('.ant-spin')).toBeInTheDocument()
   })
 
   it('대시보드 데이터를 성공적으로 로드함', async () => {

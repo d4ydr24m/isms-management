@@ -24,8 +24,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     set({ isLoading: true })
     try {
       const response = await notificationService.getNotifications({ page: 1, limit: 50 })
-      const notifications = response.data || []
-      const unreadCount = notifications.filter((n) => !n.isRead).length
+      const notifications = (response.data || response.items || []) as Notification[]
+      const unreadCount = notifications.filter((n: Notification) => !n.isRead).length
 
       set({
         notifications,

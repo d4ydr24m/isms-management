@@ -59,7 +59,7 @@ const SecuritySettings: React.FC = () => {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" role="status" />
+        <Spin size="large" />
       </div>
     )
   }

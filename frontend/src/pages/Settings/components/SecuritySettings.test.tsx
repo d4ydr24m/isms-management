@@ -108,7 +108,7 @@ describe('SecuritySettings Component', () => {
       </BrowserRouter>
     )
 
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(document.querySelector('.ant-spin')).toBeInTheDocument()
   })
 
   it('보안 설정 API를 호출한다', async () => {

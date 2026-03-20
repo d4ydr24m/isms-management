@@ -26,7 +26,7 @@ import type { TreeSelectInfo } from './components'
 import { controlService } from '@/services/controls'
 import type { ControlItem, ControlDomain, ControlProgress } from '@/types'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { Option } = Select
 
 interface FilterState {

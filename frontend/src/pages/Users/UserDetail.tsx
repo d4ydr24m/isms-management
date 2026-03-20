@@ -14,7 +14,7 @@ import {
   Spin,
   Switch,
 } from 'antd'
-import { EditOutlined, ArrowLeftOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
+import { EditOutlined, ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
 import { userService } from '@/services/users'
 import type { User, Role } from '@/types'
 

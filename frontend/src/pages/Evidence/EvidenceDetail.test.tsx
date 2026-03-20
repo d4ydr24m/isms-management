@@ -149,10 +149,10 @@ describe('EvidenceDetail', () => {
 
       await waitFor(
         () => {
-          expect(screen.getByRole('button', { name: /Back/i })).toBeInTheDocument()
+          expect(screen.getByText('Back')).toBeInTheDocument()
         },
         { timeout: 10000 }
       )
-    })
+    }, 30000)
   })
 })

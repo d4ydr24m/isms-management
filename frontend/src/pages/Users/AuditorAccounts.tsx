@@ -49,7 +49,7 @@ function AuditorAccounts() {
     try {
       const response = await auditorAccountService.getAuditorAccounts({
         page,
-        pageSize,
+        limit: pageSize,
         search: search || undefined,
       })
       setAccounts(response.items)
@@ -249,7 +249,7 @@ function AuditorAccounts() {
         <SearchInput
           placeholder="이름 또는 소속으로 검색"
           onSearch={handleSearch}
-          style={{ width: 300 }}
+          width={300}
         />
         <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           계정 생성

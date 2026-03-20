@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { searchService } from './search'
-import { apiClient, handleApiError } from './api'
+import { apiClient } from './api'
 import type { SearchResponse } from '@/types'
 
 vi.mock('./api', () => ({

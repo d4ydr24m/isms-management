@@ -6,9 +6,11 @@ import {
   AuditOutlined,
   UserOutlined,
   SettingOutlined,
+  DatabaseOutlined,
+  WarningOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 const { Sider } = Layout
 
@@ -19,7 +21,7 @@ const Sidebar = () => {
 
   const menuItems = [
     {
-      key: '/',
+      key: '/dashboard',
       icon: <DashboardOutlined />,
       label: '대시보드',
     },
@@ -39,6 +41,46 @@ const Sidebar = () => {
       label: '감사 관리',
     },
     {
+      key: '/assets',
+      icon: <DatabaseOutlined />,
+      label: '자산 관리',
+    },
+    {
+      key: 'risk-group',
+      icon: <WarningOutlined />,
+      label: '위험 관리',
+      children: [
+        {
+          key: '/risk',
+          label: '위험 시나리오',
+        },
+        {
+          key: '/risk/doa',
+          label: 'DoA 설정',
+        },
+        {
+          key: '/risk/treatments',
+          label: '처리 계획',
+        },
+        {
+          key: '/risk/soa',
+          label: 'SOA 관리',
+        },
+        {
+          key: '/risk/report',
+          label: '보고서',
+        },
+        {
+          key: '/risk/threats',
+          label: '위협 DB',
+        },
+        {
+          key: '/risk/vulnerabilities',
+          label: '취약점 DB',
+        },
+      ],
+    },
+    {
       key: '/users',
       icon: <UserOutlined />,
       label: '사용자 관리',
@@ -49,6 +91,25 @@ const Sidebar = () => {
       label: '설정',
     },
   ]
+
+  // 현재 경로에 맞는 선택된 메뉴 키 계산
+  const selectedKeys = useMemo(() => {
+    const pathname = location.pathname
+    if (pathname === '/risk/threats') return ['/risk/threats']
+    if (pathname === '/risk/vulnerabilities') return ['/risk/vulnerabilities']
+    if (pathname === '/risk/doa') return ['/risk/doa']
+    if (pathname === '/risk/treatments') return ['/risk/treatments']
+    if (pathname === '/risk/soa') return ['/risk/soa']
+    if (pathname === '/risk/report') return ['/risk/report']
+    if (pathname.startsWith('/risk')) return ['/risk']
+    return [pathname]
+  }, [location.pathname])
+
+  // 위험 관리 하위 경로인 경우 서브메뉴 자동 열기
+  const defaultOpenKeys = useMemo(() => {
+    if (location.pathname.startsWith('/risk')) return ['risk-group']
+    return []
+  }, [location.pathname])
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key)
@@ -84,7 +145,8 @@ const Sidebar = () => {
       <Menu
         theme="dark"
         mode="inline"
-        selectedKeys={[location.pathname]}
+        selectedKeys={selectedKeys}
+        defaultOpenKeys={defaultOpenKeys}
         items={menuItems}
         onClick={handleMenuClick}
       />

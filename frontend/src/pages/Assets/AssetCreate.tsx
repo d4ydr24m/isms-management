@@ -87,7 +87,7 @@ const AssetCreatePage = () => {
           departments={mockDepartments}
           users={mockUsers}
           loading={loading}
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit as (values: AssetCreateType | import('@/types').AssetUpdate) => Promise<void>}
           onCancel={handleCancel}
         />
       </Card>

@@ -283,7 +283,7 @@ const AssetForm = ({
               min={0}
               max={9999999999}
               formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={value => value!.replace(/\$\s?|(,*)/g, '')}
+              parser={value => (value!.replace(/\$\s?|(,*)/g, '') as unknown as 0 | 9999999999)}
               placeholder="취득 비용"
             />
           </Form.Item>

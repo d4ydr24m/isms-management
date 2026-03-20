@@ -18,7 +18,7 @@ export const evidenceService = {
       const response = await apiClient.get<PaginatedResponse<EvidenceListItem>>('/evidences', { params })
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -28,7 +28,7 @@ export const evidenceService = {
       const response = await apiClient.get<ApiResponse<Evidence>>(`/evidences/${id}`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -44,7 +44,7 @@ export const evidenceService = {
       })
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -54,7 +54,7 @@ export const evidenceService = {
       const response = await apiClient.put<ApiResponse<Evidence>>(`/evidences/${id}`, data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -63,7 +63,7 @@ export const evidenceService = {
     try {
       await apiClient.delete(`/evidences/${id}`)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -78,7 +78,7 @@ export const evidenceService = {
       })
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -88,7 +88,7 @@ export const evidenceService = {
       const response = await apiClient.get<ApiResponse<EvidenceVersion[]>>(`/evidences/${id}/versions`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -97,7 +97,7 @@ export const evidenceService = {
     try {
       await downloadFile(`/evidences/${id}/download`, fileName)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -107,7 +107,7 @@ export const evidenceService = {
       const response = await apiClient.get<ApiResponse<{ url: string }>>(`/evidences/${id}/preview`)
       return response.data.data!.url
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -116,7 +116,7 @@ export const evidenceService = {
     try {
       await apiClient.post(`/evidences/${id}/controls`, { controlItemIds })
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -125,7 +125,7 @@ export const evidenceService = {
     try {
       await apiClient.delete(`/evidences/${id}/controls/${controlId}`)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -137,7 +137,7 @@ export const evidenceService = {
       })
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 }

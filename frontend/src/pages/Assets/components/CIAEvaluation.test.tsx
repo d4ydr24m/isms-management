@@ -3,7 +3,7 @@
  * TDD: RED -> GREEN -> REFACTOR
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import CIAEvaluation from './CIAEvaluation'
 import type { AssetValuation } from '@/types'

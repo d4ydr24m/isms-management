@@ -11,89 +11,45 @@
 import { describe, it, expect } from 'vitest'
 import type {
   // 위협 관련
-  ThreatCategory,
   Threat,
   ThreatCreate,
-  ThreatUpdate,
-  ThreatList,
 
   // 취약점 관련
-  VulnerabilityCategory,
   Vulnerability,
-  VulnerabilityCreate,
-  VulnerabilityUpdate,
-  VulnerabilityList,
   VulnerabilityAssessment,
-  VulnerabilityAssessmentCreate,
-  VulnerabilityAssessmentList,
 
   // 위험 시나리오 관련
   RiskScenario,
-  RiskScenarioCreate,
-  RiskScenarioUpdate,
-  RiskScenarioList,
 
   // 위험 평가 관련
   RiskAssessment,
-  RiskAssessmentCreate,
-  RiskAssessmentUpdate,
-  RiskAssessmentList,
 
   // DoA 관련
   DoAConfig,
-  DoAConfigCreate,
-  DoAHistory,
 
   // 위험 처리 계획 관련
   RiskTreatmentPlan,
-  RiskTreatmentPlanCreate,
-  RiskTreatmentPlanUpdate,
-  RiskTreatmentPlanList,
-  RiskTreatmentAction,
-  RiskTreatmentActionCreate,
   RiskTreatmentProgress,
 
   // SOA 관련
   SOARecord,
-  SOARecordUpdate,
-  SOARecordList,
   SOAExportRequest,
 
   // 보고서 관련
   RiskDistribution,
-  RiskMatrixData,
-  ScenarioComparison,
   RiskReportSummary,
-  ExecutiveSummary,
 
-  // 위험-통제 연계
-  RiskTreatmentControlLink,
-  RiskTreatmentControlLinkCreate,
-  ControlEffectivenessAnalysis,
-  RiskControlCoverageAnalysis,
 } from './risk'
 
 import {
   // 상수
   THREAT_LEVELS,
-  VULNERABILITY_LEVELS,
-  RISK_LEVELS,
-  REMEDIATION_STATUSES,
   RISK_SCENARIO_STATUSES,
   TREATMENT_STRATEGIES,
-  TREATMENT_STATUSES,
-  IMPLEMENTATION_STATUSES,
-  SOA_EXPORT_FORMATS,
-  SOA_TEMPLATE_TYPES,
 
   // 헬퍼 함수
   getThreatLevelLabel,
-  getVulnerabilityLevelLabel,
-  getRiskLevelLabel,
-  getRemediationStatusLabel,
   getTreatmentStrategyLabel,
-  getTreatmentStatusLabel,
-  getImplementationStatusLabel,
   calculateRiskScore,
   classifyRiskLevel,
   isHighRisk,

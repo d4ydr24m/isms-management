@@ -13,7 +13,7 @@ export const settingsService = {
     try {
       await apiClient.put('/users/profile', data)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -23,7 +23,7 @@ export const settingsService = {
       const response = await apiClient.get<ApiResponse<SecuritySettings>>('/users/security')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -33,7 +33,7 @@ export const settingsService = {
       const response = await apiClient.get<ApiResponse<SystemSettings>>('/users/settings')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -42,7 +42,7 @@ export const settingsService = {
     try {
       await apiClient.put('/users/settings', data)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 }

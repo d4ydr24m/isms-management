@@ -9,14 +9,13 @@
  * 4. 오류 처리 검증
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import type {
   Threat,
   ThreatList,
   ThreatCreate,
-  Vulnerability,
   VulnerabilityList,
   VulnerabilityAssessmentList,
   RiskScenario,
@@ -28,6 +27,8 @@ import type {
   SOARecordList,
   RiskReportSummary,
 } from '../types/risk'
+
+const API_BASE = 'http://localhost:8000/api/v1'
 
 // MSW 서버 설정
 const server = setupServer()
@@ -196,7 +197,7 @@ describe('위협 DB API', () => {
     }
 
     server.use(
-      http.get('/api/v1/threats/by-asset-type/:typeId', () => {
+      http.get(`${API_BASE}/threats/by-asset-type/:typeId`, () => {
         return HttpResponse.json(mockResponse)
       })
     )
@@ -271,7 +272,7 @@ describe('취약점 DB API', () => {
     }
 
     server.use(
-      http.get('/api/v1/vulnerabilities/assessments', () => {
+      http.get(`${API_BASE}/vulnerabilities/assessments`, () => {
         return HttpResponse.json(mockResponse)
       })
     )
@@ -312,7 +313,7 @@ describe('위험 시나리오 API', () => {
     }
 
     server.use(
-      http.get('/api/v1/risk-scenarios', () => {
+      http.get(`${API_BASE}/risk-scenarios`, () => {
         return HttpResponse.json(mockResponse)
       })
     )
@@ -343,7 +344,7 @@ describe('위험 시나리오 API', () => {
     }
 
     server.use(
-      http.post('/api/v1/risk-scenarios', () => {
+      http.post(`${API_BASE}/risk-scenarios`, () => {
         return HttpResponse.json(mockResponse)
       })
     )
@@ -396,7 +397,7 @@ describe('위험 평가 API', () => {
     }
 
     server.use(
-      http.get('/api/v1/risk-scenarios/:scenarioId/assessments', () => {
+      http.get(`${API_BASE}/risk-scenarios/:scenarioId/assessments`, () => {
         return HttpResponse.json(mockResponse)
       })
     )
@@ -436,7 +437,7 @@ describe('위험 평가 API', () => {
     }
 
     server.use(
-      http.post('/api/v1/risk-scenarios/:scenarioId/assessments', () => {
+      http.post(`${API_BASE}/risk-scenarios/:scenarioId/assessments`, () => {
         return HttpResponse.json(mockResponse)
       })
     )
@@ -456,7 +457,7 @@ describe('위험 평가 API', () => {
 
   it('calculateRiskScenario - 시나리오 전체 위험도를 재계산해야 함', async () => {
     server.use(
-      http.post('/api/v1/risk-scenarios/:scenarioId/calculate', () => {
+      http.post(`${API_BASE}/risk-scenarios/:scenarioId/calculate`, () => {
         return HttpResponse.json({ message: '위험도 재계산 완료' })
       })
     )
@@ -483,7 +484,7 @@ describe('DoA 관리 API', () => {
     }
 
     server.use(
-      http.get('/api/v1/doa', () => {
+      http.get(`${API_BASE}/doa`, () => {
         return HttpResponse.json(mockResponse)
       })
     )
@@ -505,7 +506,7 @@ describe('DoA 관리 API', () => {
     }
 
     server.use(
-      http.get('/api/v1/risks/exceeding-doa', () => {
+      http.get(`${API_BASE}/risks/exceeding-doa`, () => {
         return HttpResponse.json(mockResponse)
       })
     )
@@ -528,7 +529,7 @@ describe('위험 처리 계획 API', () => {
     }
 
     server.use(
-      http.get('/api/v1/risk-treatments', () => {
+      http.get(`${API_BASE}/risk-treatments`, () => {
         return HttpResponse.json(mockResponse)
       })
     )
@@ -541,7 +542,7 @@ describe('위험 처리 계획 API', () => {
 
   it('createRiskTreatmentPlan - 처리 계획을 생성해야 함', async () => {
     server.use(
-      http.post('/api/v1/risk-assessments/:assessmentId/treatments', () => {
+      http.post(`${API_BASE}/risk-assessments/:assessmentId/treatments`, () => {
         return HttpResponse.json({ id: 1 })
       })
     )
@@ -566,7 +567,7 @@ describe('SOA API', () => {
     }
 
     server.use(
-      http.get('/api/v1/soa', () => {
+      http.get(`${API_BASE}/soa`, () => {
         return HttpResponse.json(mockResponse)
       })
     )
@@ -579,7 +580,7 @@ describe('SOA API', () => {
 
   it('generateSOA - SOA를 자동 생성해야 함', async () => {
     server.use(
-      http.post('/api/v1/soa/generate', () => {
+      http.post(`${API_BASE}/soa/generate`, () => {
         return HttpResponse.json({ message: 'SOA 생성 완료' })
       })
     )
@@ -590,7 +591,7 @@ describe('SOA API', () => {
 
   it('exportSOA - SOA를 내보내기해야 함', async () => {
     server.use(
-      http.get('/api/v1/soa/export', () => {
+      http.get(`${API_BASE}/soa/export`, () => {
         return HttpResponse.json({ download_url: '/downloads/soa.xlsx' })
       })
     )
@@ -629,7 +630,7 @@ describe('위험 평가 보고서 API', () => {
     }
 
     server.use(
-      http.get('/api/v1/risk-scenarios/:scenarioId/report', () => {
+      http.get(`${API_BASE}/risk-scenarios/:scenarioId/report`, () => {
         return HttpResponse.json(mockResponse)
       })
     )
@@ -643,7 +644,7 @@ describe('위험 평가 보고서 API', () => {
 
   it('exportRiskReport - 위험 평가 보고서를 내보내기해야 함', async () => {
     server.use(
-      http.get('/api/v1/risk-scenarios/:scenarioId/report/export', () => {
+      http.get(`${API_BASE}/risk-scenarios/:scenarioId/report/export`, () => {
         return HttpResponse.json({ download_url: '/downloads/report.xlsx' })
       })
     )

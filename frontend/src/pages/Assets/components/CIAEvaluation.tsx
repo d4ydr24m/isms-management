@@ -7,7 +7,7 @@ import { EditOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import type { AssetValuation, AssetValuationCreate } from '@/types'
 
-const { Text, Title } = Typography
+const { Text } = Typography
 const { Option } = Select
 const { TextArea } = Input
 
@@ -44,7 +44,7 @@ const calculateImportance = (c: number, i: number, a: number): number => {
   return Math.max(c, i, a)
 }
 
-const CIAEvaluation = ({ valuation, assetId, onUpdate, readonly = false }: CIAEvaluationProps) => {
+const CIAEvaluation = ({ valuation, assetId: _assetId, onUpdate, readonly = false }: CIAEvaluationProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [form] = Form.useForm()
   const [submitting, setSubmitting] = useState(false)

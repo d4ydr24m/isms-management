@@ -188,7 +188,7 @@ describe('useWebSocket', () => {
     it('최대 재연결 횟수에 도달하면 재연결을 중단한다', async () => {
       vi.useFakeTimers()
 
-      const { result } = renderHook(() => useWebSocket({
+      renderHook(() => useWebSocket({
         url: mockUrl,
         autoReconnect: true,
         reconnectInterval: 1000,

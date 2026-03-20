@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import AssetHistory from './AssetHistory'
-import type { AssetHistory as AssetHistoryType, AssetChangeType } from '@/types'
+import type { AssetHistory as AssetHistoryType } from '@/types'
 
 // 테스트용 Mock 데이터
 const mockHistoryCreated: AssetHistoryType = {

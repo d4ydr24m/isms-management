@@ -75,7 +75,7 @@ describe('PrivateRoute', () => {
       user: null,
     })
 
-    const { container } = render(
+    render(
       <MemoryRouter initialEntries={['/protected/resource']}>
         <Routes>
           <Route path="/login" element={<div>Login Page</div>} />

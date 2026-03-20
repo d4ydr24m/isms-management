@@ -159,7 +159,7 @@ export const ThreeWayMapping: React.FC<ThreeWayMappingProps> = ({
                 }
                 options={assets.map((asset) => ({
                   value: asset.id,
-                  label: `${asset.code} - ${asset.name}`,
+                  label: `${asset.assetCode} - ${asset.name}`,
                 }))}
               />
             </Space>

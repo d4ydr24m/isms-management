@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { BrowserRouter, MemoryRouter } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import SearchResults from './index'
 import { searchService } from '@/services/search'
 import type { SearchResponse } from '@/types'
@@ -190,7 +190,7 @@ describe('SearchResults 페이지', () => {
 
     renderWithRouter()
 
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(document.querySelector('.ant-spin')).toBeInTheDocument()
   })
 
   it('통제항목 결과에 번호와 카테고리가 표시됨', async () => {

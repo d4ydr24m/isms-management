@@ -29,7 +29,7 @@ function UserList() {
     try {
       const response = await userService.getUsers({
         page,
-        pageSize,
+        limit: pageSize,
         search: search || undefined,
         isActive: statusFilter,
       })
@@ -148,7 +148,7 @@ function UserList() {
           <SearchInput
             placeholder="이름 또는 이메일로 검색"
             onSearch={handleSearch}
-            style={{ width: 300 }}
+            width={300}
           />
           <Select
             placeholder="상태"

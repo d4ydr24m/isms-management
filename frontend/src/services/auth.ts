@@ -2,7 +2,6 @@ import { apiClient, handleApiError } from './api'
 import type {
   LoginRequest,
   LoginResponse,
-  TokenRefreshRequest,
   TokenRefreshResponse,
   MfaSetupResponse,
   MfaVerifyRequest,
@@ -16,7 +15,7 @@ export const authService = {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
       const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', credentials)
-      const { accessToken, refreshToken, user, requiresMfa } = response.data.data!
+      const { accessToken, refreshToken, requiresMfa } = response.data.data!
 
       if (!requiresMfa) {
         localStorage.setItem('accessToken', accessToken)
@@ -25,7 +24,7 @@ export const authService = {
 
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -49,7 +48,7 @@ export const authService = {
       })
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -59,7 +58,7 @@ export const authService = {
       const response = await apiClient.get<ApiResponse<CurrentUser>>('/auth/me')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -68,7 +67,7 @@ export const authService = {
     try {
       await apiClient.post('/auth/password/change', data)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -78,7 +77,7 @@ export const authService = {
       const response = await apiClient.post<ApiResponse<MfaSetupResponse>>('/auth/mfa/setup')
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -93,7 +92,7 @@ export const authService = {
 
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 }

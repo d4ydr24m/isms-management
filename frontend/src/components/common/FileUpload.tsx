@@ -27,7 +27,7 @@ const FileUpload = ({
   hintText = 'Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.',
   showUploadList = true,
 }: FileUploadProps) => {
-  const handleBeforeUpload: UploadProps['beforeUpload'] = (file, fileList) => {
+  const handleBeforeUpload: UploadProps['beforeUpload'] = (file, _fileList) => {
     // Validate file size
     if (maxSize && file.size > maxSize * 1024 * 1024) {
       const errorMsg = `File size must be less than ${maxSize}MB`

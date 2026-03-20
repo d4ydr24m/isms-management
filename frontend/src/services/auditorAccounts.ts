@@ -15,7 +15,7 @@ export const auditorAccountService = {
       const response = await apiClient.get<PaginatedResponse<AuditorAccount>>('/auditor-accounts', { params })
       return response.data
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -25,7 +25,7 @@ export const auditorAccountService = {
       const response = await apiClient.get<ApiResponse<AuditorAccount>>(`/auditor-accounts/${id}`)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -35,7 +35,7 @@ export const auditorAccountService = {
       const response = await apiClient.post<ApiResponse<AuditorAccount>>('/auditor-accounts', data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -45,7 +45,7 @@ export const auditorAccountService = {
       const response = await apiClient.put<ApiResponse<AuditorAccount>>(`/auditor-accounts/${id}`, data)
       return response.data.data!
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 
@@ -54,7 +54,7 @@ export const auditorAccountService = {
     try {
       await apiClient.delete(`/auditor-accounts/${id}`)
     } catch (error) {
-      handleApiError(error)
+      return handleApiError(error)
     }
   },
 }

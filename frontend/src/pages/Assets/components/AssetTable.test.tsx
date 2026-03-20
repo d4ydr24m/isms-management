@@ -3,7 +3,7 @@
  * TDD: RED -> GREEN -> REFACTOR
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import AssetTable from './AssetTable'
@@ -488,7 +488,10 @@ describe('AssetTable', () => {
       renderWithRouter(<AssetTable {...defaultProps} />)
 
       await waitFor(() => {
-        const link = screen.getByRole('link', { name: '메인 웹서버' })
+        // 자산명 컬럼의 링크 확인 - getAllByText로 찾은 후 가장 가까운 링크 확인
+        const nameElement = screen.getByText('메인 웹서버')
+        const link = nameElement.closest('a')
+        expect(link).not.toBeNull()
         expect(link).toHaveAttribute('href', '/assets/1')
       })
     })
@@ -508,7 +511,6 @@ describe('AssetTable', () => {
 
   describe('툴팁', () => {
     it('상세보기 버튼에 툴팁을 표시한다', async () => {
-      const user = userEvent.setup()
       renderWithRouter(<AssetTable {...defaultProps} />)
 
       await waitFor(() => {

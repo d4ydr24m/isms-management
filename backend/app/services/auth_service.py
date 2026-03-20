@@ -305,9 +305,7 @@ class AuthService:
 
     def logout(self, user: User, token: str) -> Dict[str, Any]:
         """
-        로그아웃 처리
-
-        TODO: Redis 블랙리스트에 토큰 추가
+        로그아웃 처리 - Redis 블랙리스트에 토큰 추가
 
         Args:
             user: 사용자
@@ -316,7 +314,27 @@ class AuthService:
         Returns:
             Dict with success
         """
-        # 현재 단순 구현 - 추후 Redis 블랙리스트 구현
+        try:
+            from app.services.session_service import session_service
+
+            # 토큰 디코딩하여 만료 시간 확인
+            payload = decode_token(token)
+            if payload and "exp" in payload:
+                # 토큰 만료까지 남은 시간 계산
+                exp_timestamp = payload["exp"]
+                now_timestamp = datetime.utcnow().timestamp()
+                expires_in = max(int(exp_timestamp - now_timestamp), 0)
+
+                # 블랙리스트에 추가 (만료 시간까지만 유지)
+                if expires_in > 0:
+                    session_service.add_token_to_blacklist(token, expires_in)
+
+            # 사용자의 세션 삭제
+            session_service.delete_session(f"session:{user.id}:{token[:32]}")
+        except Exception:
+            # Redis 연결 실패 시에도 로그아웃은 성공 처리
+            pass
+
         return {"success": True, "message": "로그아웃되었습니다."}
 
     def check_password_expiry(self, user: User) -> bool:

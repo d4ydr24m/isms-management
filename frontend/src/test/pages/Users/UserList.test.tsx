@@ -87,7 +87,7 @@ describe('UserList Component', () => {
       totalPages: 3,
     })
 
-    const user = userEvent.setup()
+    userEvent.setup()
     render(
       <BrowserRouter>
         <UserList />
