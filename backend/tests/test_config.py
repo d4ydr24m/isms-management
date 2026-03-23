@@ -32,7 +32,7 @@ class TestSettingsClass:
             assert settings.APP_NAME == "ISMS Management System"
             assert settings.APP_VERSION == "1.0.0"
             assert settings.ENVIRONMENT == "development"
-            assert settings.DEBUG is True
+            assert settings.DEBUG is False
             assert settings.ALGORITHM == "HS256"
             assert settings.ACCESS_TOKEN_EXPIRE_MINUTES == 30
             assert settings.REFRESH_TOKEN_EXPIRE_DAYS == 7

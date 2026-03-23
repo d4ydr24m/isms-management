@@ -49,8 +49,8 @@ const { Text } = Typography
 
 interface ThreatFilterParams {
   search?: string
-  threat_level?: 1 | 2 | 3
-  is_custom?: boolean
+  threatLevel?: 1 | 2 | 3
+  isCustom?: boolean
 }
 
 const ThreatDBPage = () => {
@@ -63,8 +63,8 @@ const ThreatDBPage = () => {
   })
   const [filters, setFilters] = useState<ThreatFilterParams>({
     search: '',
-    threat_level: undefined,
-    is_custom: undefined,
+    threatLevel: undefined,
+    isCustom: undefined,
   })
   const [modalVisible, setModalVisible] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
@@ -81,8 +81,8 @@ const ThreatDBPage = () => {
         page: pagination.current,
         limit: pagination.pageSize,
         search: filters.search || undefined,
-        threat_level: filters.threat_level,
-        is_custom: filters.is_custom,
+        threatLevel: filters.threatLevel,
+        isCustom: filters.isCustom,
       })
       setThreats(response.items)
       setPagination((prev) => ({
@@ -103,10 +103,10 @@ const ThreatDBPage = () => {
   // 통계 계산
   const stats = {
     total: pagination.total,
-    custom: threats.filter(t => t.is_custom).length,
+    custom: threats.filter(t => t.isCustom).length,
     byLevel: THREAT_LEVEL_OPTIONS.map(level => ({
       ...level,
-      count: threats.filter(t => t.threat_level === level.value).length,
+      count: threats.filter(t => t.threatLevel === level.value).length,
     })),
   }
 
@@ -127,13 +127,13 @@ const ThreatDBPage = () => {
 
   // 위협 레벨 필터 핸들러
   const handleLevelChange = (value?: 1 | 2 | 3) => {
-    setFilters((prev) => ({ ...prev, threat_level: value }))
+    setFilters((prev) => ({ ...prev, threatLevel: value }))
     setPagination((prev) => ({ ...prev, current: 1 }))
   }
 
   // 커스텀 필터 핸들러
   const handleCustomFilterChange = (checked: boolean) => {
-    setFilters((prev) => ({ ...prev, is_custom: checked ? true : undefined }))
+    setFilters((prev) => ({ ...prev, isCustom: checked ? true : undefined }))
     setPagination((prev) => ({ ...prev, current: 1 }))
   }
 
@@ -153,7 +153,7 @@ const ThreatDBPage = () => {
       code: threat.code,
       name: threat.name,
       description: threat.description,
-      threat_level: threat.threat_level,
+      threatLevel: threat.threatLevel,
     })
     setModalVisible(true)
   }
@@ -195,7 +195,7 @@ const ThreatDBPage = () => {
           code: values.code,
           name: values.name,
           description: values.description || '',
-          threat_level: values.threat_level,
+          threatLevel: values.threatLevel,
         }
         await createThreat(data)
         message.success('위협이 추가되었습니다')
@@ -203,7 +203,7 @@ const ThreatDBPage = () => {
         const data: ThreatUpdate = {
           name: values.name,
           description: values.description || '',
-          threat_level: values.threat_level,
+          threatLevel: values.threatLevel,
         }
         await updateThreat(editingThreat.id, data)
         message.success('위협이 수정되었습니다')
@@ -252,7 +252,7 @@ const ThreatDBPage = () => {
       render: (name: string, record: Threat) => (
         <Space>
           <a onClick={() => handleDetailClick(record)}>{name}</a>
-          {record.is_custom && (
+          {record.isCustom && (
             <Tag color="blue" style={{ margin: 0 }}>
               커스텀
             </Tag>
@@ -269,25 +269,25 @@ const ThreatDBPage = () => {
     },
     {
       title: '카테고리',
-      dataIndex: 'category_name',
-      key: 'category_name',
+      dataIndex: 'categoryName',
+      key: 'categoryName',
       width: 130,
       render: (name: string | null) => name || <Text type="secondary">-</Text>,
     },
     {
       title: '위협 레벨',
-      dataIndex: 'threat_level',
-      key: 'threat_level',
+      dataIndex: 'threatLevel',
+      key: 'threatLevel',
       width: 100,
       align: 'center',
       filters: THREAT_LEVEL_OPTIONS.map(l => ({ text: l.label, value: l.value })),
-      onFilter: (value, record) => record.threat_level === value,
+      onFilter: (value, record) => record.threatLevel === value,
       render: (level: 1 | 2 | 3) => getThreatLevelTag(level),
     },
     {
       title: '상태',
-      dataIndex: 'is_active',
-      key: 'is_active',
+      dataIndex: 'isActive',
+      key: 'isActive',
       width: 80,
       align: 'center',
       render: (active: boolean) =>
@@ -308,25 +308,25 @@ const ThreatDBPage = () => {
           >
             상세
           </Button>
-          <Tooltip title={!record.is_custom ? '기본 위협은 수정할 수 없습니다' : ''}>
+          <Tooltip title={!record.isCustom ? '기본 위협은 수정할 수 없습니다' : ''}>
             <Button
               type="link"
               size="small"
               icon={<EditOutlined />}
               onClick={() => handleEditClick(record)}
-              disabled={!record.is_custom}
+              disabled={!record.isCustom}
             >
               수정
             </Button>
           </Tooltip>
-          <Tooltip title={!record.is_custom ? '기본 위협은 삭제할 수 없습니다' : ''}>
+          <Tooltip title={!record.isCustom ? '기본 위협은 삭제할 수 없습니다' : ''}>
             <Button
               type="link"
               size="small"
               danger
               icon={<DeleteOutlined />}
               onClick={() => handleDeleteClick(record)}
-              disabled={!record.is_custom}
+              disabled={!record.isCustom}
             >
               삭제
             </Button>
@@ -488,7 +488,7 @@ const ThreatDBPage = () => {
           </Form.Item>
 
           <Form.Item
-            name="threat_level"
+            name="threatLevel"
             label={
               <Space>
                 <span>위협 레벨</span>
@@ -519,7 +519,7 @@ const ThreatDBPage = () => {
           <Space>
             <ThunderboltOutlined />
             <span>위협 상세 정보</span>
-            {selectedThreat?.is_custom && <Tag color="blue">커스텀</Tag>}
+            {selectedThreat?.isCustom && <Tag color="blue">커스텀</Tag>}
           </Space>
         }
         open={detailDrawerOpen}
@@ -529,7 +529,7 @@ const ThreatDBPage = () => {
         }}
         width={500}
         extra={
-          selectedThreat?.is_custom && (
+          selectedThreat?.isCustom && (
             <Button
               type="primary"
               size="small"
@@ -552,31 +552,31 @@ const ThreatDBPage = () => {
               {selectedThreat.description || <Text type="secondary">-</Text>}
             </Descriptions.Item>
             <Descriptions.Item label="카테고리">
-              {selectedThreat.category_name || <Text type="secondary">미분류</Text>}
+              {selectedThreat.categoryName || <Text type="secondary">미분류</Text>}
             </Descriptions.Item>
             <Descriptions.Item label="위협 레벨">
-              {getThreatLevelTag(selectedThreat.threat_level)}
+              {getThreatLevelTag(selectedThreat.threatLevel)}
             </Descriptions.Item>
             <Descriptions.Item label="유형">
-              {selectedThreat.is_custom ? (
+              {selectedThreat.isCustom ? (
                 <Tag color="blue">커스텀</Tag>
               ) : (
                 <Tag color="default">기본 제공</Tag>
               )}
             </Descriptions.Item>
             <Descriptions.Item label="상태">
-              {selectedThreat.is_active ? (
+              {selectedThreat.isActive ? (
                 <Tag color="success">활성</Tag>
               ) : (
                 <Tag color="default">비활성</Tag>
               )}
             </Descriptions.Item>
             <Descriptions.Item label="등록일">
-              {dayjs(selectedThreat.created_at).format('YYYY-MM-DD HH:mm')}
+              {dayjs(selectedThreat.createdAt).format('YYYY-MM-DD HH:mm')}
             </Descriptions.Item>
             <Descriptions.Item label="수정일">
-              {selectedThreat.updated_at
-                ? dayjs(selectedThreat.updated_at).format('YYYY-MM-DD HH:mm')
+              {selectedThreat.updatedAt
+                ? dayjs(selectedThreat.updatedAt).format('YYYY-MM-DD HH:mm')
                 : <Text type="secondary">-</Text>}
             </Descriptions.Item>
           </Descriptions>

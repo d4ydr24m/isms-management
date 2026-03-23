@@ -64,12 +64,12 @@ const ControlTree = ({
   }
 
   if (domains.length === 0) {
-    return <Empty description="No domains available" />
+    return <Empty description="사용 가능한 영역이 없습니다" />
   }
 
   return (
     <Tree
-      aria-label="Control domains tree"
+      aria-label="통제 영역 트리"
       showIcon
       treeData={treeData}
       onSelect={handleSelect}

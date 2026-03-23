@@ -17,11 +17,15 @@ export const settingsService = {
     }
   },
 
-  // 보안 설정 조회
+  // 보안 설정 조회 — /auth/me 에서 MFA 상태 등을 추출
   async getSecuritySettings(): Promise<SecuritySettings> {
     try {
-      const response = await apiClient.get<ApiResponse<SecuritySettings>>('/users/security')
-      return response.data.data!
+      const response = await apiClient.get<ApiResponse<any>>('/auth/me')
+      const user = response.data.data!
+      return {
+        isMfaEnabled: user.isMfaEnabled ?? false,
+        lastPasswordChange: user.lastPasswordChange ?? null,
+      }
     } catch (error) {
       return handleApiError(error)
     }

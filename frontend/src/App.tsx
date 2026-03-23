@@ -1,8 +1,30 @@
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, useLocation } from 'react-router-dom'
 import { ConfigProvider } from 'antd'
 import koKR from 'antd/locale/ko_KR'
 import { useThemeStore } from '@/stores/themeStore'
 import { getThemeConfig } from '@/theme/themeConfig'
+import { useAuthStore } from '@/stores/authStore'
+import MainLayout from '@/layouts/MainLayout'
+
+import AppRouter from '@/routes'
+
+const AUTH_PATHS = ['/login', '/auth/mfa-verify']
+
+function AppContent() {
+  const location = useLocation()
+  const { isAuthenticated } = useAuthStore()
+  const isAuthPage = AUTH_PATHS.some((p) => location.pathname.startsWith(p))
+
+  if (isAuthPage || !isAuthenticated) {
+    return <AppRouter />
+  }
+
+  return (
+    <MainLayout>
+      <AppRouter />
+    </MainLayout>
+  )
+}
 
 function App() {
   const { isDark } = useThemeStore()
@@ -11,10 +33,7 @@ function App() {
   return (
     <ConfigProvider locale={koKR} theme={themeConfig}>
       <BrowserRouter>
-        <div className="app">
-          <h1>ISMS Management System</h1>
-          <p>프로젝트 초기화 완료</p>
-        </div>
+        <AppContent />
       </BrowserRouter>
     </ConfigProvider>
   )

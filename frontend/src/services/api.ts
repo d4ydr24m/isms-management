@@ -1,31 +1,57 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios'
 
+// snake_case → camelCase 변환
+const toCamelCase = (str: string): string =>
+  str.replace(/_([a-z])/g, (_, c) => c.toUpperCase())
+
+// camelCase → snake_case 변환
+const toSnakeCase = (str: string): string =>
+  str.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)
+
+const convertKeys = (obj: any, converter: (key: string) => string): any => {
+  if (Array.isArray(obj)) {
+    return obj.map((item) => convertKeys(item, converter))
+  }
+  if (obj !== null && typeof obj === 'object' && !(obj instanceof Date) && !(obj instanceof File) && !(obj instanceof Blob)) {
+    return Object.keys(obj).reduce((acc: any, key: string) => {
+      acc[converter(key)] = convertKeys(obj[key], converter)
+      return acc
+    }, {})
+  }
+  return obj
+}
+
 // Axios 인스턴스 생성
+// withCredentials: true ensures HttpOnly cookies are sent with cross-origin requests
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 30000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 })
 
-// Request 인터셉터: Authorization 헤더 추가
+// Request 인터셉터: camelCase → snake_case 변환
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    if (config.data && !(config.data instanceof FormData)) {
+      config.data = convertKeys(config.data, toSnakeCase)
+    }
+    if (config.params) {
+      config.params = convertKeys(config.params, toSnakeCase)
     }
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
-// Response 인터셉터: 토큰 갱신 및 에러 처리
+// Response 인터셉터: snake_case → camelCase 변환 및 에러 처리
 apiClient.interceptors.response.use(
   (response) => {
+    if (response.data && typeof response.data === 'object') {
+      response.data = convertKeys(response.data, toCamelCase)
+    }
     return response
   },
   async (error: AxiosError) => {
@@ -36,30 +62,18 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken')
-        if (!refreshToken) {
-          throw new Error('No refresh token available')
-        }
-
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
-          { refreshToken }
+        // Cookie-based refresh (refresh_token cookie sent automatically)
+        const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+        await axios.post(
+          `${baseURL}/auth/refresh`,
+          {},
+          { withCredentials: true }
         )
 
-        const { accessToken, refreshToken: newRefreshToken } = response.data.data
-
-        localStorage.setItem('accessToken', accessToken)
-        localStorage.setItem('refreshToken', newRefreshToken)
-
-        if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`
-        }
-
+        // Retry the original request (new cookies are set by the refresh response)
         return apiClient(originalRequest)
       } catch (refreshError) {
         // 토큰 갱신 실패 시 로그아웃 처리
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
         window.location.href = '/auth/login'
         return Promise.reject(refreshError)
       }

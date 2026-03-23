@@ -138,14 +138,14 @@ const ControlListPage = () => {
 
   const columns: ColumnsType<ControlItem> = [
     {
-      title: 'Number',
+      title: '번호',
       dataIndex: 'number',
       key: 'number',
       width: 100,
       sorter: true,
     },
     {
-      title: 'Title',
+      title: '통제항목명',
       dataIndex: 'title',
       key: 'title',
       render: (text, record) => (
@@ -156,12 +156,12 @@ const ControlListPage = () => {
           >
             {text}
           </span>
-          {record.isRequired && <Tag color="red">Required</Tag>}
+          {record.isRequired && <Tag color="red">필수</Tag>}
         </Space>
       ),
     },
     {
-      title: 'Evidence',
+      title: '증적',
       dataIndex: 'evidenceCount',
       key: 'evidenceCount',
       width: 120,
@@ -178,7 +178,7 @@ const ControlListPage = () => {
       ),
     },
     {
-      title: 'Actions',
+      title: '작업',
       key: 'actions',
       width: 100,
       align: 'center',
@@ -187,9 +187,9 @@ const ControlListPage = () => {
           type="link"
           icon={<EyeOutlined />}
           onClick={() => handleRowClick(record)}
-          aria-label="View"
+          aria-label="보기"
         >
-          View
+          보기
         </Button>
       ),
     },
@@ -199,7 +199,7 @@ const ControlListPage = () => {
     <div>
       <Row gutter={16}>
         <Col xs={24} md={6}>
-          <Card title="Control Domains" size="small">
+          <Card title="통제 영역" size="small">
             <ControlTree
               domains={domains}
               onSelect={handleTreeSelect}
@@ -209,10 +209,10 @@ const ControlListPage = () => {
           </Card>
 
           {progress && (
-            <Card title="Progress" size="small" style={{ marginTop: 16 }}>
+            <Card title="진척률" size="small" style={{ marginTop: 16 }}>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <div>
-                  <Text type="secondary">Overall Progress</Text>
+                  <Text type="secondary">전체 진척률</Text>
                   <Progress
                     percent={progress.progressPercentage}
                     status="active"
@@ -221,14 +221,14 @@ const ControlListPage = () => {
                 <Row gutter={8}>
                   <Col span={12}>
                     <Statistic
-                      title="Total"
+                      title="전체"
                       value={progress.totalControls}
                       valueStyle={{ fontSize: 16 }}
                     />
                   </Col>
                   <Col span={12}>
                     <Statistic
-                      title="With Evidence"
+                      title="증적 확보"
                       value={progress.controlsWithEvidence}
                       valueStyle={{ fontSize: 16 }}
                     />
@@ -240,12 +240,12 @@ const ControlListPage = () => {
         </Col>
 
         <Col xs={24} md={18}>
-          <Card title="Control Items">
+          <Card title="통제항목 목록">
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
               <Row gutter={16}>
                 <Col xs={24} sm={12} md={10}>
                   <Input
-                    placeholder="Search by number or title"
+                    placeholder="번호 또는 제목으로 검색"
                     prefix={<SearchOutlined />}
                     onChange={(e) => handleSearch(e.target.value)}
                     allowClear
@@ -253,15 +253,15 @@ const ControlListPage = () => {
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Select
-                    placeholder="Filter by Type"
+                    placeholder="유형 필터"
                     style={{ width: '100%' }}
                     allowClear
                     onChange={handleRequiredChange}
                     value={filters.isRequired}
                   >
-                    <Option value={undefined}>All Items</Option>
-                    <Option value={true}>Required Only</Option>
-                    <Option value={false}>Optional Only</Option>
+                    <Option value={undefined}>전체 항목</Option>
+                    <Option value={true}>필수 항목만</Option>
+                    <Option value={false}>선택 항목만</Option>
                   </Select>
                 </Col>
               </Row>
@@ -274,7 +274,7 @@ const ControlListPage = () => {
                 pagination={{
                   ...pagination,
                   showSizeChanger: true,
-                  showTotal: (total) => `Total ${total} items`,
+                  showTotal: (total) => `총 ${total}건`,
                 }}
                 onChange={handleTableChange}
                 onRow={(record) => ({

@@ -75,9 +75,9 @@ import { RISK_LEVELS } from '@/types/risk'
 const { Option } = Select
 
 interface RiskAssessmentFilterParams {
-  asset_id?: number
-  risk_level?: RiskLevel
-  exceeds_doa?: boolean
+  assetId?: number
+  riskLevel?: RiskLevel
+  exceedsDoa?: boolean
 }
 
 const RiskAssessmentPage = () => {
@@ -216,17 +216,17 @@ const RiskAssessmentPage = () => {
 
   // 필터 핸들러
   const handleAssetFilterChange = (value?: number) => {
-    setFilters((prev) => ({ ...prev, asset_id: value }))
+    setFilters((prev) => ({ ...prev, assetId: value }))
     setPagination((prev) => ({ ...prev, current: 1 }))
   }
 
   const handleRiskLevelFilterChange = (value?: RiskLevel) => {
-    setFilters((prev) => ({ ...prev, risk_level: value }))
+    setFilters((prev) => ({ ...prev, riskLevel: value }))
     setPagination((prev) => ({ ...prev, current: 1 }))
   }
 
   const handleDoAFilterChange = (checked: boolean) => {
-    setFilters((prev) => ({ ...prev, exceeds_doa: checked ? true : undefined }))
+    setFilters((prev) => ({ ...prev, exceedsDoa: checked ? true : undefined }))
     setPagination((prev) => ({ ...prev, current: 1 }))
   }
 
@@ -243,12 +243,12 @@ const RiskAssessmentPage = () => {
     setModalMode('edit')
     setEditingAssessment(assessment)
     form.setFieldsValue({
-      asset_id: assessment.asset_id,
-      threat_id: assessment.threat_id,
-      vulnerability_id: assessment.vulnerability_id,
-      asset_value: assessment.asset_value,
-      threat_level: assessment.threat_level,
-      vulnerability_level: assessment.vulnerability_level,
+      assetId: assessment.assetId,
+      threatId: assessment.threatId,
+      vulnerabilityId: assessment.vulnerabilityId,
+      assetValue: assessment.assetValue,
+      threatLevel: assessment.threatLevel,
+      vulnerabilityLevel: assessment.vulnerabilityLevel,
       remarks: assessment.remarks,
     })
     setModalVisible(true)
@@ -285,21 +285,21 @@ const RiskAssessmentPage = () => {
 
       if (modalMode === 'create') {
         const data: RiskAssessmentCreate = {
-          asset_id: values.asset_id,
-          threat_id: values.threat_id,
-          vulnerability_id: values.vulnerability_id,
-          asset_value: values.asset_value,
-          threat_level: values.threat_level,
-          vulnerability_level: values.vulnerability_level,
+          assetId: values.assetId,
+          threatId: values.threatId,
+          vulnerabilityId: values.vulnerabilityId,
+          assetValue: values.assetValue,
+          threatLevel: values.threatLevel,
+          vulnerabilityLevel: values.vulnerabilityLevel,
           remarks: values.remarks || null,
         }
         await createRiskAssessment(parseInt(scenarioId), data)
         message.success('평가가 추가되었습니다')
       } else if (editingAssessment) {
         const data: RiskAssessmentUpdate = {
-          asset_value: values.asset_value,
-          threat_level: values.threat_level,
-          vulnerability_level: values.vulnerability_level,
+          assetValue: values.assetValue,
+          threatLevel: values.threatLevel,
+          vulnerabilityLevel: values.vulnerabilityLevel,
           remarks: values.remarks || null,
         }
         await updateRiskAssessment(editingAssessment.id, data)
@@ -338,16 +338,16 @@ const RiskAssessmentPage = () => {
       const assessments: RiskAssessmentCreate[] = []
 
       // 선택된 자산, 위협, 취약점 조합으로 평가 생성
-      for (const assetId of values.asset_ids) {
-        for (const threatId of values.threat_ids) {
-          for (const vulnerabilityId of values.vulnerability_ids) {
+      for (const assetId of values.assetIds) {
+        for (const threatId of values.threatIds) {
+          for (const vulnerabilityId of values.vulnerabilityIds) {
             assessments.push({
-              asset_id: assetId,
-              threat_id: threatId,
-              vulnerability_id: vulnerabilityId,
-              asset_value: values.asset_value,
-              threat_level: values.threat_level,
-              vulnerability_level: values.vulnerability_level,
+              assetId: assetId,
+              threatId: threatId,
+              vulnerabilityId: vulnerabilityId,
+              assetValue: values.assetValue,
+              threatLevel: values.threatLevel,
+              vulnerabilityLevel: values.vulnerabilityLevel,
               remarks: values.remarks || null,
             })
           }
@@ -404,66 +404,66 @@ const RiskAssessmentPage = () => {
   const columns: TableProps<RiskAssessment>['columns'] = [
     {
       title: '자산',
-      dataIndex: 'asset_name',
-      key: 'asset_name',
+      dataIndex: 'assetName',
+      key: 'assetName',
       width: 200,
       render: (name: string, record: RiskAssessment) => (
         <Space direction="vertical" size={0}>
           <span>{name}</span>
-          <span style={{ fontSize: '12px', color: '#8c8c8c' }}>{record.asset_code}</span>
+          <span style={{ fontSize: '12px', color: '#8c8c8c' }}>{record.assetCode}</span>
         </Space>
       ),
     },
     {
       title: '위협',
-      dataIndex: 'threat_name',
-      key: 'threat_name',
+      dataIndex: 'threatName',
+      key: 'threatName',
       width: 150,
     },
     {
       title: '취약점',
-      dataIndex: 'vulnerability_name',
-      key: 'vulnerability_name',
+      dataIndex: 'vulnerabilityName',
+      key: 'vulnerabilityName',
       width: 150,
     },
     {
       title: '자산가치',
-      dataIndex: 'asset_value',
-      key: 'asset_value',
+      dataIndex: 'assetValue',
+      key: 'assetValue',
       width: 80,
       align: 'center',
       render: (value: 1 | 2 | 3) => <Tag>{value}</Tag>,
     },
     {
       title: '위협등급',
-      dataIndex: 'threat_level',
-      key: 'threat_level',
+      dataIndex: 'threatLevel',
+      key: 'threatLevel',
       width: 80,
       align: 'center',
       render: (value: 1 | 2 | 3) => <Tag>{value}</Tag>,
     },
     {
       title: '취약점등급',
-      dataIndex: 'vulnerability_level',
-      key: 'vulnerability_level',
+      dataIndex: 'vulnerabilityLevel',
+      key: 'vulnerabilityLevel',
       width: 100,
       align: 'center',
       render: (value: 1 | 2 | 3) => <Tag>{value}</Tag>,
     },
     {
       title: '위험도',
-      key: 'risk_score',
+      key: 'riskScore',
       width: 120,
       align: 'center',
       render: (_: unknown, record: RiskAssessment) =>
-        getRiskLevelTag(record.risk_level, record.risk_score),
+        getRiskLevelTag(record.riskLevel, record.riskScore),
     },
     {
       title: '상태',
       key: 'status',
       width: 100,
       align: 'center',
-      render: (_: unknown, record: RiskAssessment) => renderDoABadge(record.exceeds_doa),
+      render: (_: unknown, record: RiskAssessment) => renderDoABadge(record.exceedsDoa),
     },
     {
       title: '작업',
@@ -497,9 +497,9 @@ const RiskAssessmentPage = () => {
   ]
 
   // 통계 계산
-  const highRiskCount = assessments.filter((a) => a.risk_level === 'high').length
-  const mediumRiskCount = assessments.filter((a) => a.risk_level === 'medium').length
-  const doaExceedingCount = assessments.filter((a) => a.exceeds_doa).length
+  const highRiskCount = assessments.filter((a) => a.riskLevel === 'high').length
+  const mediumRiskCount = assessments.filter((a) => a.riskLevel === 'medium').length
+  const doaExceedingCount = assessments.filter((a) => a.exceedsDoa).length
 
   return (
     <div>
@@ -529,8 +529,8 @@ const RiskAssessmentPage = () => {
         </Row>
         {doaConfig && (
           <Alert
-            message={`현재 DoA(허용 가능 위험 수준): ${doaConfig.threshold_value}`}
-            description={`${doaConfig.threshold_value}를 초과하는 위험은 즉시 조치가 필요합니다.`}
+            message={`현재 DoA(허용 가능 위험 수준): ${doaConfig.thresholdValue}`}
+            description={`${doaConfig.thresholdValue}를 초과하는 위험은 즉시 조치가 필요합니다.`}
             type="info"
             showIcon
             icon={<WarningOutlined />}
@@ -545,7 +545,7 @@ const RiskAssessmentPage = () => {
           <RiskMatrix
             data={matrixData}
             loading={matrixLoading}
-            doaThreshold={doaConfig?.threshold_value}
+            doaThreshold={doaConfig?.thresholdValue}
             onCellClick={(threatLevel, vulnLevel) => {
               setFilters({
                 ...filters,
@@ -623,7 +623,7 @@ const RiskAssessmentPage = () => {
               showTotal: (total) => `총 ${total}개`,
             }}
             onChange={handleTableChange}
-            rowClassName={(record) => (record.exceeds_doa ? 'doa-exceeding-row' : '')}
+            rowClassName={(record) => (record.exceedsDoa ? 'doa-exceeding-row' : '')}
           />
         </Space>
       </Card>
@@ -642,7 +642,7 @@ const RiskAssessmentPage = () => {
           {modalMode === 'create' && (
             <>
               <Form.Item
-                name="asset_id"
+                name="assetId"
                 label="자산"
                 rules={[{ required: true, message: '자산을 선택해주세요' }]}
               >
@@ -656,7 +656,7 @@ const RiskAssessmentPage = () => {
               </Form.Item>
 
               <Form.Item
-                name="threat_id"
+                name="threatId"
                 label="위협"
                 rules={[{ required: true, message: '위협을 선택해주세요' }]}
               >
@@ -670,7 +670,7 @@ const RiskAssessmentPage = () => {
               </Form.Item>
 
               <Form.Item
-                name="vulnerability_id"
+                name="vulnerabilityId"
                 label="취약점"
                 rules={[{ required: true, message: '취약점을 선택해주세요' }]}
               >
@@ -688,7 +688,7 @@ const RiskAssessmentPage = () => {
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item
-                name="asset_value"
+                name="assetValue"
                 label="자산가치"
                 rules={[{ required: true, message: '자산가치를 선택해주세요' }]}
               >
@@ -701,7 +701,7 @@ const RiskAssessmentPage = () => {
             </Col>
             <Col span={8}>
               <Form.Item
-                name="threat_level"
+                name="threatLevel"
                 label="위협등급"
                 rules={[{ required: true, message: '위협등급을 선택해주세요' }]}
               >
@@ -714,7 +714,7 @@ const RiskAssessmentPage = () => {
             </Col>
             <Col span={8}>
               <Form.Item
-                name="vulnerability_level"
+                name="vulnerabilityLevel"
                 label="취약점등급"
                 rules={[{ required: true, message: '취약점등급을 선택해주세요' }]}
               >
@@ -751,7 +751,7 @@ const RiskAssessmentPage = () => {
         />
         <Form form={bulkForm} layout="vertical">
           <Form.Item
-            name="asset_ids"
+            name="assetIds"
             label="자산 (복수 선택)"
             rules={[{ required: true, message: '최소 1개 이상의 자산을 선택해주세요' }]}
           >
@@ -765,7 +765,7 @@ const RiskAssessmentPage = () => {
           </Form.Item>
 
           <Form.Item
-            name="threat_ids"
+            name="threatIds"
             label="위협 (복수 선택)"
             rules={[{ required: true, message: '최소 1개 이상의 위협을 선택해주세요' }]}
           >
@@ -779,7 +779,7 @@ const RiskAssessmentPage = () => {
           </Form.Item>
 
           <Form.Item
-            name="vulnerability_ids"
+            name="vulnerabilityIds"
             label="취약점 (복수 선택)"
             rules={[{ required: true, message: '최소 1개 이상의 취약점을 선택해주세요' }]}
           >
@@ -795,7 +795,7 @@ const RiskAssessmentPage = () => {
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item
-                name="asset_value"
+                name="assetValue"
                 label="자산가치"
                 rules={[{ required: true, message: '자산가치를 선택해주세요' }]}
               >
@@ -808,7 +808,7 @@ const RiskAssessmentPage = () => {
             </Col>
             <Col span={8}>
               <Form.Item
-                name="threat_level"
+                name="threatLevel"
                 label="위협등급"
                 rules={[{ required: true, message: '위협등급을 선택해주세요' }]}
               >
@@ -821,7 +821,7 @@ const RiskAssessmentPage = () => {
             </Col>
             <Col span={8}>
               <Form.Item
-                name="vulnerability_level"
+                name="vulnerabilityLevel"
                 label="취약점등급"
                 rules={[{ required: true, message: '취약점등급을 선택해주세요' }]}
               >

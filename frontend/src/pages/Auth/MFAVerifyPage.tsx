@@ -45,7 +45,7 @@ const MFAVerifyPage = () => {
         navigate('/dashboard')
       }
     } catch (err: any) {
-      setError(err.message || 'Verification failed')
+      setError(err.message || '인증에 실패했습니다')
       setCode('')
       form.setFieldsValue({ code: '' })
     } finally {
@@ -90,9 +90,9 @@ const MFAVerifyPage = () => {
       >
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
           <SafetyOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
-          <h1 style={{ marginTop: '16px' }}>Two-Factor Authentication</h1>
+          <h1 style={{ marginTop: '16px' }}>2단계 인증</h1>
           <p style={{ color: '#666', marginTop: '8px' }}>
-            Enter the 6-digit code from your authenticator app
+            인증 앱에 표시된 6자리 코드를 입력해 주세요
           </p>
         </div>
 
@@ -117,10 +117,10 @@ const MFAVerifyPage = () => {
           <Form.Item
             name="code"
             rules={[
-              { required: true, message: 'Please input verification code!' },
+              { required: true, message: '인증 코드를 입력해 주세요' },
               {
                 len: 6,
-                message: 'Code must be exactly 6 digits!',
+                message: '인증 코드는 6자리여야 합니다',
               },
             ]}
           >
@@ -129,7 +129,7 @@ const MFAVerifyPage = () => {
               placeholder="000000"
               maxLength={6}
               disabled={isLoading}
-              aria-label="Verification code"
+              aria-label="인증 코드"
               value={code}
               onChange={handleCodeChange}
               style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '8px' }}
@@ -138,13 +138,13 @@ const MFAVerifyPage = () => {
 
           <Form.Item>
             <Button type="primary" htmlType="submit" block disabled={isLoading}>
-              {isLoading ? 'Verifying...' : 'Verify'}
+              {isLoading ? '확인 중...' : '확인'}
             </Button>
           </Form.Item>
         </Form>
 
         <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <Link to="/login">Back to login</Link>
+          <Link to="/login">로그인으로 돌아가기</Link>
         </div>
       </div>
     </div>

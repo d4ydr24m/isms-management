@@ -34,7 +34,7 @@ const LoginPage = () => {
         navigate(from)
       }
     } catch (err: any) {
-      setLocalError(err.message || 'Login failed')
+      setLocalError(err.message || '로그인에 실패했습니다')
     }
   }
 
@@ -65,7 +65,7 @@ const LoginPage = () => {
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
         }}
       >
-        <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>ISMS Management</h1>
+        <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>ISMS 관리 시스템</h1>
 
         {(localError || error) && (
           <Alert
@@ -92,42 +92,42 @@ const LoginPage = () => {
           <Form.Item
             name="email"
             rules={[
-              { required: true, message: 'Please input your email!' },
-              { type: 'email', message: 'Please enter a valid email!' },
+              { required: true, message: '이메일을 입력해 주세요' },
+              { type: 'email', message: '올바른 이메일 형식을 입력해 주세요' },
             ]}
           >
             <Input
               prefix={<UserOutlined />}
-              placeholder="Email"
+              placeholder="이메일"
               disabled={isLoading}
-              aria-label="Email"
+              aria-label="이메일"
             />
           </Form.Item>
 
           <Form.Item
             name="password"
-            rules={[{ required: true, message: 'Please input your password!' }]}
+            rules={[{ required: true, message: '비밀번호를 입력해 주세요' }]}
           >
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder="Password"
+              placeholder="비밀번호"
               disabled={isLoading}
-              aria-label="Password"
+              aria-label="비밀번호"
             />
           </Form.Item>
 
           <Form.Item>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Form.Item name="remember" valuePropName="checked" noStyle>
-                <Checkbox disabled={isLoading}>Remember me</Checkbox>
+                <Checkbox disabled={isLoading}>로그인 상태 유지</Checkbox>
               </Form.Item>
-              <a href="/auth/forgot-password">Forgot password?</a>
+              <a href="/auth/forgot-password">비밀번호 찾기</a>
             </div>
           </Form.Item>
 
           <Form.Item>
             <Button type="primary" htmlType="submit" block disabled={isLoading}>
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isLoading ? '로그인 중...' : '로그인'}
             </Button>
           </Form.Item>
         </Form>

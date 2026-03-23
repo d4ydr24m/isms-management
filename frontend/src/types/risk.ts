@@ -14,11 +14,11 @@ export interface ThreatCategory {
   code: string
   name: string
   description: string | null
-  parent_id: number | null
-  sort_order: number
-  is_active: boolean
-  created_at: string
-  updated_at: string | null
+  parentId: number | null
+  sortOrder: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string | null
   children?: ThreatCategory[]
 }
 
@@ -26,8 +26,8 @@ export interface ThreatCategoryCreate {
   code: string
   name: string
   description?: string | null
-  parent_id?: number | null
-  sort_order?: number
+  parentId?: number | null
+  sortOrder?: number
 }
 
 // =============================================================================
@@ -39,29 +39,29 @@ export interface Threat {
   code: string
   name: string
   description: string | null
-  category_id: number | null
-  category_name: string | null
-  threat_level: 1 | 2 | 3 // 1: 하, 2: 중, 3: 상
-  is_custom: boolean
-  is_active: boolean
-  created_at: string
-  updated_at: string | null
+  categoryId: number | null
+  categoryName: string | null
+  threatLevel: 1 | 2 | 3 // 1: 하, 2: 중, 3: 상
+  isCustom: boolean
+  isActive: boolean
+  createdAt: string
+  updatedAt: string | null
 }
 
 export interface ThreatCreate {
   code: string
   name: string
   description?: string | null
-  category_id?: number | null
-  threat_level?: 1 | 2 | 3
+  categoryId?: number | null
+  threatLevel?: 1 | 2 | 3
 }
 
 export interface ThreatUpdate {
   name?: string
   description?: string | null
-  category_id?: number | null
-  threat_level?: 1 | 2 | 3
-  is_active?: boolean
+  categoryId?: number | null
+  threatLevel?: 1 | 2 | 3
+  isActive?: boolean
 }
 
 export interface ThreatList {
@@ -78,19 +78,19 @@ export interface VulnerabilityCategory {
   code: string
   name: string
   description: string | null
-  parent_id: number | null
-  sort_order: number
-  is_active: boolean
-  created_at: string
-  updated_at: string | null
+  parentId: number | null
+  sortOrder: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string | null
 }
 
 export interface VulnerabilityCategoryCreate {
   code: string
   name: string
   description?: string | null
-  parent_id?: number | null
-  sort_order?: number
+  parentId?: number | null
+  sortOrder?: number
 }
 
 // =============================================================================
@@ -102,29 +102,29 @@ export interface Vulnerability {
   code: string
   name: string
   description: string | null
-  category_id: number | null
-  category_name: string | null
-  vulnerability_level: 1 | 2 | 3 // 1: 하, 2: 중, 3: 상
-  is_custom: boolean
-  is_active: boolean
-  created_at: string
-  updated_at: string | null
+  categoryId: number | null
+  categoryName: string | null
+  vulnerabilityLevel: 1 | 2 | 3 // 1: 하, 2: 중, 3: 상
+  isCustom: boolean
+  isActive: boolean
+  createdAt: string
+  updatedAt: string | null
 }
 
 export interface VulnerabilityCreate {
   code: string
   name: string
   description?: string | null
-  category_id?: number | null
-  vulnerability_level?: 1 | 2 | 3
+  categoryId?: number | null
+  vulnerabilityLevel?: 1 | 2 | 3
 }
 
 export interface VulnerabilityUpdate {
   name?: string
   description?: string | null
-  category_id?: number | null
-  vulnerability_level?: 1 | 2 | 3
-  is_active?: boolean
+  categoryId?: number | null
+  vulnerabilityLevel?: 1 | 2 | 3
+  isActive?: boolean
 }
 
 export interface VulnerabilityList {
@@ -136,30 +136,30 @@ export type RemediationStatus = 'open' | 'in_progress' | 'closed' | 'accepted'
 
 export interface VulnerabilityAssessment {
   id: number
-  asset_id: number
-  asset_name: string | null
-  asset_code: string | null
-  vulnerability_id: number
-  vulnerability_name: string | null
-  vulnerability_code: string | null
-  is_vulnerable: boolean
-  assessment_date: string
-  assessed_by: number | null
-  assessor_name: string | null
+  assetId: number
+  assetName: string | null
+  assetCode: string | null
+  vulnerabilityId: number
+  vulnerabilityName: string | null
+  vulnerabilityCode: string | null
+  isVulnerable: boolean
+  assessmentDate: string
+  assessedBy: number | null
+  assessorName: string | null
   findings: string | null
-  remediation_status: RemediationStatus
-  remediation_date: string | null
+  remediationStatus: RemediationStatus
+  remediationDate: string | null
   remarks: string | null
-  created_at: string
+  createdAt: string
 }
 
 export interface VulnerabilityAssessmentCreate {
-  asset_id: number
-  vulnerability_id: number
-  is_vulnerable?: boolean
-  assessment_date: string
+  assetId: number
+  vulnerabilityId: number
+  isVulnerable?: boolean
+  assessmentDate: string
   findings?: string | null
-  remediation_status?: RemediationStatus
+  remediationStatus?: RemediationStatus
   remarks?: string | null
 }
 
@@ -181,31 +181,31 @@ export interface RiskScenario {
   id: number
   name: string
   description: string | null
-  start_date: string
-  end_date: string | null
+  startDate: string
+  endDate: string | null
   status: RiskScenarioStatus
-  created_by: number
-  creator_name: string | null
-  completed_at: string | null
-  created_at: string
-  updated_at: string | null
-  assessment_count: number
-  high_risk_count: number
-  exceeding_doa_count: number
+  createdBy: number
+  creatorName: string | null
+  completedAt: string | null
+  createdAt: string
+  updatedAt: string | null
+  assessmentCount: number
+  highRiskCount: number
+  exceedingDoaCount: number
 }
 
 export interface RiskScenarioCreate {
   name: string
   description?: string | null
-  start_date: string
-  end_date?: string | null
+  startDate: string
+  endDate?: string | null
 }
 
 export interface RiskScenarioUpdate {
   name?: string
   description?: string | null
-  start_date?: string
-  end_date?: string | null
+  startDate?: string
+  endDate?: string | null
   status?: RiskScenarioStatus
 }
 
@@ -225,43 +225,43 @@ export type RiskLevel = 'low' | 'medium' | 'high'
 
 export interface RiskAssessment {
   id: number
-  scenario_id: number
-  asset_id: number
-  asset_name: string | null
-  asset_code: string | null
-  threat_id: number
-  threat_name: string | null
-  vulnerability_id: number
-  vulnerability_name: string | null
-  asset_value: 1 | 2 | 3 // 1: 하, 2: 중, 3: 상
-  threat_level: 1 | 2 | 3
-  vulnerability_level: 1 | 2 | 3
-  risk_score: number | null
-  risk_level: RiskLevel | null
-  exceeds_doa: boolean
-  evaluated_by: number | null
-  evaluator_name: string | null
-  evaluated_at: string | null
+  scenarioId: number
+  assetId: number
+  assetName: string | null
+  assetCode: string | null
+  threatId: number
+  threatName: string | null
+  vulnerabilityId: number
+  vulnerabilityName: string | null
+  assetValue: 1 | 2 | 3 // 1: 하, 2: 중, 3: 상
+  threatLevel: 1 | 2 | 3
+  vulnerabilityLevel: 1 | 2 | 3
+  riskScore: number | null
+  riskLevel: RiskLevel | null
+  exceedsDoa: boolean
+  evaluatedBy: number | null
+  evaluatorName: string | null
+  evaluatedAt: string | null
   remarks: string | null
-  created_at: string
-  updated_at: string | null
-  has_treatment_plan: boolean
+  createdAt: string
+  updatedAt: string | null
+  hasTreatmentPlan: boolean
 }
 
 export interface RiskAssessmentCreate {
-  asset_id: number
-  threat_id: number
-  vulnerability_id: number
-  asset_value: 1 | 2 | 3
-  threat_level: 1 | 2 | 3
-  vulnerability_level: 1 | 2 | 3
+  assetId: number
+  threatId: number
+  vulnerabilityId: number
+  assetValue: 1 | 2 | 3
+  threatLevel: 1 | 2 | 3
+  vulnerabilityLevel: 1 | 2 | 3
   remarks?: string | null
 }
 
 export interface RiskAssessmentUpdate {
-  asset_value?: 1 | 2 | 3
-  threat_level?: 1 | 2 | 3
-  vulnerability_level?: 1 | 2 | 3
+  assetValue?: 1 | 2 | 3
+  threatLevel?: 1 | 2 | 3
+  vulnerabilityLevel?: 1 | 2 | 3
   remarks?: string | null
 }
 
@@ -283,34 +283,34 @@ export interface RiskAssessmentBulkCreate {
 
 export interface DoAConfig {
   id: number
-  threshold_value: number // 1-27
-  effective_date: string
-  expiry_date: string | null
+  thresholdValue: number // 1-27
+  effectiveDate: string
+  expiryDate: string | null
   remarks: string | null
-  approved_by: number | null
-  approver_name: string | null
-  approval_date: string | null
-  is_active: boolean
-  created_at: string
-  updated_at: string | null
+  approvedBy: number | null
+  approverName: string | null
+  approvalDate: string | null
+  isActive: boolean
+  createdAt: string
+  updatedAt: string | null
 }
 
 export interface DoAConfigCreate {
-  threshold_value: number
-  effective_date: string
-  expiry_date?: string | null
+  thresholdValue: number
+  effectiveDate: string
+  expiryDate?: string | null
   remarks?: string | null
 }
 
 export interface DoAHistory {
   id: number
-  doa_config_id: number
-  old_threshold: number | null
-  new_threshold: number
-  change_reason: string | null
-  changed_by: number
-  changer_name: string | null
-  changed_at: string
+  doaConfigId: number
+  oldThreshold: number | null
+  newThreshold: number
+  changeReason: string | null
+  changedBy: number
+  changerName: string | null
+  changedAt: string
 }
 
 // =============================================================================
@@ -322,40 +322,40 @@ export type TreatmentStatus = 'planned' | 'in_progress' | 'completed' | 'cancell
 
 export interface RiskTreatmentPlan {
   id: number
-  risk_assessment_id: number
-  risk_score: number | null
-  risk_level: RiskLevel | null
-  asset_name: string | null
-  threat_name: string | null
-  vulnerability_name: string | null
+  riskAssessmentId: number
+  riskScore: number | null
+  riskLevel: RiskLevel | null
+  assetName: string | null
+  threatName: string | null
+  vulnerabilityName: string | null
   strategy: TreatmentStrategy
-  strategy_name: string | null // 한글 전략명
+  strategyName: string | null // 한글 전략명
   description: string | null
-  assignee_id: number | null
-  assignee_name: string | null
-  due_date: string | null
+  assigneeId: number | null
+  assigneeName: string | null
+  dueDate: string | null
   budget: number | null
   status: TreatmentStatus
-  completed_at: string | null
-  created_at: string
-  updated_at: string | null
-  action_count: number
-  latest_residual_risk: number | null
+  completedAt: string | null
+  createdAt: string
+  updatedAt: string | null
+  actionCount: number
+  latestResidualRisk: number | null
 }
 
 export interface RiskTreatmentPlanCreate {
   strategy: TreatmentStrategy
   description?: string | null
-  assignee_id?: number | null
-  due_date?: string | null
+  assigneeId?: number | null
+  dueDate?: string | null
   budget?: number | null
 }
 
 export interface RiskTreatmentPlanUpdate {
   strategy?: TreatmentStrategy
   description?: string | null
-  assignee_id?: number | null
-  due_date?: string | null
+  assigneeId?: number | null
+  dueDate?: string | null
   budget?: number | null
   status?: TreatmentStatus
 }
@@ -370,31 +370,31 @@ export interface RiskTreatmentPlanList {
 
 export interface RiskTreatmentAction {
   id: number
-  plan_id: number
-  action_description: string
+  planId: number
+  actionDescription: string
   result: string | null
-  residual_risk_score: number | null
-  completed_by: number | null
-  completer_name: string | null
-  completed_at: string | null
-  evidence_file_path: string | null
-  created_at: string
+  residualRiskScore: number | null
+  completedBy: number | null
+  completerName: string | null
+  completedAt: string | null
+  evidenceFilePath: string | null
+  createdAt: string
 }
 
 export interface RiskTreatmentActionCreate {
-  action_description: string
+  actionDescription: string
   result?: string | null
-  residual_risk_score?: number | null
-  evidence_file_path?: string | null
+  residualRiskScore?: number | null
+  evidenceFilePath?: string | null
 }
 
 export interface RiskTreatmentProgress {
   total: number
   completed: number
-  in_progress: number
+  inProgress: number
   planned: number
   cancelled: number
-  completion_rate: number
+  completionRate: number
 }
 
 // =============================================================================
@@ -410,37 +410,37 @@ export type ImplementationStatus =
 
 export interface SOARecord {
   id: number
-  control_item_id: number
-  control_code: string | null
-  control_title: string | null
-  control_description: string | null
-  is_applicable: boolean
-  exclusion_reason: string | null
-  implementation_status: ImplementationStatus
-  implementation_status_name: string | null // 한글명
-  implementation_evidence: string | null
-  related_assets: string | null
-  related_risks: string | null
+  controlItemId: number
+  controlCode: string | null
+  controlTitle: string | null
+  controlDescription: string | null
+  isApplicable: boolean
+  exclusionReason: string | null
+  implementationStatus: ImplementationStatus
+  implementationStatusName: string | null // 한글명
+  implementationEvidence: string | null
+  relatedAssets: string | null
+  relatedRisks: string | null
   remarks: string | null
-  created_at: string
-  updated_at: string | null
+  createdAt: string
+  updatedAt: string | null
 }
 
 export interface SOARecordUpdate {
-  is_applicable?: boolean
-  exclusion_reason?: string | null
-  implementation_status?: ImplementationStatus
-  implementation_evidence?: string | null
-  related_assets?: string | null
-  related_risks?: string | null
+  isApplicable?: boolean
+  exclusionReason?: string | null
+  implementationStatus?: ImplementationStatus
+  implementationEvidence?: string | null
+  relatedAssets?: string | null
+  relatedRisks?: string | null
   remarks?: string | null
 }
 
 export interface SOARecordList {
   items: SOARecord[]
   total: number
-  applicable_count: number
-  not_applicable_count: number
+  applicableCount: number
+  notApplicableCount: number
 }
 
 export type SOAExportFormat = 'excel' | 'word'
@@ -448,7 +448,7 @@ export type SOATemplateType = 'isms_p' | 'iso27001'
 
 export interface SOAExportRequest {
   format: SOAExportFormat
-  template_type: SOATemplateType
+  templateType: SOATemplateType
 }
 
 // =============================================================================
@@ -471,34 +471,34 @@ export interface RiskMatrixData {
 }
 
 export interface ScenarioComparison {
-  scenario1_id: number
-  scenario1_name: string
-  scenario2_id: number
-  scenario2_name: string
-  risk_count_diff: number
-  high_risk_diff: number
-  avg_risk_score_diff: number
+  scenario1Id: number
+  scenario1Name: string
+  scenario2Id: number
+  scenario2Name: string
+  riskCountDiff: number
+  highRiskDiff: number
+  avgRiskScoreDiff: number
 }
 
 export interface RiskReportSummary {
-  scenario_id: number
-  scenario_name: string
-  assessment_period: string
-  total_assets: number
-  total_risks: number
-  risk_distribution: RiskDistribution
-  exceeding_doa_count: number
-  treatment_progress: RiskTreatmentProgress
-  top_risks: RiskAssessment[]
+  scenarioId: number
+  scenarioName: string
+  assessmentPeriod: string
+  totalAssets: number
+  totalRisks: number
+  riskDistribution: RiskDistribution
+  exceedingDoaCount: number
+  treatmentProgress: RiskTreatmentProgress
+  topRisks: RiskAssessment[]
 }
 
 export interface ExecutiveSummary {
-  report_date: string
-  scenario_name: string
-  key_findings: string[]
-  risk_overview: Record<string, unknown>
+  reportDate: string
+  scenarioName: string
+  keyFindings: string[]
+  riskOverview: Record<string, unknown>
   recommendations: string[]
-  action_items: Array<Record<string, unknown>>
+  actionItems: Array<Record<string, unknown>>
 }
 
 // =============================================================================
@@ -509,21 +509,21 @@ export type LinkType = 'primary' | 'secondary' | 'related'
 
 export interface RiskTreatmentControlLink {
   id: number
-  treatment_plan_id: number
-  control_item_id: number
-  link_type: LinkType
-  effectiveness_rating: number | null // 0.0 ~ 1.0
+  treatmentPlanId: number
+  controlItemId: number
+  linkType: LinkType
+  effectivenessRating: number | null // 0.0 ~ 1.0
   remarks: string | null
-  created_by: number | null
-  created_at: string
-  updated_at: string | null
+  createdBy: number | null
+  createdAt: string
+  updatedAt: string | null
 }
 
 export interface RiskTreatmentControlLinkCreate {
-  treatment_plan_id: number
-  control_item_ids: number[]
-  link_type?: LinkType
-  effectiveness_rating?: number | null
+  treatmentPlanId: number
+  controlItemIds: number[]
+  linkType?: LinkType
+  effectivenessRating?: number | null
   remarks?: string | null
 }
 
@@ -535,40 +535,40 @@ export interface ControlItemBrief {
 
 export interface LinkedControlDetail {
   id: number
-  control_item: ControlItemBrief
-  link_type: LinkType
-  effectiveness_rating: number | null
-  created_at: string
+  controlItem: ControlItemBrief
+  linkType: LinkType
+  effectivenessRating: number | null
+  createdAt: string
   remarks: string | null
 }
 
 export interface ControlEffectivenessAnalysis {
-  control_item_id: number
-  linked_treatment_count: number
-  average_effectiveness: number
-  implementation_rate: number
-  residual_risk_summary: Record<string, unknown>
+  controlItemId: number
+  linkedTreatmentCount: number
+  averageEffectiveness: number
+  implementationRate: number
+  residualRiskSummary: Record<string, unknown>
 }
 
 export interface RiskControlCoverageAnalysis {
-  total_risks: number
-  controlled_risks: number
-  coverage_percentage: number
+  totalRisks: number
+  controlledRisks: number
+  coveragePercentage: number
 }
 
 export interface RiskControlMatrixResponse {
   matrix: Array<Record<string, unknown>>
-  coverage_analysis: RiskControlCoverageAnalysis
-  uncontrolled_risks: Array<Record<string, unknown>>
-  control_summary: Record<string, unknown>
+  coverageAnalysis: RiskControlCoverageAnalysis
+  uncontrolledRisks: Array<Record<string, unknown>>
+  controlSummary: Record<string, unknown>
 }
 
 export interface ResidualRiskTrendResponse {
-  treatment_plan_id: number
-  initial_risk_score: number
-  current_residual_score: number
-  trend_data: Array<Record<string, unknown>>
-  reduction_percentage: number
+  treatmentPlanId: number
+  initialRiskScore: number
+  currentResidualScore: number
+  trendData: Array<Record<string, unknown>>
+  reductionPercentage: number
 }
 
 // =============================================================================
@@ -753,11 +753,11 @@ export function calculateRiskDistribution(assessments: RiskAssessment[]): RiskDi
   }
 
   assessments.forEach(assessment => {
-    if (assessment.risk_level === 'high') {
+    if (assessment.riskLevel === 'high') {
       distribution.high++
-    } else if (assessment.risk_level === 'medium') {
+    } else if (assessment.riskLevel === 'medium') {
       distribution.medium++
-    } else if (assessment.risk_level === 'low') {
+    } else if (assessment.riskLevel === 'low') {
       distribution.low++
     }
   })

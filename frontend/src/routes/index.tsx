@@ -26,6 +26,11 @@ import AssetListPage from '@/pages/Assets'
 import AssetDetail from '@/pages/Assets/AssetDetail'
 import AssetCreate from '@/pages/Assets/AssetCreate'
 import AssetImport from '@/pages/Assets/AssetImport'
+// Controls Management
+import ControlsPage from '@/pages/Controls'
+import ControlDetail from '@/pages/Controls/ControlDetail'
+// Settings
+import SettingsPage from '@/pages/Settings'
 // Risk Management
 import RiskIndexPage from '@/pages/Risk'
 import RiskScenarioDetail from '@/pages/Risk/RiskScenarioDetail'
@@ -246,6 +251,34 @@ const AppRouter = () => {
         element={
           <PrivateRoute>
             <AssetCreate />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Controls Management routes */}
+      <Route
+        path="/controls"
+        element={
+          <PrivateRoute>
+            <ControlsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/controls/:id"
+        element={
+          <PrivateRoute>
+            <ControlDetail />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Settings route */}
+      <Route
+        path="/settings"
+        element={
+          <PrivateRoute>
+            <SettingsPage />
           </PrivateRoute>
         }
       />

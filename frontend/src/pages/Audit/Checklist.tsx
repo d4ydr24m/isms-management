@@ -46,10 +46,10 @@ const resultColors: Record<ChecklistResultType, string> = {
 }
 
 const resultLabels: Record<ChecklistResultType, string> = {
-  conforming: 'Conforming',
-  non_conforming: 'Non-conforming',
-  observation: 'Observation',
-  not_applicable: 'Not Applicable',
+  conforming: '적합',
+  non_conforming: '부적합',
+  observation: '관찰사항',
+  not_applicable: '해당없음',
 }
 
 interface ChecklistItemEdit {
@@ -101,7 +101,7 @@ const ChecklistPage = () => {
       })
       setEditedItems(initialEdits)
     } catch {
-      message.error('Failed to load checklist')
+      message.error('체크리스트를 불러오는데 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -171,7 +171,7 @@ const ChecklistPage = () => {
         )
       )
 
-      message.success('Checklist saved successfully')
+      message.success('체크리스트가 저장되었습니다')
 
       // Reset modified flags
       setEditedItems((prev) => {
@@ -182,7 +182,7 @@ const ChecklistPage = () => {
         return newMap
       })
     } catch {
-      message.error('Failed to save checklist')
+      message.error('체크리스트 저장에 실패했습니다')
     } finally {
       setSaving(false)
     }
@@ -195,33 +195,33 @@ const ChecklistPage = () => {
 
     if (uncheckedCount > 0) {
       Modal.confirm({
-        title: 'Confirm Complete Audit',
-        content: `There are ${uncheckedCount} unchecked items. Are you sure you want to complete the audit?`,
-        okText: 'Confirm',
-        cancelText: 'Cancel',
+        title: '감사 완료 확인',
+        content: `미점검 항목이 ${uncheckedCount}건 있습니다. 감사를 완료하시겠습니까?`,
+        okText: '확인',
+        cancelText: '취소',
         onOk: async () => {
           try {
             await auditService.updateAudit(Number(auditId), { status: 'completed' })
-            message.success('Audit completed successfully')
+            message.success('감사가 완료되었습니다')
             navigate(`/audits/${auditId}`)
           } catch {
-            message.error('Failed to complete audit')
+            message.error('감사 완료에 실패했습니다')
           }
         },
       })
     } else {
       Modal.confirm({
-        title: 'Confirm Complete Audit',
-        content: 'Are you sure you want to complete this audit?',
-        okText: 'Confirm',
-        cancelText: 'Cancel',
+        title: '감사 완료 확인',
+        content: '이 감사를 완료하시겠습니까?',
+        okText: '확인',
+        cancelText: '취소',
         onOk: async () => {
           try {
             await auditService.updateAudit(Number(auditId), { status: 'completed' })
-            message.success('Audit completed successfully')
+            message.success('감사가 완료되었습니다')
             navigate(`/audits/${auditId}`)
           } catch {
-            message.error('Failed to complete audit')
+            message.error('감사 완료에 실패했습니다')
           }
         },
       })
@@ -266,14 +266,14 @@ const ChecklistPage = () => {
 
   const columns: ColumnsType<AuditChecklist> = [
     {
-      title: 'No.',
+      title: '번호',
       dataIndex: 'order',
       key: 'order',
       width: 60,
       align: 'center',
     },
     {
-      title: 'Control Item',
+      title: '통제항목',
       key: 'controlItem',
       width: 300,
       render: (_, record) => (
@@ -285,7 +285,7 @@ const ChecklistPage = () => {
       ),
     },
     {
-      title: 'Result',
+      title: '결과',
       key: 'result',
       width: 180,
       render: (_, record) => {
@@ -295,7 +295,7 @@ const ChecklistPage = () => {
             style={{ width: '100%' }}
             value={edited?.result || undefined}
             onChange={(value) => handleResultChange(record.id, value)}
-            placeholder="Select result"
+            placeholder="결과 선택"
             aria-label="result"
           >
             <Option value="conforming">
@@ -315,7 +315,7 @@ const ChecklistPage = () => {
       },
     },
     {
-      title: 'Findings/Notes',
+      title: '소견/비고',
       key: 'findings',
       render: (_, record) => {
         const edited = editedItems.get(record.id)
@@ -324,13 +324,13 @@ const ChecklistPage = () => {
             rows={2}
             value={edited?.findings || ''}
             onChange={(e) => handleFindingsChange(record.id, e.target.value)}
-            placeholder="Enter findings or notes"
+            placeholder="소견 또는 비고 입력"
           />
         )
       },
     },
     {
-      title: 'Evidence',
+      title: '증적',
       key: 'evidence',
       width: 150,
       render: (_, record) => {
@@ -349,16 +349,16 @@ const ChecklistPage = () => {
               size="small"
               icon={<PaperClipOutlined />}
               onClick={() => handleOpenEvidenceModal(record.id)}
-              aria-label="Attach Evidence"
+              aria-label="증적 첨부"
             >
-              Attach Evidence
+              증적 첨부
             </Button>
           </Space>
         )
       },
     },
     {
-      title: 'Actions',
+      title: '작업',
       key: 'actions',
       width: 150,
       render: (_, record) => {
@@ -369,9 +369,9 @@ const ChecklistPage = () => {
               type="link"
               icon={<ExclamationCircleOutlined />}
               onClick={() => handleRegisterNonConformity(record.id)}
-              aria-label="Register Non-conformity"
+              aria-label="부적합 등록"
             >
-              Register Non-conformity
+              부적합 등록
             </Button>
           )
         }
@@ -387,11 +387,11 @@ const ChecklistPage = () => {
           <Row justify="space-between" align="middle">
             <Col>
               <Space>
-                <Button icon={<ArrowLeftOutlined />} onClick={handleBack} aria-label="Back">
-                  Back
+                <Button icon={<ArrowLeftOutlined />} onClick={handleBack} aria-label="뒤로">
+                  뒤로
                 </Button>
                 <Title level={4} style={{ margin: 0 }}>
-                  {audit?.title || 'Checklist'}
+                  {audit?.title || '체크리스트'}
                 </Title>
               </Space>
             </Col>
@@ -402,16 +402,16 @@ const ChecklistPage = () => {
                   icon={<SaveOutlined />}
                   onClick={handleSave}
                   loading={saving}
-                  aria-label="Save"
+                  aria-label="저장"
                 >
-                  Save
+                  저장
                 </Button>
                 <Button
                   icon={<CheckCircleOutlined />}
                   onClick={handleComplete}
-                  aria-label="Complete Audit"
+                  aria-label="감사 완료"
                 >
-                  Complete Audit
+                  감사 완료
                 </Button>
               </Space>
             </Col>
@@ -422,37 +422,37 @@ const ChecklistPage = () => {
           <Row gutter={16} align="middle">
             <Col xs={24} md={8}>
               <Space direction="vertical" style={{ width: '100%' }}>
-                <Text strong>Progress</Text>
+                <Text strong>진행률</Text>
                 <Progress percent={progressData.percent} status="active" />
                 <Text type="secondary">
-                  {progressData.checked} / {progressData.total} items checked ({progressData.percent}%)
+                  {progressData.checked} / {progressData.total} 항목 점검 완료 ({progressData.percent}%)
                 </Text>
               </Space>
             </Col>
             <Col xs={24} md={8}>
               <Space>
-                <Text>Filter:</Text>
+                <Text>필터:</Text>
                 <Checkbox
                   checked={filterUnchecked}
                   onChange={(e) => setFilterUnchecked(e.target.checked)}
                 >
-                  Show unchecked only
+                  미점검만 보기
                 </Checkbox>
               </Space>
             </Col>
             <Col xs={24} md={8}>
               <Space>
-                <Text>Result Filter:</Text>
+                <Text>결과 필터:</Text>
                 <Select
                   style={{ width: 150 }}
                   value={resultFilter}
                   onChange={setResultFilter}
                 >
-                  <Option value="all">All</Option>
-                  <Option value="conforming">Conforming</Option>
-                  <Option value="non_conforming">Non-conforming</Option>
-                  <Option value="observation">Observation</Option>
-                  <Option value="not_applicable">Not Applicable</Option>
+                  <Option value="all">전체</Option>
+                  <Option value="conforming">적합</Option>
+                  <Option value="non_conforming">부적합</Option>
+                  <Option value="observation">관찰사항</Option>
+                  <Option value="not_applicable">해당없음</Option>
                 </Select>
               </Space>
             </Col>
@@ -471,7 +471,7 @@ const ChecklistPage = () => {
         </Card>
 
         <Modal
-          title="Select Evidence"
+          title="증적 선택"
           open={evidenceModalVisible}
           onCancel={() => setEvidenceModalVisible(false)}
           footer={null}
@@ -491,9 +491,9 @@ const ChecklistPage = () => {
               },
             }}
             columns={[
-              { title: 'Title', dataIndex: 'title', key: 'title' },
-              { title: 'File Name', dataIndex: 'fileName', key: 'fileName' },
-              { title: 'Version', dataIndex: 'version', key: 'version', width: 80 },
+              { title: '제목', dataIndex: 'title', key: 'title' },
+              { title: '파일명', dataIndex: 'fileName', key: 'fileName' },
+              { title: '버전', dataIndex: 'version', key: 'version', width: 80 },
             ]}
             pagination={{ pageSize: 10 }}
           />

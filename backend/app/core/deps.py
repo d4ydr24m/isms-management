@@ -5,7 +5,7 @@ DB 세션, 인증, 권한 검증 등
 from datetime import datetime
 from typing import Callable, Generator, List, Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -31,6 +31,7 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def get_current_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
     token: Optional[str] = None,
@@ -39,6 +40,7 @@ def get_current_user(
     현재 인증된 사용자 반환
 
     Args:
+        request: HTTP 요청 객체 (쿠키에서 토큰 추출용)
         credentials: HTTP Authorization 헤더의 Bearer 토큰
         db: 데이터베이스 세션
         token: 직접 전달된 토큰 (테스트용)
@@ -55,11 +57,13 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    # 토큰 추출
+    # 토큰 추출: 직접 전달 > Authorization 헤더 > HttpOnly 쿠키
     if token:
         access_token = token
     elif credentials:
         access_token = credentials.credentials
+    elif request.cookies.get("access_token"):
+        access_token = request.cookies.get("access_token")
     else:
         raise credentials_exception
 

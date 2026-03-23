@@ -191,7 +191,7 @@ const RiskScenarioDetailPage = () => {
       const data = await getRiskTreatmentPlans({
         page: treatmentPagination.current,
         size: treatmentPagination.pageSize,
-        scenario_id: id,
+        scenarioId: id,
       })
       setTreatmentPlans(data.items)
       setTreatmentPagination((prev) => ({ ...prev, total: data.total }))
@@ -235,8 +235,8 @@ const RiskScenarioDetailPage = () => {
     form.setFieldsValue({
       name: scenario.name,
       description: scenario.description,
-      start_date: scenario.start_date ? dayjs(scenario.start_date) : undefined,
-      end_date: scenario.end_date ? dayjs(scenario.end_date) : undefined,
+      startDate: scenario.startDate ? dayjs(scenario.startDate) : undefined,
+      endDate: scenario.endDate ? dayjs(scenario.endDate) : undefined,
     })
     setEditModalVisible(true)
   }
@@ -248,8 +248,8 @@ const RiskScenarioDetailPage = () => {
       const data: RiskScenarioUpdate = {
         name: values.name,
         description: values.description || null,
-        start_date: values.start_date ? values.start_date.format('YYYY-MM-DD') : undefined,
-        end_date: values.end_date ? values.end_date.format('YYYY-MM-DD') : null,
+        startDate: values.startDate ? values.startDate.format('YYYY-MM-DD') : undefined,
+        endDate: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
       }
       await updateRiskScenario(scenario.id, data)
       message.success('시나리오가 수정되었습니다')
@@ -343,8 +343,8 @@ const RiskScenarioDetailPage = () => {
     setExporting(true)
     try {
       const result = await exportRiskReport(id, format)
-      if (result.download_url) {
-        window.open(result.download_url, '_blank')
+      if (result.downloadUrl) {
+        window.open(result.downloadUrl, '_blank')
       }
       message.success(`${format === 'excel' ? 'Excel' : 'Word'} 파일이 생성되었습니다`)
     } catch {
@@ -376,58 +376,58 @@ const RiskScenarioDetailPage = () => {
   const assessmentColumns: TableProps<RiskAssessment>['columns'] = [
     {
       title: '자산',
-      dataIndex: 'asset_name',
-      key: 'asset_name',
+      dataIndex: 'assetName',
+      key: 'assetName',
       ellipsis: true,
     },
     {
       title: '위협',
-      dataIndex: 'threat_name',
-      key: 'threat_name',
+      dataIndex: 'threatName',
+      key: 'threatName',
       ellipsis: true,
     },
     {
       title: '취약점',
-      dataIndex: 'vulnerability_name',
-      key: 'vulnerability_name',
+      dataIndex: 'vulnerabilityName',
+      key: 'vulnerabilityName',
       ellipsis: true,
     },
     {
       title: '자산가치',
-      dataIndex: 'asset_value',
-      key: 'asset_value',
+      dataIndex: 'assetValue',
+      key: 'assetValue',
       width: 90,
       align: 'center',
     },
     {
       title: '위협수준',
-      dataIndex: 'threat_level',
-      key: 'threat_level',
+      dataIndex: 'threatLevel',
+      key: 'threatLevel',
       width: 90,
       align: 'center',
     },
     {
       title: '취약수준',
-      dataIndex: 'vulnerability_level',
-      key: 'vulnerability_level',
+      dataIndex: 'vulnerabilityLevel',
+      key: 'vulnerabilityLevel',
       width: 90,
       align: 'center',
     },
     {
       title: 'DoR',
-      dataIndex: 'risk_score',
-      key: 'risk_score',
+      dataIndex: 'riskScore',
+      key: 'riskScore',
       width: 80,
       align: 'center',
-      sorter: (a, b) => (a.risk_score ?? 0) - (b.risk_score ?? 0),
+      sorter: (a, b) => (a.riskScore ?? 0) - (b.riskScore ?? 0),
       render: (score: number) => (
         <span style={{ fontWeight: 'bold', fontSize: 16 }}>{score}</span>
       ),
     },
     {
       title: '등급',
-      dataIndex: 'risk_level',
-      key: 'risk_level',
+      dataIndex: 'riskLevel',
+      key: 'riskLevel',
       width: 90,
       align: 'center',
       filters: [
@@ -435,7 +435,7 @@ const RiskScenarioDetailPage = () => {
         { text: '중위험', value: 'medium' },
         { text: '저위험', value: 'low' },
       ],
-      onFilter: (value, record) => record.risk_level === value,
+      onFilter: (value, record) => record.riskLevel === value,
       render: (level: string) => (
         <Tag color={RISK_LEVEL_COLOR[level] || 'default'}>
           {RISK_LEVEL_LABEL[level] || level}
@@ -444,15 +444,15 @@ const RiskScenarioDetailPage = () => {
     },
     {
       title: 'DoA',
-      dataIndex: 'exceeds_doa',
-      key: 'exceeds_doa',
+      dataIndex: 'exceedsDoa',
+      key: 'exceedsDoa',
       width: 80,
       align: 'center',
       filters: [
         { text: '초과', value: true },
         { text: '적합', value: false },
       ],
-      onFilter: (value, record) => record.exceeds_doa === value,
+      onFilter: (value, record) => record.exceedsDoa === value,
       render: (exceeds: boolean) =>
         exceeds ? (
           <Badge status="error" text="초과" />
@@ -462,8 +462,8 @@ const RiskScenarioDetailPage = () => {
     },
     {
       title: '처리',
-      dataIndex: 'has_treatment_plan',
-      key: 'has_treatment_plan',
+      dataIndex: 'hasTreatmentPlan',
+      key: 'hasTreatmentPlan',
       width: 80,
       align: 'center',
       render: (has: boolean) =>
@@ -478,30 +478,30 @@ const RiskScenarioDetailPage = () => {
   const treatmentColumns: TableProps<RiskTreatmentPlan>['columns'] = [
     {
       title: '대상 자산',
-      dataIndex: 'asset_name',
-      key: 'asset_name',
+      dataIndex: 'assetName',
+      key: 'assetName',
       ellipsis: true,
       render: (name: string | null) => name || '-',
     },
     {
       title: '위협',
-      dataIndex: 'threat_name',
-      key: 'threat_name',
+      dataIndex: 'threatName',
+      key: 'threatName',
       ellipsis: true,
       render: (name: string | null) => name || '-',
     },
     {
       title: '위험도',
-      dataIndex: 'risk_score',
-      key: 'risk_score',
+      dataIndex: 'riskScore',
+      key: 'riskScore',
       width: 80,
       align: 'center',
       render: (score: number | null, record) => (
         <Space direction="vertical" size={0}>
           <span style={{ fontWeight: 'bold' }}>{score ?? '-'}</span>
-          {record.risk_level && (
-            <Tag color={RISK_LEVEL_COLOR[record.risk_level] || 'default'} style={{ margin: 0 }}>
-              {RISK_LEVEL_LABEL[record.risk_level] || record.risk_level}
+          {record.riskLevel && (
+            <Tag color={RISK_LEVEL_COLOR[record.riskLevel] || 'default'} style={{ margin: 0 }}>
+              {RISK_LEVEL_LABEL[record.riskLevel] || record.riskLevel}
             </Tag>
           )}
         </Space>
@@ -526,15 +526,15 @@ const RiskScenarioDetailPage = () => {
     },
     {
       title: '담당자',
-      dataIndex: 'assignee_name',
-      key: 'assignee_name',
+      dataIndex: 'assigneeName',
+      key: 'assigneeName',
       width: 100,
       render: (name: string | null) => name || '-',
     },
     {
       title: '기한',
-      dataIndex: 'due_date',
-      key: 'due_date',
+      dataIndex: 'dueDate',
+      key: 'dueDate',
       width: 120,
       render: (date: string | null) => {
         if (!date) return '-'
@@ -561,8 +561,8 @@ const RiskScenarioDetailPage = () => {
     },
     {
       title: '잔여위험',
-      dataIndex: 'latest_residual_risk',
-      key: 'latest_residual_risk',
+      dataIndex: 'latestResidualRisk',
+      key: 'latestResidualRisk',
       width: 90,
       align: 'center',
       render: (score: number | null) => (score !== null ? score : '-'),
@@ -593,13 +593,13 @@ const RiskScenarioDetailPage = () => {
   const statusConfig = STATUS_MAP[scenario.status]
 
   // 위험 분포 계산
-  const highCount = scenario.high_risk_count
-  const totalCount = scenario.assessment_count
-  const mediumCount = report?.risk_distribution?.medium || 0
-  const lowCount = report?.risk_distribution?.low || 0
+  const highCount = scenario.highRiskCount
+  const totalCount = scenario.assessmentCount
+  const mediumCount = report?.riskDistribution?.medium || 0
+  const lowCount = report?.riskDistribution?.low || 0
 
   // 처리 진행률
-  const treatmentProgress = report?.treatment_progress
+  const treatmentProgress = report?.treatmentProgress
 
   // 상태 전이 가능 버튼
   const renderStatusActions = () => {
@@ -707,19 +707,19 @@ const RiskScenarioDetailPage = () => {
           <Descriptions.Item label="상태">
             <Tag color={statusConfig.color}>{statusConfig.label}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="작성자">{scenario.creator_name || '-'}</Descriptions.Item>
+          <Descriptions.Item label="작성자">{scenario.creatorName || '-'}</Descriptions.Item>
           <Descriptions.Item label="시작일">
-            {dayjs(scenario.start_date).format('YYYY-MM-DD')}
+            {dayjs(scenario.startDate).format('YYYY-MM-DD')}
           </Descriptions.Item>
           <Descriptions.Item label="종료일">
-            {scenario.end_date ? dayjs(scenario.end_date).format('YYYY-MM-DD') : '진행중'}
+            {scenario.endDate ? dayjs(scenario.endDate).format('YYYY-MM-DD') : '진행중'}
           </Descriptions.Item>
           <Descriptions.Item label="생성일">
-            {dayjs(scenario.created_at).format('YYYY-MM-DD HH:mm')}
+            {dayjs(scenario.createdAt).format('YYYY-MM-DD HH:mm')}
           </Descriptions.Item>
-          {scenario.completed_at && (
+          {scenario.completedAt && (
             <Descriptions.Item label="완료일">
-              {dayjs(scenario.completed_at).format('YYYY-MM-DD HH:mm')}
+              {dayjs(scenario.completedAt).format('YYYY-MM-DD HH:mm')}
             </Descriptions.Item>
           )}
           {scenario.description && (
@@ -765,8 +765,8 @@ const RiskScenarioDetailPage = () => {
           <Card>
             <Statistic
               title="DoA 초과"
-              value={scenario.exceeding_doa_count}
-              valueStyle={{ color: scenario.exceeding_doa_count > 0 ? '#cf1322' : undefined }}
+              value={scenario.exceedingDoaCount}
+              valueStyle={{ color: scenario.exceedingDoaCount > 0 ? '#cf1322' : undefined }}
               prefix={<WarningOutlined />}
             />
           </Card>
@@ -821,7 +821,7 @@ const RiskScenarioDetailPage = () => {
                 <div style={{ textAlign: 'center' }}>
                   <Progress
                     type="dashboard"
-                    percent={Math.round(treatmentProgress.completion_rate)}
+                    percent={Math.round(treatmentProgress.completionRate)}
                     size={120}
                     strokeColor={{
                       '0%': '#108ee9',
@@ -833,7 +833,7 @@ const RiskScenarioDetailPage = () => {
                       <Statistic title="계획" value={treatmentProgress.planned} valueStyle={{ fontSize: 16 }} />
                     </Col>
                     <Col span={6}>
-                      <Statistic title="진행" value={treatmentProgress.in_progress} valueStyle={{ fontSize: 16 }} />
+                      <Statistic title="진행" value={treatmentProgress.inProgress} valueStyle={{ fontSize: 16 }} />
                     </Col>
                     <Col span={6}>
                       <Statistic title="완료" value={treatmentProgress.completed} valueStyle={{ fontSize: 16, color: '#52c41a' }} />
@@ -961,13 +961,13 @@ const RiskScenarioDetailPage = () => {
             <Input.TextArea rows={4} />
           </Form.Item>
           <Form.Item
-            name="start_date"
+            name="startDate"
             label="시작일"
             rules={[{ required: true, message: '시작일을 입력해주세요' }]}
           >
             <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
           </Form.Item>
-          <Form.Item name="end_date" label="종료일">
+          <Form.Item name="endDate" label="종료일">
             <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
           </Form.Item>
         </Form>

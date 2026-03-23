@@ -159,8 +159,8 @@ const RiskIndexPage = () => {
     form.setFieldsValue({
       name: scenario.name,
       description: scenario.description,
-      start_date: scenario.start_date ? dayjs(scenario.start_date) : undefined,
-      end_date: scenario.end_date ? dayjs(scenario.end_date) : undefined,
+      startDate: scenario.startDate ? dayjs(scenario.startDate) : undefined,
+      endDate: scenario.endDate ? dayjs(scenario.endDate) : undefined,
       status: scenario.status,
     })
     setModalVisible(true)
@@ -196,8 +196,8 @@ const RiskIndexPage = () => {
         const data: RiskScenarioCreate = {
           name: values.name,
           description: values.description || null,
-          start_date: values.start_date ? values.start_date.format('YYYY-MM-DD') : '',
-          end_date: values.end_date ? values.end_date.format('YYYY-MM-DD') : null,
+          startDate: values.startDate ? values.startDate.format('YYYY-MM-DD') : '',
+          endDate: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
         }
         await createRiskScenario(data)
         message.success('시나리오가 추가되었습니다')
@@ -205,8 +205,8 @@ const RiskIndexPage = () => {
         const data: RiskScenarioUpdate = {
           name: values.name,
           description: values.description || null,
-          start_date: values.start_date ? values.start_date.format('YYYY-MM-DD') : undefined,
-          end_date: values.end_date ? values.end_date.format('YYYY-MM-DD') : null,
+          startDate: values.startDate ? values.startDate.format('YYYY-MM-DD') : undefined,
+          endDate: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
           status: values.status,
         }
         await updateRiskScenario(editingScenario.id, data)
@@ -302,16 +302,16 @@ const RiskIndexPage = () => {
 
   // 평가 현황 표시 함수
   const renderAssessmentStatus = (scenario: RiskScenario) => {
-    const { assessment_count, high_risk_count, exceeding_doa_count } = scenario
+    const { assessmentCount, highRiskCount, exceedingDoaCount } = scenario
 
     return (
       <Space direction="vertical" size={0}>
-        <span>총 {assessment_count}건</span>
-        {high_risk_count > 0 && (
-          <Badge status="error" text={`고위험 ${high_risk_count}건`} />
+        <span>총 {assessmentCount}건</span>
+        {highRiskCount > 0 && (
+          <Badge status="error" text={`고위험 ${highRiskCount}건`} />
         )}
-        {exceeding_doa_count > 0 && (
-          <Badge status="warning" text={`DoA초과 ${exceeding_doa_count}건`} />
+        {exceedingDoaCount > 0 && (
+          <Badge status="warning" text={`DoA초과 ${exceedingDoaCount}건`} />
         )}
       </Space>
     )
@@ -322,7 +322,7 @@ const RiskIndexPage = () => {
     selectedRowKeys,
     onChange: (keys) => setSelectedRowKeys(keys),
     getCheckboxProps: (record) => ({
-      disabled: record.assessment_count === 0,
+      disabled: record.assessmentCount === 0,
     }),
   }
 
@@ -341,8 +341,8 @@ const RiskIndexPage = () => {
       key: 'period',
       width: 250,
       render: (_: unknown, record: RiskScenario) => {
-        const startDate = dayjs(record.start_date).format('YYYY-MM-DD')
-        const endDate = record.end_date ? dayjs(record.end_date).format('YYYY-MM-DD') : '진행중'
+        const startDate = dayjs(record.startDate).format('YYYY-MM-DD')
+        const endDate = record.endDate ? dayjs(record.endDate).format('YYYY-MM-DD') : '진행중'
         return `${startDate} ~ ${endDate}`
       },
     },
@@ -506,14 +506,14 @@ const RiskIndexPage = () => {
           </Form.Item>
 
           <Form.Item
-            name="start_date"
+            name="startDate"
             label="시작일"
             rules={[{ required: true, message: '시작일을 입력해주세요' }]}
           >
             <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
           </Form.Item>
 
-          <Form.Item name="end_date" label="종료일">
+          <Form.Item name="endDate" label="종료일">
             <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
           </Form.Item>
 
@@ -554,29 +554,29 @@ const RiskIndexPage = () => {
           <div>
             <Descriptions bordered size="small" column={2} style={{ marginBottom: 24 }}>
               <Descriptions.Item label="시나리오 A" span={1}>
-                <strong>{comparison.scenario1_name}</strong>
+                <strong>{comparison.scenario1Name}</strong>
               </Descriptions.Item>
               <Descriptions.Item label="시나리오 B" span={1}>
-                <strong>{comparison.scenario2_name}</strong>
+                <strong>{comparison.scenario2Name}</strong>
               </Descriptions.Item>
             </Descriptions>
 
             <Row gutter={16}>
               <Col span={8}>
-                {renderDiff(comparison.risk_count_diff, '총 위험 건수 변화')}
+                {renderDiff(comparison.riskCountDiff, '총 위험 건수 변화')}
               </Col>
               <Col span={8}>
-                {renderDiff(comparison.high_risk_diff, '고위험 건수 변화')}
+                {renderDiff(comparison.highRiskDiff, '고위험 건수 변화')}
               </Col>
               <Col span={8}>
                 <Statistic
                   title="평균 위험점수 변화"
-                  value={Math.abs(comparison.avg_risk_score_diff)}
+                  value={Math.abs(comparison.avgRiskScoreDiff)}
                   precision={1}
                   prefix={
-                    comparison.avg_risk_score_diff > 0 ? (
+                    comparison.avgRiskScoreDiff > 0 ? (
                       <ArrowUpOutlined />
-                    ) : comparison.avg_risk_score_diff < 0 ? (
+                    ) : comparison.avgRiskScoreDiff < 0 ? (
                       <ArrowDownOutlined />
                     ) : (
                       <MinusOutlined />
@@ -584,16 +584,16 @@ const RiskIndexPage = () => {
                   }
                   valueStyle={{
                     color:
-                      comparison.avg_risk_score_diff > 0
+                      comparison.avgRiskScoreDiff > 0
                         ? '#cf1322'
-                        : comparison.avg_risk_score_diff < 0
+                        : comparison.avgRiskScoreDiff < 0
                           ? '#3f8600'
                           : undefined,
                   }}
                   suffix={
-                    comparison.avg_risk_score_diff > 0
+                    comparison.avgRiskScoreDiff > 0
                       ? '증가'
-                      : comparison.avg_risk_score_diff < 0
+                      : comparison.avgRiskScoreDiff < 0
                         ? '감소'
                         : '동일'
                   }

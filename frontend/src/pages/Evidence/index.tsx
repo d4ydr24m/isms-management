@@ -37,7 +37,7 @@ const EvidenceListPage = () => {
         total: response.meta?.total || 0,
       }))
     } catch {
-      message.error('Failed to load evidences')
+      message.error('증적 목록을 불러오는데 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -70,19 +70,19 @@ const EvidenceListPage = () => {
 
   const handleDelete = (id: number) => {
     Modal.confirm({
-      title: 'Delete Evidence',
+      title: '증적 삭제',
       icon: <ExclamationCircleOutlined />,
-      content: 'Are you sure you want to delete this evidence? This action cannot be undone.',
-      okText: 'Delete',
+      content: '이 증적을 삭제하시겠습니까? 삭제된 증적은 복구할 수 없습니다.',
+      okText: '삭제',
       okType: 'danger',
-      cancelText: 'Cancel',
+      cancelText: '취소',
       onOk: async () => {
         try {
           await evidenceService.deleteEvidence(id)
-          message.success('Evidence deleted successfully')
+          message.success('증적이 삭제되었습니다')
           fetchEvidences()
         } catch {
-          message.error('Failed to delete evidence')
+          message.error('증적 삭제에 실패했습니다')
         }
       },
     })
@@ -91,20 +91,20 @@ const EvidenceListPage = () => {
   const handleDownload = async (id: number, fileName: string) => {
     try {
       await evidenceService.downloadEvidence(id, fileName)
-      message.success('Download started')
+      message.success('다운로드가 시작되었습니다')
     } catch {
-      message.error('Failed to download file')
+      message.error('파일 다운로드에 실패했습니다')
     }
   }
 
   return (
     <div>
       <Card
-        title="Evidence Management"
+        title="증적 관리"
         extra={
           <Link to="/evidence/create">
             <Button type="primary" icon={<PlusOutlined />}>
-              Create Evidence
+              증적 등록
             </Button>
           </Link>
         }
@@ -113,7 +113,7 @@ const EvidenceListPage = () => {
           <Row gutter={16}>
             <Col xs={24} sm={12} md={8}>
               <Input
-                placeholder="Search by title or file name"
+                placeholder="제목 또는 파일명으로 검색"
                 prefix={<SearchOutlined />}
                 onChange={(e) => handleSearch(e.target.value)}
                 allowClear
@@ -121,17 +121,17 @@ const EvidenceListPage = () => {
             </Col>
             <Col xs={24} sm={12} md={6}>
               <Select
-                placeholder="Filter by Status"
+                placeholder="상태 필터"
                 style={{ width: '100%' }}
                 allowClear
                 onChange={handleStatusChange}
                 value={filters.status}
               >
-                <Option value={undefined}>All Status</Option>
-                <Option value="active">Active</Option>
-                <Option value="draft">Draft</Option>
-                <Option value="expired">Expired</Option>
-                <Option value="archived">Archived</Option>
+                <Option value={undefined}>전체 상태</Option>
+                <Option value="active">유효</Option>
+                <Option value="draft">초안</Option>
+                <Option value="expired">만료</Option>
+                <Option value="archived">보관</Option>
               </Select>
             </Col>
           </Row>

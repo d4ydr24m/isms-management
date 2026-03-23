@@ -15,7 +15,7 @@ function DataTable<T extends Record<string, any>>({
       className={className}
       bordered
       locale={{
-        emptyText: 'No data',
+        emptyText: '데이터가 없습니다',
       }}
     />
   )

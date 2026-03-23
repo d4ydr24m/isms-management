@@ -20,12 +20,12 @@ import { calculateRiskScore, classifyRiskLevel } from '@/types/risk'
 // =============================================================================
 
 export interface ThreeWayMappingValue {
-  asset_id?: number
-  threat_id?: number
-  vulnerability_id?: number
-  asset_value?: 1 | 2 | 3
-  threat_level?: 1 | 2 | 3
-  vulnerability_level?: 1 | 2 | 3
+  assetId?: number
+  threatId?: number
+  vulnerabilityId?: number
+  assetValue?: 1 | 2 | 3
+  threatLevel?: 1 | 2 | 3
+  vulnerabilityLevel?: 1 | 2 | 3
 }
 
 export interface ThreeWayMappingProps {
@@ -72,42 +72,42 @@ export const ThreeWayMapping: React.FC<ThreeWayMappingProps> = ({
   const handleAssetChange = (assetId: number) => {
     onChange({
       ...value,
-      asset_id: assetId,
+      assetId: assetId,
     })
   }
 
   const handleThreatChange = (threatId: number) => {
     onChange({
       ...value,
-      threat_id: threatId,
+      threatId: threatId,
     })
   }
 
   const handleVulnerabilityChange = (vulnerabilityId: number) => {
     onChange({
       ...value,
-      vulnerability_id: vulnerabilityId,
+      vulnerabilityId: vulnerabilityId,
     })
   }
 
   const handleAssetValueChange = (assetValue: 1 | 2 | 3) => {
     onChange({
       ...value,
-      asset_value: assetValue,
+      assetValue: assetValue,
     })
   }
 
   const handleThreatLevelChange = (threatLevel: 1 | 2 | 3) => {
     onChange({
       ...value,
-      threat_level: threatLevel,
+      threatLevel: threatLevel,
     })
   }
 
   const handleVulnerabilityLevelChange = (vulnerabilityLevel: 1 | 2 | 3) => {
     onChange({
       ...value,
-      vulnerability_level: vulnerabilityLevel,
+      vulnerabilityLevel: vulnerabilityLevel,
     })
   }
 
@@ -116,13 +116,13 @@ export const ThreeWayMapping: React.FC<ThreeWayMappingProps> = ({
   // ===========================================================================
 
   const calculateRisk = () => {
-    const { asset_value, threat_level, vulnerability_level } = value
+    const { assetValue, threatLevel, vulnerabilityLevel } = value
 
-    if (!asset_value || !threat_level || !vulnerability_level) {
+    if (!assetValue || !threatLevel || !vulnerabilityLevel) {
       return null
     }
 
-    const score = calculateRiskScore(asset_value, threat_level, vulnerability_level)
+    const score = calculateRiskScore(assetValue, threatLevel, vulnerabilityLevel)
     const level = classifyRiskLevel(score)
 
     return {
@@ -150,7 +150,7 @@ export const ThreeWayMapping: React.FC<ThreeWayMappingProps> = ({
                 showSearch
                 placeholder="자산을 선택하세요"
                 style={{ width: '100%' }}
-                value={value.asset_id}
+                value={value.assetId}
                 onChange={handleAssetChange}
                 disabled={disabled}
                 optionFilterProp="children"
@@ -172,7 +172,7 @@ export const ThreeWayMapping: React.FC<ThreeWayMappingProps> = ({
                 showSearch
                 placeholder="위협을 선택하세요"
                 style={{ width: '100%' }}
-                value={value.threat_id}
+                value={value.threatId}
                 onChange={handleThreatChange}
                 disabled={disabled}
                 optionFilterProp="children"
@@ -194,7 +194,7 @@ export const ThreeWayMapping: React.FC<ThreeWayMappingProps> = ({
                 showSearch
                 placeholder="취약점을 선택하세요"
                 style={{ width: '100%' }}
-                value={value.vulnerability_id}
+                value={value.vulnerabilityId}
                 onChange={handleVulnerabilityChange}
                 disabled={disabled}
                 optionFilterProp="children"
@@ -220,7 +220,7 @@ export const ThreeWayMapping: React.FC<ThreeWayMappingProps> = ({
               <Select
                 placeholder="값 선택 (1-3)"
                 style={{ width: '100%' }}
-                value={value.asset_value}
+                value={value.assetValue}
                 onChange={handleAssetValueChange}
                 disabled={disabled}
                 options={LEVEL_OPTIONS}
@@ -234,7 +234,7 @@ export const ThreeWayMapping: React.FC<ThreeWayMappingProps> = ({
               <Select
                 placeholder="등급 선택 (1-3)"
                 style={{ width: '100%' }}
-                value={value.threat_level}
+                value={value.threatLevel}
                 onChange={handleThreatLevelChange}
                 disabled={disabled}
                 options={LEVEL_OPTIONS}
@@ -248,7 +248,7 @@ export const ThreeWayMapping: React.FC<ThreeWayMappingProps> = ({
               <Select
                 placeholder="등급 선택 (1-3)"
                 style={{ width: '100%' }}
-                value={value.vulnerability_level}
+                value={value.vulnerabilityLevel}
                 onChange={handleVulnerabilityLevelChange}
                 disabled={disabled}
                 options={LEVEL_OPTIONS}
@@ -283,8 +283,8 @@ export const ThreeWayMapping: React.FC<ThreeWayMappingProps> = ({
             <Col>
               <Space direction="vertical" size="small" style={{ fontSize: '12px', color: '#666' }}>
                 <div>
-                  공식: 자산가치({value.asset_value}) × 위협등급({value.threat_level}) × 취약점등급(
-                  {value.vulnerability_level})
+                  공식: 자산가치({value.assetValue}) × 위협등급({value.threatLevel}) × 취약점등급(
+                  {value.vulnerabilityLevel})
                 </div>
                 <div>
                   분류: 1-8 낮음 / 9-17 중간 / 18-27 높음

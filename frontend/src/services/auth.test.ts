@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { authService } from './auth'
 import { apiClient } from './api'
 
@@ -15,15 +15,10 @@ vi.mock('./api', () => ({
 describe('authService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    localStorage.clear()
-  })
-
-  afterEach(() => {
-    localStorage.clear()
   })
 
   describe('login', () => {
-    it('로그인 성공 시 토큰을 저장한다', async () => {
+    it('로그인 성공 시 응답 데이터를 반환한다', async () => {
       const mockResponse = {
         data: {
           data: {
@@ -51,12 +46,13 @@ describe('authService', () => {
         email: 'test@example.com',
         password: 'password123',
       })
-      expect(localStorage.getItem('accessToken')).toBe('test-access-token')
-      expect(localStorage.getItem('refreshToken')).toBe('test-refresh-token')
       expect(result.requiresMfa).toBe(false)
+      // Tokens are managed via HttpOnly cookies, not localStorage
+      expect(localStorage.getItem('accessToken')).toBeNull()
+      expect(localStorage.getItem('refreshToken')).toBeNull()
     })
 
-    it('MFA가 필요한 경우 토큰을 저장하지 않는다', async () => {
+    it('MFA가 필요한 경우 requiresMfa를 반환한다', async () => {
       const mockResponse = {
         data: {
           data: {
@@ -80,35 +76,23 @@ describe('authService', () => {
         password: 'password123',
       })
 
-      expect(localStorage.getItem('accessToken')).toBeNull()
-      expect(localStorage.getItem('refreshToken')).toBeNull()
       expect(result.requiresMfa).toBe(true)
     })
   })
 
   describe('logout', () => {
-    it('로그아웃 시 토큰을 제거한다', async () => {
-      localStorage.setItem('accessToken', 'test-token')
-      localStorage.setItem('refreshToken', 'test-refresh')
-
+    it('로그아웃 API를 호출한다', async () => {
       vi.mocked(apiClient.post).mockResolvedValue({})
 
       await authService.logout()
 
-      expect(localStorage.getItem('accessToken')).toBeNull()
-      expect(localStorage.getItem('refreshToken')).toBeNull()
+      expect(apiClient.post).toHaveBeenCalledWith('/auth/logout')
     })
 
-    it('로그아웃 API 실패해도 토큰은 제거된다', async () => {
-      localStorage.setItem('accessToken', 'test-token')
-      localStorage.setItem('refreshToken', 'test-refresh')
-
+    it('로그아웃 API 실패해도 에러를 던지지 않는다', async () => {
       vi.mocked(apiClient.post).mockRejectedValue(new Error('Network error'))
 
-      await authService.logout()
-
-      expect(localStorage.getItem('accessToken')).toBeNull()
-      expect(localStorage.getItem('refreshToken')).toBeNull()
+      await expect(authService.logout()).resolves.not.toThrow()
     })
   })
 
@@ -204,7 +188,7 @@ describe('authService', () => {
   })
 
   describe('verifyMfa', () => {
-    it('MFA 검증 성공 시 토큰을 저장한다', async () => {
+    it('MFA 검증 성공 시 응답 데이터를 반환한다', async () => {
       const mockResponse = {
         data: {
           data: {
@@ -223,15 +207,17 @@ describe('authService', () => {
 
       vi.mocked(apiClient.post).mockResolvedValue(mockResponse)
 
-      await authService.verifyMfa({
+      const result = await authService.verifyMfa({
         token: '123456',
       })
 
       expect(apiClient.post).toHaveBeenCalledWith('/auth/mfa/verify', {
         token: '123456',
       })
-      expect(localStorage.getItem('accessToken')).toBe('mfa-access-token')
-      expect(localStorage.getItem('refreshToken')).toBe('mfa-refresh-token')
+      expect(result.requiresMfa).toBe(false)
+      // Tokens are managed via HttpOnly cookies, not localStorage
+      expect(localStorage.getItem('accessToken')).toBeNull()
+      expect(localStorage.getItem('refreshToken')).toBeNull()
     })
   })
 })

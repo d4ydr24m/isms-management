@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -52,6 +52,9 @@ class NotificationSetting(Base):
     """
 
     __tablename__ = "notification_settings"
+    __table_args__ = (
+        UniqueConstraint("user_id", "notification_type", name="uq_notification_settings_user_type"),
+    )
 
     user_id = Column(
         Integer, ForeignKey("users.id"), nullable=False, index=True, comment="사용자 ID"

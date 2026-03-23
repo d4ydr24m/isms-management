@@ -3,7 +3,6 @@ import type {
   Notification,
   NotificationSetting,
   NotificationSettingUpdate,
-  ApiResponse,
   PaginatedResponse,
   PaginationParams,
 } from '@/types'
@@ -40,17 +39,24 @@ export const notificationService = {
   // 알림 설정 조회
   async getSettings(): Promise<NotificationSetting[]> {
     try {
-      const response = await apiClient.get<ApiResponse<NotificationSetting[]>>('/notifications/settings')
-      return response.data.data!
+      const response = await apiClient.get<{ settings: NotificationSetting[] }>('/notifications/settings')
+      return response.data.settings
     } catch (error) {
       return handleApiError(error)
     }
   },
 
-  // 알림 설정 변경 (단일)
+  // 알림 설정 변경 (단일 — bulk endpoint로 래핑)
   async updateSetting(setting: NotificationSettingUpdate): Promise<void> {
     try {
-      await apiClient.put(`/notifications/settings/${setting.type}`, setting)
+      await apiClient.put('/notifications/settings', {
+        settings: [{
+          notificationType: setting.type,
+          emailEnabled: setting.emailEnabled,
+          appEnabled: setting.appEnabled,
+          frequency: setting.frequency,
+        }],
+      })
     } catch (error) {
       return handleApiError(error)
     }

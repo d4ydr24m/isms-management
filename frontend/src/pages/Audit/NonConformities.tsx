@@ -31,11 +31,11 @@ const statusColors: Record<CorrectiveActionStatus, string> = {
 }
 
 const statusLabels: Record<CorrectiveActionStatus, string> = {
-  pending: 'Pending',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-  verified: 'Verified',
-  rejected: 'Rejected',
+  pending: '대기',
+  in_progress: '진행 중',
+  completed: '완료',
+  verified: '검증됨',
+  rejected: '반려',
 }
 
 const NonConformitiesPage = () => {
@@ -124,7 +124,7 @@ const NonConformitiesPage = () => {
 
   const columns: ColumnsType<NonConformity> = [
     {
-      title: 'Control',
+      title: '통제항목',
       key: 'control',
       width: 100,
       render: (_, record) => (
@@ -133,7 +133,7 @@ const NonConformitiesPage = () => {
       sorter: true,
     },
     {
-      title: 'Title',
+      title: '제목',
       dataIndex: 'title',
       key: 'title',
       render: (text, record) => (
@@ -146,7 +146,7 @@ const NonConformitiesPage = () => {
       ),
     },
     {
-      title: 'Severity',
+      title: '심각도',
       dataIndex: 'type',
       key: 'type',
       width: 100,
@@ -156,7 +156,7 @@ const NonConformitiesPage = () => {
       sorter: true,
     },
     {
-      title: 'Status',
+      title: '상태',
       dataIndex: 'status',
       key: 'status',
       width: 120,
@@ -166,14 +166,14 @@ const NonConformitiesPage = () => {
       sorter: true,
     },
     {
-      title: 'Assignee',
+      title: '담당자',
       dataIndex: 'assigneeName',
       key: 'assigneeName',
       width: 120,
       render: (name: string | null) => name || '-',
     },
     {
-      title: 'Due Date',
+      title: '기한',
       dataIndex: 'dueDate',
       key: 'dueDate',
       width: 120,
@@ -181,14 +181,14 @@ const NonConformitiesPage = () => {
       sorter: true,
     },
     {
-      title: 'Created',
+      title: '등록일',
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 120,
       sorter: true,
     },
     {
-      title: 'Actions',
+      title: '작업',
       key: 'actions',
       width: 100,
       align: 'center',
@@ -197,9 +197,9 @@ const NonConformitiesPage = () => {
           type="link"
           icon={<EyeOutlined />}
           onClick={() => handleRowClick(record)}
-          aria-label="View"
+          aria-label="보기"
         >
-          View
+          보기
         </Button>
       ),
     },
@@ -208,10 +208,10 @@ const NonConformitiesPage = () => {
   return (
     <div>
       <Card
-        title="Non-conformities"
+        title="부적합 관리"
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-            Register Non-conformity
+            부적합 등록
           </Button>
         }
       >
@@ -221,57 +221,57 @@ const NonConformitiesPage = () => {
             <Col xs={12} sm={6} md={4}>
               <Card size="small" style={{ backgroundColor: '#fff1f0', borderColor: '#ffa39e' }}>
                 <Statistic
-                  title="Critical"
+                  title="치명적"
                   value={stats.critical}
                   valueStyle={{ color: '#f5222d', fontSize: 18 }}
-                  suffix={<span style={{ fontSize: 12 }}>Critical: {stats.critical}</span>}
+                  suffix={<span style={{ fontSize: 12 }}>치명적: {stats.critical}</span>}
                 />
               </Card>
             </Col>
             <Col xs={12} sm={6} md={4}>
               <Card size="small" style={{ backgroundColor: '#fff7e6', borderColor: '#ffd591' }}>
                 <Statistic
-                  title="Major"
+                  title="중대"
                   value={stats.major}
                   valueStyle={{ color: '#fa8c16', fontSize: 18 }}
-                  suffix={<span style={{ fontSize: 12 }}>Major: {stats.major}</span>}
+                  suffix={<span style={{ fontSize: 12 }}>중대: {stats.major}</span>}
                 />
               </Card>
             </Col>
             <Col xs={12} sm={6} md={4}>
               <Card size="small" style={{ backgroundColor: '#fffbe6', borderColor: '#ffe58f' }}>
                 <Statistic
-                  title="Minor"
+                  title="경미"
                   value={stats.minor}
                   valueStyle={{ color: '#faad14', fontSize: 18 }}
-                  suffix={<span style={{ fontSize: 12 }}>Minor: {stats.minor}</span>}
+                  suffix={<span style={{ fontSize: 12 }}>경미: {stats.minor}</span>}
                 />
               </Card>
             </Col>
             <Col xs={12} sm={6} md={4}>
               <Card size="small">
                 <Statistic
-                  title="Pending"
+                  title="대기"
                   value={stats.pending}
                   valueStyle={{ fontSize: 18 }}
-                  suffix={<span style={{ fontSize: 12 }}>Pending: {stats.pending}</span>}
+                  suffix={<span style={{ fontSize: 12 }}>대기: {stats.pending}</span>}
                 />
               </Card>
             </Col>
             <Col xs={12} sm={6} md={4}>
               <Card size="small" style={{ backgroundColor: '#e6f7ff', borderColor: '#91d5ff' }}>
                 <Statistic
-                  title="In Progress"
+                  title="진행 중"
                   value={stats.inProgress}
                   valueStyle={{ color: '#1890ff', fontSize: 18 }}
-                  suffix={<span style={{ fontSize: 12 }}>In Progress: {stats.inProgress}</span>}
+                  suffix={<span style={{ fontSize: 12 }}>진행 중: {stats.inProgress}</span>}
                 />
               </Card>
             </Col>
             <Col xs={12} sm={6} md={4}>
               <Card size="small" style={{ backgroundColor: '#f6ffed', borderColor: '#b7eb8f' }}>
                 <Statistic
-                  title="Completed"
+                  title="완료"
                   value={stats.completed}
                   valueStyle={{ color: '#52c41a', fontSize: 18 }}
                 />
@@ -283,7 +283,7 @@ const NonConformitiesPage = () => {
           <Row gutter={16}>
             <Col xs={24} sm={12} md={8}>
               <Input
-                placeholder="Search by title or control"
+                placeholder="제목 또는 통제항목으로 검색"
                 prefix={<SearchOutlined />}
                 onChange={(e) => handleSearch(e.target.value)}
                 allowClear
@@ -291,33 +291,33 @@ const NonConformitiesPage = () => {
             </Col>
             <Col xs={24} sm={6} md={4}>
               <Select
-                placeholder="Filter by Severity"
+                placeholder="심각도 필터"
                 style={{ width: '100%' }}
                 allowClear
                 onChange={handleSeverityChange}
                 value={filters.type}
               >
-                <Option value={undefined}>All Severity</Option>
-                <Option value="critical">Critical</Option>
-                <Option value="major">Major</Option>
-                <Option value="minor">Minor</Option>
-                <Option value="observation">Observation</Option>
+                <Option value={undefined}>전체 심각도</Option>
+                <Option value="critical">치명적</Option>
+                <Option value="major">중대</Option>
+                <Option value="minor">경미</Option>
+                <Option value="observation">관찰사항</Option>
               </Select>
             </Col>
             <Col xs={24} sm={6} md={4}>
               <Select
-                placeholder="Filter by Status"
+                placeholder="상태 필터"
                 style={{ width: '100%' }}
                 allowClear
                 onChange={handleStatusChange}
                 value={filters.status}
               >
-                <Option value={undefined}>All Status</Option>
-                <Option value="pending">Pending</Option>
-                <Option value="in_progress">In Progress</Option>
-                <Option value="completed">Completed</Option>
-                <Option value="verified">Verified</Option>
-                <Option value="rejected">Rejected</Option>
+                <Option value={undefined}>전체 상태</Option>
+                <Option value="pending">대기</Option>
+                <Option value="in_progress">진행 중</Option>
+                <Option value="completed">완료</Option>
+                <Option value="verified">검증됨</Option>
+                <Option value="rejected">반려</Option>
               </Select>
             </Col>
           </Row>
@@ -331,7 +331,7 @@ const NonConformitiesPage = () => {
             pagination={{
               ...pagination,
               showSizeChanger: true,
-              showTotal: (total) => `Total ${total} items`,
+              showTotal: (total) => `총 ${total}건`,
             }}
             onChange={handleTableChange}
             onRow={(record) => ({

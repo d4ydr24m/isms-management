@@ -22,10 +22,10 @@ const statusConfig: Record<
   EvidenceStatus,
   { color: string; text: string }
 > = {
-  active: { color: 'green', text: 'Active' },
-  draft: { color: 'orange', text: 'Draft' },
-  expired: { color: 'red', text: 'Expired' },
-  archived: { color: 'default', text: 'Archived' },
+  active: { color: 'green', text: '유효' },
+  draft: { color: 'orange', text: '초안' },
+  expired: { color: 'red', text: '만료' },
+  archived: { color: 'default', text: '보관' },
 }
 
 const EvidenceTable = ({
@@ -39,7 +39,7 @@ const EvidenceTable = ({
 }: EvidenceTableProps) => {
   const columns: ColumnsType<EvidenceListItem> = [
     {
-      title: 'Title',
+      title: '제목',
       dataIndex: 'title',
       key: 'title',
       sorter: true,
@@ -48,13 +48,13 @@ const EvidenceTable = ({
       ),
     },
     {
-      title: 'File Name',
+      title: '파일명',
       dataIndex: 'fileName',
       key: 'fileName',
       ellipsis: true,
     },
     {
-      title: 'Status',
+      title: '상태',
       dataIndex: 'status',
       key: 'status',
       render: (status: EvidenceStatus) => {
@@ -63,7 +63,7 @@ const EvidenceTable = ({
       },
     },
     {
-      title: 'Version',
+      title: '버전',
       dataIndex: 'version',
       key: 'version',
       width: 80,
@@ -71,42 +71,42 @@ const EvidenceTable = ({
       render: (version: number) => `v${version}`,
     },
     {
-      title: 'Valid Until',
+      title: '유효 기한',
       dataIndex: 'validUntil',
       key: 'validUntil',
       sorter: true,
       render: (validUntil: string | null) => validUntil || '-',
     },
     {
-      title: 'Uploader',
+      title: '등록자',
       dataIndex: 'uploaderName',
       key: 'uploaderName',
     },
     {
-      title: 'Controls',
+      title: '통제항목',
       dataIndex: 'controlItemCount',
       key: 'controlItemCount',
       width: 80,
       align: 'center',
     },
     {
-      title: 'Actions',
+      title: '작업',
       key: 'actions',
       width: 160,
       render: (_: unknown, record: EvidenceListItem) => (
         <Space size="small">
-          <Tooltip title="View">
+          <Tooltip title="보기">
             <Link to={`/evidence/${record.id}`}>
               <Button type="text" size="small" icon={<EyeOutlined />} />
             </Link>
           </Tooltip>
-          <Tooltip title="Edit">
+          <Tooltip title="수정">
             <Link to={`/evidence/${record.id}/edit`}>
               <Button type="text" size="small" icon={<EditOutlined />} />
             </Link>
           </Tooltip>
           {onDownload && (
-            <Tooltip title="Download">
+            <Tooltip title="다운로드">
               <Button
                 type="text"
                 size="small"
@@ -116,7 +116,7 @@ const EvidenceTable = ({
             </Tooltip>
           )}
           {onDelete && (
-            <Tooltip title="Delete">
+            <Tooltip title="삭제">
               <Button
                 type="text"
                 size="small"
@@ -144,7 +144,7 @@ const EvidenceTable = ({
               ...pagination,
               showSizeChanger: true,
               showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} items`,
+                `${range[0]}-${range[1]} / 총 ${total}건`,
             }
           : false
       }
@@ -152,7 +152,7 @@ const EvidenceTable = ({
       rowSelection={rowSelection}
       bordered
       locale={{
-        emptyText: 'No data',
+        emptyText: '데이터가 없습니다',
       }}
     />
   )

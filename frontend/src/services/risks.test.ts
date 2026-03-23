@@ -599,7 +599,7 @@ describe('SOA API', () => {
     const { exportSOA } = await import('./risks')
     const result = await exportSOA({ format: 'excel', template_type: 'isms_p' })
 
-    expect(result.download_url).toBeDefined()
+    expect(result.downloadUrl).toBeDefined()
   })
 })
 
@@ -652,7 +652,7 @@ describe('위험 평가 보고서 API', () => {
     const { exportRiskReport } = await import('./risks')
     const result = await exportRiskReport(1, 'excel')
 
-    expect(result.download_url).toBeDefined()
+    expect(result.downloadUrl).toBeDefined()
   })
 })
 

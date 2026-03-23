@@ -62,11 +62,11 @@ const statusColors: Record<CorrectiveActionStatus, string> = {
 }
 
 const statusLabels: Record<CorrectiveActionStatus, string> = {
-  pending: 'Pending',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-  verified: 'Verified',
-  rejected: 'Rejected',
+  pending: '대기',
+  in_progress: '진행 중',
+  completed: '완료',
+  verified: '검증됨',
+  rejected: '반려',
 }
 
 interface StatusHistoryItem {
@@ -162,7 +162,7 @@ const NonConformityDetail = () => {
         },
       ])
     } catch {
-      message.error('Failed to load non-conformity')
+      message.error('부적합 사항을 불러오는데 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -208,11 +208,11 @@ const NonConformityDetail = () => {
       }
 
       await auditService.updateNonConformity(Number(id), updateData)
-      message.success('Non-conformity updated successfully')
+      message.success('부적합 사항이 수정되었습니다')
       setIsEditing(false)
       fetchData()
     } catch {
-      message.error('Failed to update non-conformity')
+      message.error('부적합 사항 수정에 실패했습니다')
     }
   }
 
@@ -223,11 +223,11 @@ const NonConformityDetail = () => {
   const handleStatusConfirm = async (newStatus: CorrectiveActionStatus) => {
     try {
       await auditService.updateNonConformity(Number(id), { status: newStatus })
-      message.success('Status updated successfully')
+      message.success('상태가 수정되었습니다')
       setStatusModalVisible(false)
       fetchData()
     } catch {
-      message.error('Failed to update status')
+      message.error('상태 수정에 실패했습니다')
     }
   }
 
@@ -247,34 +247,34 @@ const NonConformityDetail = () => {
       }
 
       await auditService.createCorrectiveAction(Number(id), actionData)
-      message.success('Corrective action added successfully')
+      message.success('시정조치가 등록되었습니다')
       setIsAddingAction(false)
       fetchData()
     } catch {
-      message.error('Failed to add corrective action')
+      message.error('시정조치 등록에 실패했습니다')
     }
   }
 
   const correctiveActionColumns: ColumnsType<CorrectiveAction> = [
     {
-      title: 'Action',
+      title: '조치',
       dataIndex: 'action',
       key: 'action',
     },
     {
-      title: 'Responsible',
+      title: '담당자',
       dataIndex: 'responsibleName',
       key: 'responsibleName',
       width: 120,
     },
     {
-      title: 'Due Date',
+      title: '기한',
       dataIndex: 'dueDate',
       key: 'dueDate',
       width: 120,
     },
     {
-      title: 'Status',
+      title: '상태',
       dataIndex: 'status',
       key: 'status',
       width: 120,
@@ -283,7 +283,7 @@ const NonConformityDetail = () => {
       ),
     },
     {
-      title: 'Verification',
+      title: '검증',
       key: 'verification',
       width: 200,
       render: (_, record) => {
@@ -291,7 +291,7 @@ const NonConformityDetail = () => {
           return (
             <Space direction="vertical" size="small">
               <Text type="success">
-                <CheckCircleOutlined /> Verified by {record.verifiedByName}
+                <CheckCircleOutlined /> {record.verifiedByName} 검증 완료
               </Text>
               <Text type="secondary" style={{ fontSize: 12 }}>
                 {record.verificationNotes}
@@ -315,7 +315,7 @@ const NonConformityDetail = () => {
   if (!nonConformity) {
     return (
       <Card>
-        <Text>Non-conformity not found</Text>
+        <Text>부적합 사항을 찾을 수 없습니다</Text>
       </Card>
     )
   }
@@ -325,8 +325,8 @@ const NonConformityDetail = () => {
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <Card>
           <Space style={{ marginBottom: 16 }}>
-            <Button icon={<ArrowLeftOutlined />} onClick={handleBack} aria-label="Back">
-              Back
+            <Button icon={<ArrowLeftOutlined />} onClick={handleBack} aria-label="뒤로">
+              뒤로
             </Button>
           </Space>
 
@@ -340,18 +340,18 @@ const NonConformityDetail = () => {
               <Space>
                 {isEditing ? (
                   <>
-                    <Button onClick={handleCancelEdit}>Cancel</Button>
-                    <Button type="primary" onClick={handleSave} aria-label="Save">
-                      Save
+                    <Button onClick={handleCancelEdit}>취소</Button>
+                    <Button type="primary" onClick={handleSave} aria-label="저장">
+                      저장
                     </Button>
                   </>
                 ) : (
                   <>
-                    <Button icon={<EditOutlined />} onClick={handleEdit} aria-label="Edit">
-                      Edit
+                    <Button icon={<EditOutlined />} onClick={handleEdit} aria-label="수정">
+                      수정
                     </Button>
-                    <Button onClick={handleStatusChange} aria-label="Change Status">
-                      Change Status
+                    <Button onClick={handleStatusChange} aria-label="상태 변경">
+                      상태 변경
                     </Button>
                   </>
                 )}
@@ -360,52 +360,52 @@ const NonConformityDetail = () => {
           </Row>
 
           <Descriptions bordered column={{ xs: 1, sm: 2, md: 3 }}>
-            <Descriptions.Item label="Control Item">
+            <Descriptions.Item label="통제항목">
               {nonConformity.controlItem.number} - {nonConformity.controlItem.title}
             </Descriptions.Item>
-            <Descriptions.Item label="Severity">
+            <Descriptions.Item label="심각도">
               <Tag color={severityColors[nonConformity.type]}>{nonConformity.type.toUpperCase()}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Status">
+            <Descriptions.Item label="상태">
               <Tag color={statusColors[nonConformity.status]}>{statusLabels[nonConformity.status]}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Due Date">{nonConformity.dueDate || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Assignee">{nonConformity.assigneeName || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Audit">
+            <Descriptions.Item label="기한">{nonConformity.dueDate || '-'}</Descriptions.Item>
+            <Descriptions.Item label="담당자">{nonConformity.assigneeName || '-'}</Descriptions.Item>
+            <Descriptions.Item label="감사">
               <a onClick={handleAuditClick} style={{ cursor: 'pointer' }}>
                 {nonConformity.auditTitle}
               </a>
             </Descriptions.Item>
-            <Descriptions.Item label="Description" span={3}>
+            <Descriptions.Item label="설명" span={3}>
               <Paragraph>{nonConformity.description}</Paragraph>
             </Descriptions.Item>
-            <Descriptions.Item label="Evidence" span={3}>
+            <Descriptions.Item label="증적" span={3}>
               <Paragraph>{nonConformity.evidence}</Paragraph>
             </Descriptions.Item>
-            <Descriptions.Item label="Root Cause" span={3}>
+            <Descriptions.Item label="근본 원인" span={3}>
               {isEditing ? (
                 <Form form={form}>
                   <Form.Item name="rootCause" noStyle>
-                    <TextArea rows={4} placeholder="Enter root cause analysis" />
+                    <TextArea rows={4} placeholder="근본 원인 분석 입력" />
                   </Form.Item>
                 </Form>
               ) : (
-                <Paragraph>{nonConformity.rootCause || 'Not analyzed yet'}</Paragraph>
+                <Paragraph>{nonConformity.rootCause || '분석 전'}</Paragraph>
               )}
             </Descriptions.Item>
           </Descriptions>
         </Card>
 
         <Card
-          title="Corrective Actions"
+          title="시정조치"
           extra={
             <Button
               type="primary"
               icon={<PlusOutlined />}
               onClick={handleAddCorrectiveAction}
-              aria-label="Add Corrective Action"
+              aria-label="시정조치 추가"
             >
-              Add Corrective Action
+              시정조치 추가
             </Button>
           }
         >
@@ -417,20 +417,20 @@ const NonConformityDetail = () => {
           />
         </Card>
 
-        <Card title="Attachments">
+        <Card title="첨부파일">
           <Space direction="vertical" style={{ width: '100%' }}>
             <Upload
               listType="text"
               beforeUpload={() => false}
             >
-              <Button icon={<UploadOutlined />} aria-label="Upload Evidence">
-                Upload Evidence
+              <Button icon={<UploadOutlined />} aria-label="증적 업로드">
+                증적 업로드
               </Button>
             </Upload>
           </Space>
         </Card>
 
-        <Card title="Status History">
+        <Card title="상태 이력">
           <Timeline
             items={statusHistory.map((item) => ({
               color: item.status === 'pending' ? 'gray' : item.status === 'in_progress' ? 'blue' : 'green',
@@ -451,67 +451,67 @@ const NonConformityDetail = () => {
 
         {/* Status Change Modal */}
         <Modal
-          title="Change Status"
+          title="상태 변경"
           open={statusModalVisible}
           onCancel={() => setStatusModalVisible(false)}
           footer={null}
         >
           <Space direction="vertical" style={{ width: '100%' }}>
-            <Text>Select new status:</Text>
+            <Text>새 상태를 선택하세요:</Text>
             <Button block onClick={() => handleStatusConfirm('in_progress')}>
-              In Progress
+              진행 중
             </Button>
             <Button block onClick={() => handleStatusConfirm('completed')}>
-              Completed
+              완료
             </Button>
             <Button block onClick={() => handleStatusConfirm('verified')}>
-              Verified
+              검증됨
             </Button>
             <Button block onClick={() => handleStatusConfirm('rejected')}>
-              Rejected
+              반려
             </Button>
             <Divider />
             <Button block type="primary" onClick={() => handleStatusConfirm('completed')}>
-              Resolved
+              해결됨
             </Button>
             <Button block onClick={() => handleStatusConfirm('verified')}>
-              Closed
+              종결
             </Button>
           </Space>
           <div style={{ textAlign: 'center', marginTop: 16 }}>
-            <Text type="secondary">Confirm your selection</Text>
+            <Text type="secondary">선택을 확인하세요</Text>
           </div>
         </Modal>
 
         {/* Add Corrective Action Modal */}
         <Modal
-          title="Add Corrective Action"
+          title="시정조치 추가"
           open={isAddingAction}
           onCancel={() => setIsAddingAction(false)}
           onOk={handleSaveCorrectiveAction}
-          okText="Add"
+          okText="추가"
         >
           <Form form={actionForm} layout="vertical">
             <Form.Item
               name="action"
-              label="Action"
-              rules={[{ required: true, message: 'Action is required' }]}
+              label="조치"
+              rules={[{ required: true, message: '조치 내용을 입력해주세요' }]}
             >
-              <Input placeholder="Enter corrective action" />
+              <Input placeholder="시정조치 내용 입력" />
             </Form.Item>
             <Form.Item
               name="implementationPlan"
-              label="Implementation Plan"
-              rules={[{ required: true, message: 'Implementation plan is required' }]}
+              label="이행 계획"
+              rules={[{ required: true, message: '이행 계획을 입력해주세요' }]}
             >
-              <TextArea rows={4} placeholder="Describe the implementation plan" />
+              <TextArea rows={4} placeholder="이행 계획 기술" />
             </Form.Item>
             <Form.Item
               name="responsibleId"
-              label="Responsible Person"
-              rules={[{ required: true, message: 'Responsible person is required' }]}
+              label="담당자"
+              rules={[{ required: true, message: '담당자를 선택해주세요' }]}
             >
-              <Select placeholder="Select responsible person">
+              <Select placeholder="담당자 선택">
                 {users.map((user) => (
                   <Option key={user.id} value={user.id}>
                     {user.name} ({user.email})
@@ -521,8 +521,8 @@ const NonConformityDetail = () => {
             </Form.Item>
             <Form.Item
               name="dueDate"
-              label="Due Date"
-              rules={[{ required: true, message: 'Due date is required' }]}
+              label="기한"
+              rules={[{ required: true, message: '기한을 선택해주세요' }]}
             >
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>

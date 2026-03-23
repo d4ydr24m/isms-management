@@ -144,10 +144,10 @@ const DoASettingsPage = () => {
 
   // DoA 설정 변경 모달 열기
   const handleOpenModal = () => {
-    const initialValue = currentDoA?.threshold_value ?? 9
+    const initialValue = currentDoA?.thresholdValue ?? 9
     form.setFieldsValue({
-      threshold_value: initialValue,
-      effective_date: dayjs(),
+      thresholdValue: initialValue,
+      effectiveDate: dayjs(),
       remarks: '',
     })
     setPreviewThreshold(initialValue)
@@ -161,9 +161,9 @@ const DoASettingsPage = () => {
       setModalLoading(true)
 
       const data: DoAConfigCreate = {
-        threshold_value: values.threshold_value,
-        effective_date: values.effective_date.format('YYYY-MM-DD'),
-        expiry_date: values.expiry_date ? values.expiry_date.format('YYYY-MM-DD') : null,
+        thresholdValue: values.thresholdValue,
+        effectiveDate: values.effectiveDate.format('YYYY-MM-DD'),
+        expiryDate: values.expiryDate ? values.expiryDate.format('YYYY-MM-DD') : null,
         remarks: values.remarks || null,
       }
 
@@ -187,29 +187,29 @@ const DoASettingsPage = () => {
   const exceedingColumns: TableProps<RiskAssessment>['columns'] = [
     {
       title: '자산',
-      dataIndex: 'asset_name',
-      key: 'asset_name',
+      dataIndex: 'assetName',
+      key: 'assetName',
       width: 180,
     },
     {
       title: '위협',
-      dataIndex: 'threat_name',
-      key: 'threat_name',
+      dataIndex: 'threatName',
+      key: 'threatName',
       width: 150,
     },
     {
       title: '취약점',
-      dataIndex: 'vulnerability_name',
-      key: 'vulnerability_name',
+      dataIndex: 'vulnerabilityName',
+      key: 'vulnerabilityName',
       width: 150,
     },
     {
       title: '위험 점수',
-      dataIndex: 'risk_score',
-      key: 'risk_score',
+      dataIndex: 'riskScore',
+      key: 'riskScore',
       width: 100,
       align: 'center',
-      sorter: (a, b) => (a.risk_score ?? 0) - (b.risk_score ?? 0),
+      sorter: (a, b) => (a.riskScore ?? 0) - (b.riskScore ?? 0),
       render: (score: number | null) => {
         if (score === null) return '-'
         return (
@@ -221,8 +221,8 @@ const DoASettingsPage = () => {
     },
     {
       title: '위험 등급',
-      dataIndex: 'risk_level',
-      key: 'risk_level',
+      dataIndex: 'riskLevel',
+      key: 'riskLevel',
       width: 100,
       align: 'center',
       render: (level: string | null) => {
@@ -233,8 +233,8 @@ const DoASettingsPage = () => {
     },
     {
       title: '처리 계획',
-      dataIndex: 'has_treatment_plan',
-      key: 'has_treatment_plan',
+      dataIndex: 'hasTreatmentPlan',
+      key: 'hasTreatmentPlan',
       width: 100,
       align: 'center',
       render: (hasPlan: boolean) =>
@@ -270,10 +270,10 @@ const DoASettingsPage = () => {
               <Col span={6}>
                 <Statistic
                   title="현재 임계값"
-                  value={currentDoA.threshold_value}
+                  value={currentDoA.thresholdValue}
                   suffix="/ 27"
                   valueStyle={{
-                    color: getScoreColor(currentDoA.threshold_value),
+                    color: getScoreColor(currentDoA.thresholdValue),
                     fontSize: 36,
                   }}
                 />
@@ -281,9 +281,9 @@ const DoASettingsPage = () => {
               <Col span={6}>
                 <Statistic
                   title="위험 등급 기준"
-                  value={getScoreLabel(currentDoA.threshold_value)}
+                  value={getScoreLabel(currentDoA.thresholdValue)}
                   valueStyle={{
-                    color: getScoreColor(currentDoA.threshold_value),
+                    color: getScoreColor(currentDoA.thresholdValue),
                     fontSize: 20,
                   }}
                 />
@@ -303,9 +303,9 @@ const DoASettingsPage = () => {
               <Col span={6}>
                 <Statistic
                   title="적용 상태"
-                  value={currentDoA.is_active ? '활성' : '비활성'}
+                  value={currentDoA.isActive ? '활성' : '비활성'}
                   valueStyle={{
-                    color: currentDoA.is_active ? '#52c41a' : '#8c8c8c',
+                    color: currentDoA.isActive ? '#52c41a' : '#8c8c8c',
                     fontSize: 20,
                   }}
                 />
@@ -319,16 +319,16 @@ const DoASettingsPage = () => {
               style={{ marginTop: 24 }}
             >
               <Descriptions.Item label="시행일">
-                {currentDoA.effective_date}
+                {currentDoA.effectiveDate}
               </Descriptions.Item>
               <Descriptions.Item label="만료일">
-                {currentDoA.expiry_date || '없음 (무기한)'}
+                {currentDoA.expiryDate || '없음 (무기한)'}
               </Descriptions.Item>
               <Descriptions.Item label="승인자">
-                {currentDoA.approver_name || '-'}
+                {currentDoA.approverName || '-'}
               </Descriptions.Item>
               <Descriptions.Item label="승인일">
-                {currentDoA.approval_date || '-'}
+                {currentDoA.approvalDate || '-'}
               </Descriptions.Item>
               <Descriptions.Item label="비고" span={2}>
                 {currentDoA.remarks || '-'}
@@ -398,14 +398,14 @@ const DoASettingsPage = () => {
                 <div
                   style={{
                     position: 'absolute',
-                    left: `${((currentDoA.threshold_value - 0.5) / 27) * 100}%`,
+                    left: `${((currentDoA.thresholdValue - 0.5) / 27) * 100}%`,
                     transform: 'translateX(-50%)',
                     fontSize: 11,
                     color: '#ff4d4f',
                     fontWeight: 'bold',
                   }}
                 >
-                  ▲ DoA={currentDoA.threshold_value}
+                  ▲ DoA={currentDoA.thresholdValue}
                 </div>
               </div>
             </div>
@@ -432,7 +432,7 @@ const DoASettingsPage = () => {
           >
             {exceedingTotal > 0 && (
               <Alert
-                message={`${exceedingTotal}건의 위험이 DoA 임계값(${currentDoA?.threshold_value ?? '-'})을 초과하고 있습니다.`}
+                message={`${exceedingTotal}건의 위험이 DoA 임계값(${currentDoA?.thresholdValue ?? '-'})을 초과하고 있습니다.`}
                 description="즉시 위험 처리 계획을 수립하여 잔여 위험을 허용 수준 이하로 낮춰야 합니다."
                 type="error"
                 showIcon
@@ -469,18 +469,18 @@ const DoASettingsPage = () => {
             {history.length > 0 ? (
               <Timeline
                 items={history.map((item) => ({
-                  color: item.new_threshold > (item.old_threshold ?? 0) ? 'green' : 'red',
+                  color: item.newThreshold > (item.oldThreshold ?? 0) ? 'green' : 'red',
                   children: (
                     <div>
                       <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
-                        {item.old_threshold !== null ? (
+                        {item.oldThreshold !== null ? (
                           <Space>
-                            <span>{item.old_threshold}</span>
+                            <span>{item.oldThreshold}</span>
                             <span>→</span>
-                            <span style={{ color: getScoreColor(item.new_threshold) }}>
-                              {item.new_threshold}
+                            <span style={{ color: getScoreColor(item.newThreshold) }}>
+                              {item.newThreshold}
                             </span>
-                            {item.new_threshold > item.old_threshold ? (
+                            {item.newThreshold > item.oldThreshold ? (
                               <ArrowUpOutlined style={{ color: '#52c41a' }} />
                             ) : (
                               <ArrowDownOutlined style={{ color: '#ff4d4f' }} />
@@ -489,20 +489,20 @@ const DoASettingsPage = () => {
                         ) : (
                           <span>
                             초기 설정:{' '}
-                            <span style={{ color: getScoreColor(item.new_threshold) }}>
-                              {item.new_threshold}
+                            <span style={{ color: getScoreColor(item.newThreshold) }}>
+                              {item.newThreshold}
                             </span>
                           </span>
                         )}
                       </div>
-                      {item.change_reason && (
+                      {item.changeReason && (
                         <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 2 }}>
-                          사유: {item.change_reason}
+                          사유: {item.changeReason}
                         </div>
                       )}
                       <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-                        {item.changer_name && `${item.changer_name} · `}
-                        {dayjs(item.changed_at).format('YYYY-MM-DD HH:mm')}
+                        {item.changerName && `${item.changerName} · `}
+                        {dayjs(item.changedAt).format('YYYY-MM-DD HH:mm')}
                       </div>
                     </div>
                   ),
@@ -539,7 +539,7 @@ const DoASettingsPage = () => {
 
         <Form form={form} layout="vertical">
           <Form.Item
-            name="threshold_value"
+            name="thresholdValue"
             label="DoA 임계값"
             rules={[{ required: true, message: '임계값을 설정해주세요' }]}
           >
@@ -583,14 +583,14 @@ const DoASettingsPage = () => {
             <div style={{ fontSize: 13, color: getScoreColor(previewThreshold) }}>
               {getScoreLabel(previewThreshold)} 이하 허용
             </div>
-            {currentDoA && previewThreshold !== currentDoA.threshold_value && (
+            {currentDoA && previewThreshold !== currentDoA.thresholdValue && (
               <div style={{ fontSize: 12, marginTop: 8 }}>
                 <ExclamationCircleOutlined style={{ color: '#faad14', marginRight: 4 }} />
-                현재 {currentDoA.threshold_value}에서{' '}
-                {previewThreshold > currentDoA.threshold_value ? (
-                  <span style={{ color: '#52c41a' }}>상향 (+{previewThreshold - currentDoA.threshold_value})</span>
+                현재 {currentDoA.thresholdValue}에서{' '}
+                {previewThreshold > currentDoA.thresholdValue ? (
+                  <span style={{ color: '#52c41a' }}>상향 (+{previewThreshold - currentDoA.thresholdValue})</span>
                 ) : (
-                  <span style={{ color: '#ff4d4f' }}>하향 ({previewThreshold - currentDoA.threshold_value})</span>
+                  <span style={{ color: '#ff4d4f' }}>하향 ({previewThreshold - currentDoA.thresholdValue})</span>
                 )}
               </div>
             )}
@@ -599,7 +599,7 @@ const DoASettingsPage = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="effective_date"
+                name="effectiveDate"
                 label="시행일"
                 rules={[{ required: true, message: '시행일을 선택해주세요' }]}
               >
@@ -607,7 +607,7 @@ const DoASettingsPage = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="expiry_date" label="만료일">
+              <Form.Item name="expiryDate" label="만료일">
                 <DatePicker style={{ width: '100%' }} placeholder="없음 (무기한)" />
               </Form.Item>
             </Col>

@@ -1,10 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { apiClient, handleApiError } from './api'
 
 describe('API Client', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
 
   it('should create axios instance with correct base URL', () => {
     const expectedURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'

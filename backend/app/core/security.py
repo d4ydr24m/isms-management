@@ -3,6 +3,8 @@
 JWT 토큰, 비밀번호 해싱, TOTP 등
 """
 import re
+import secrets
+import string
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -80,9 +82,13 @@ def generate_totp_secret() -> str:
 def verify_totp(secret: str, token: str) -> bool:
     """
     TOTP 토큰 검증
+
+    valid_window은 settings.TOTP_VALID_WINDOW으로 제어.
+    0 = 현재 30초 윈도우만 허용 (가장 엄격)
+    1 = ±30초 허용 (기본값, 시간 동기화 오차 대비)
     """
     totp = pyotp.TOTP(secret)
-    return totp.verify(token, valid_window=1)
+    return totp.verify(token, valid_window=settings.TOTP_VALID_WINDOW)
 
 
 def get_totp_uri(secret: str, email: str) -> str:
@@ -91,6 +97,56 @@ def get_totp_uri(secret: str, email: str) -> str:
     """
     totp = pyotp.TOTP(secret)
     return totp.provisioning_uri(name=email, issuer_name="ISMS Management System")
+
+
+def generate_backup_codes(count: int = 10) -> List[str]:
+    """
+    MFA 백업 코드 생성
+
+    8자리 대문자 영숫자 코드를 생성하고 "XXXX-XXXX" 형식으로 반환
+
+    Args:
+        count: 생성할 코드 수 (기본 10)
+
+    Returns:
+        List of formatted backup codes
+    """
+    alphabet = string.ascii_uppercase + string.digits
+    codes = []
+    for _ in range(count):
+        raw = ''.join(secrets.choice(alphabet) for _ in range(8))
+        formatted = f"{raw[:4]}-{raw[4:]}"
+        codes.append(formatted)
+    return codes
+
+
+def hash_backup_code(code: str) -> str:
+    """
+    백업 코드를 bcrypt로 해싱
+
+    Args:
+        code: 원본 백업 코드 (대시 포함 가능)
+
+    Returns:
+        해싱된 백업 코드
+    """
+    normalized = code.replace("-", "").upper()
+    return get_password_hash(normalized)
+
+
+def verify_backup_code(code: str, hashed: str) -> bool:
+    """
+    백업 코드를 해시와 비교 검증
+
+    Args:
+        code: 사용자 입력 백업 코드
+        hashed: 저장된 해시
+
+    Returns:
+        일치 여부
+    """
+    normalized = code.replace("-", "").upper()
+    return verify_password(normalized, hashed)
 
 
 def validate_password_policy(password: str) -> Dict[str, Any]:

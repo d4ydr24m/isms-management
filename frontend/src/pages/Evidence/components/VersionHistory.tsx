@@ -31,10 +31,10 @@ const VersionHistory = ({
 
   return (
     <Spin spinning={loading}>
-      <Card title="Version History">
+      <Card title="버전 이력">
         {sortedVersions.length === 0 ? (
           <Empty
-            description="No version history available"
+            description="버전 이력이 없습니다"
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         ) : (
@@ -49,7 +49,7 @@ const VersionHistory = ({
                         v{version.version}
                       </Title>
                       {version.version === currentVersion && (
-                        <Tag color="green">Current</Tag>
+                        <Tag color="green">현재</Tag>
                       )}
                     </Space>
 
@@ -76,7 +76,7 @@ const VersionHistory = ({
                       style={{ padding: 0 }}
                       aria-label="download"
                     >
-                      Download
+                      다운로드
                     </Button>
                   </Space>
                 </div>

@@ -1,7 +1,7 @@
 """
 인증 관련 Pydantic 스키마
 """
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
@@ -12,7 +12,7 @@ class LoginRequest(BaseModel):
     """로그인 요청 스키마"""
     email: EmailStr
     password: str = Field(..., min_length=1)
-    otp_code: Optional[str] = Field(None, min_length=6, max_length=6)
+    otp_code: Optional[str] = Field(None, min_length=6, max_length=9, description="OTP 코드 (6자리) 또는 백업 코드 (XXXX-XXXX 형식, 9자리)")
 
 
 class TokenResponse(BaseModel):
@@ -66,5 +66,22 @@ class OTPVerify(BaseModel):
 
 class MFADisableRequest(BaseModel):
     """MFA 비활성화 요청 스키마"""
+    password: str = Field(..., min_length=1)
+    otp_code: str = Field(..., min_length=6, max_length=6)
+
+
+class MFAEnableResponse(BaseModel):
+    """MFA 활성화 응답 스키마 (백업 코드 포함)"""
+    message: str
+    backup_codes: List[str]
+
+
+class MFABackupCodesResponse(BaseModel):
+    """MFA 백업 코드 응답 스키마"""
+    backup_codes: List[str]
+
+
+class MFARegenerateBackupCodesRequest(BaseModel):
+    """MFA 백업 코드 재생성 요청 스키마"""
     password: str = Field(..., min_length=1)
     otp_code: str = Field(..., min_length=6, max_length=6)

@@ -34,17 +34,17 @@ const statusColors: Record<AuditStatus, string> = {
 }
 
 const statusLabels: Record<AuditStatus, string> = {
-  planned: 'Planned',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
+  planned: '예정',
+  in_progress: '진행 중',
+  completed: '완료',
+  cancelled: '취소',
 }
 
 const auditTypeLabels: Record<string, string> = {
-  internal: 'Internal',
-  external: 'External',
-  certification: 'Certification',
-  surveillance: 'Surveillance',
+  internal: '내부 감사',
+  external: '외부 감사',
+  certification: '인증 심사',
+  surveillance: '사후 심사',
 }
 
 const severityColors: Record<NonConformityType, string> = {
@@ -121,13 +121,13 @@ const AuditDetail = () => {
 
   const nonConformityColumns: ColumnsType<NonConformity> = [
     {
-      title: 'Control',
+      title: '통제항목',
       key: 'control',
       width: 100,
       render: (_, record) => record.controlItem.number,
     },
     {
-      title: 'Title',
+      title: '제목',
       dataIndex: 'title',
       key: 'title',
       render: (text, record) => (
@@ -140,7 +140,7 @@ const AuditDetail = () => {
       ),
     },
     {
-      title: 'Severity',
+      title: '심각도',
       dataIndex: 'type',
       key: 'type',
       width: 100,
@@ -149,7 +149,7 @@ const AuditDetail = () => {
       ),
     },
     {
-      title: 'Status',
+      title: '상태',
       dataIndex: 'status',
       key: 'status',
       width: 120,
@@ -165,7 +165,7 @@ const AuditDetail = () => {
       },
     },
     {
-      title: 'Due Date',
+      title: '기한',
       dataIndex: 'dueDate',
       key: 'dueDate',
       width: 120,
@@ -183,7 +183,7 @@ const AuditDetail = () => {
   if (!audit) {
     return (
       <Card>
-        <Text>Audit not found</Text>
+        <Text>감사를 찾을 수 없습니다</Text>
       </Card>
     )
   }
@@ -193,8 +193,8 @@ const AuditDetail = () => {
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <Card>
           <Space style={{ marginBottom: 16 }}>
-            <Button icon={<ArrowLeftOutlined />} onClick={handleBack} aria-label="Back">
-              Back
+            <Button icon={<ArrowLeftOutlined />} onClick={handleBack} aria-label="뒤로">
+              뒤로
             </Button>
           </Space>
 
@@ -206,92 +206,92 @@ const AuditDetail = () => {
             </Col>
             <Col>
               <Space>
-                <Button icon={<EditOutlined />} onClick={handleEdit} aria-label="Edit">
-                  Edit
+                <Button icon={<EditOutlined />} onClick={handleEdit} aria-label="수정">
+                  수정
                 </Button>
                 <Button
                   type="primary"
                   icon={<FileTextOutlined />}
                   onClick={handleViewChecklist}
-                  aria-label="View Checklist"
+                  aria-label="체크리스트 보기"
                 >
-                  View Checklist
+                  체크리스트 보기
                 </Button>
                 <Button
                   icon={<ExclamationCircleOutlined />}
                   onClick={handleRegisterNonConformity}
-                  aria-label="Register Non-conformity"
+                  aria-label="부적합 등록"
                 >
-                  Register Non-conformity
+                  부적합 등록
                 </Button>
               </Space>
             </Col>
           </Row>
 
           <Descriptions bordered column={{ xs: 1, sm: 2, md: 3 }}>
-            <Descriptions.Item label="Type">
+            <Descriptions.Item label="유형">
               <Tag>{auditTypeLabels[audit.auditType] || audit.auditType}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Status">
+            <Descriptions.Item label="상태">
               <Tag color={statusColors[audit.status]}>{statusLabels[audit.status]}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Period">
+            <Descriptions.Item label="기간">
               {audit.startDate} ~ {audit.endDate}
             </Descriptions.Item>
-            <Descriptions.Item label="Scope" span={3}>
+            <Descriptions.Item label="범위" span={3}>
               {audit.scope}
             </Descriptions.Item>
-            <Descriptions.Item label="Auditors" span={2}>
+            <Descriptions.Item label="감사원" span={2}>
               <Space>
                 {audit.auditors.map((auditor) => (
                   <Tag key={auditor.id}>{auditor.name}</Tag>
                 ))}
               </Space>
             </Descriptions.Item>
-            <Descriptions.Item label="Created By">{audit.createdByName}</Descriptions.Item>
-            <Descriptions.Item label="Created At">{audit.createdAt}</Descriptions.Item>
-            <Descriptions.Item label="Updated At">{audit.updatedAt}</Descriptions.Item>
+            <Descriptions.Item label="작성자">{audit.createdByName}</Descriptions.Item>
+            <Descriptions.Item label="작성일">{audit.createdAt}</Descriptions.Item>
+            <Descriptions.Item label="수정일">{audit.updatedAt}</Descriptions.Item>
           </Descriptions>
         </Card>
 
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <Card title="Checklist Progress" size="small">
+            <Card title="체크리스트 진행률" size="small">
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Progress percent={progressPercent} status="active" />
                 <Text type="secondary">
-                  {checkedItems} / {totalItems} items checked
+                  {checkedItems} / {totalItems} 항목 점검 완료
                 </Text>
               </Space>
             </Card>
           </Col>
           <Col xs={24} md={12}>
-            <Card title="Non-conformities" size="small">
+            <Card title="부적합 사항" size="small">
               <Row gutter={8}>
                 <Col span={6}>
                   <Statistic
-                    title="Critical"
+                    title="치명적"
                     value={severityStats.critical}
                     valueStyle={{ color: '#f5222d', fontSize: 20 }}
                   />
                 </Col>
                 <Col span={6}>
                   <Statistic
-                    title="Major"
+                    title="중대"
                     value={severityStats.major}
                     valueStyle={{ color: '#fa8c16', fontSize: 20 }}
                   />
                 </Col>
                 <Col span={6}>
                   <Statistic
-                    title="Minor"
+                    title="경미"
                     value={severityStats.minor}
                     valueStyle={{ color: '#faad14', fontSize: 20 }}
                   />
                 </Col>
                 <Col span={6}>
                   <Statistic
-                    title="Total"
+                    title="합계"
                     value={audit.nonConformityCount}
                     valueStyle={{ fontSize: 20 }}
                   />
@@ -301,7 +301,7 @@ const AuditDetail = () => {
           </Col>
         </Row>
 
-        <Card title="Non-conformity List">
+        <Card title="부적합 목록">
           <Table
             columns={nonConformityColumns}
             dataSource={nonConformities}

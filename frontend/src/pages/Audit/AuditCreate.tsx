@@ -65,7 +65,7 @@ const AuditCreate = () => {
       setExternalAuditors(auditorsData.data || [])
       setControls(controlsData.data || [])
     } catch {
-      message.error('Failed to load data')
+      message.error('데이터를 불러오는데 실패했습니다')
     }
   }, [])
 
@@ -92,10 +92,10 @@ const AuditCreate = () => {
       }
 
       const result = await auditService.createAudit(data)
-      message.success('Audit plan created successfully')
+      message.success('감사 계획이 등록되었습니다')
       navigate(`/audits/${result.id}`)
     } catch {
-      message.error('Failed to create audit plan')
+      message.error('감사 계획 등록에 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -108,7 +108,7 @@ const AuditCreate = () => {
   const controlTransferData: TransferItem[] = controls.map((control) => ({
     key: String(control.id),
     title: `${control.number} - ${control.title}`,
-    description: control.isRequired ? 'Required' : 'Optional',
+    description: control.isRequired ? '필수' : '선택',
   }))
 
   const handleControlChange: TransferProps['onChange'] = (nextTargetKeys) => {
@@ -119,7 +119,7 @@ const AuditCreate = () => {
     option.title.toLowerCase().includes(inputValue.toLowerCase())
 
   return (
-    <Card title="Create Audit Plan">
+    <Card title="감사 계획 등록">
       <Form
         form={form}
         layout="vertical"
@@ -134,23 +134,23 @@ const AuditCreate = () => {
           <Col xs={24} md={12}>
             <Form.Item
               name="title"
-              label="Audit Title"
-              rules={[{ required: true, message: 'Title is required' }]}
+              label="감사 제목"
+              rules={[{ required: true, message: '제목을 입력해주세요' }]}
             >
-              <Input placeholder="Enter audit title" />
+              <Input placeholder="감사 제목 입력" />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
             <Form.Item
               name="auditType"
-              label="Audit Type"
-              rules={[{ required: true, message: 'Audit type is required' }]}
+              label="감사 유형"
+              rules={[{ required: true, message: '감사 유형을 선택해주세요' }]}
             >
-              <Select placeholder="Select audit type">
-                <Option value="internal">Internal</Option>
-                <Option value="external">External</Option>
-                <Option value="certification">Certification</Option>
-                <Option value="surveillance">Surveillance</Option>
+              <Select placeholder="감사 유형 선택">
+                <Option value="internal">내부 감사</Option>
+                <Option value="external">외부 감사</Option>
+                <Option value="certification">인증 심사</Option>
+                <Option value="surveillance">사후 심사</Option>
               </Select>
             </Form.Item>
           </Col>
@@ -158,40 +158,40 @@ const AuditCreate = () => {
 
         <Form.Item
           name="description"
-          label="Description"
+          label="설명"
         >
-          <TextArea rows={3} placeholder="Enter audit description" />
+          <TextArea rows={3} placeholder="감사 설명 입력" />
         </Form.Item>
 
         <Form.Item
           name="period"
-          label="Audit Period"
-          rules={[{ required: true, message: 'Audit period is required' }]}
+          label="감사 기간"
+          rules={[{ required: true, message: '감사 기간을 선택해주세요' }]}
         >
           <RangePicker style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
           name="scope"
-          label="Audit Scope"
-          rules={[{ required: true, message: 'Audit scope is required' }]}
+          label="감사 범위"
+          rules={[{ required: true, message: '감사 범위를 입력해주세요' }]}
         >
-          <TextArea rows={4} placeholder="Describe the audit scope" />
+          <TextArea rows={4} placeholder="감사 범위 기술" />
         </Form.Item>
 
         <Divider />
 
-        <Title level={5}>Auditor Assignment</Title>
+        <Title level={5}>감사원 배정</Title>
 
         <Row gutter={24}>
           <Col xs={24} md={12}>
             <Form.Item
               name="internalAuditorIds"
-              label="Internal Auditors"
+              label="내부 감사원"
             >
               <Select
                 mode="multiple"
-                placeholder="Select internal auditors"
+                placeholder="내부 감사원 선택"
                 optionFilterProp="children"
                 allowClear
               >
@@ -208,11 +208,11 @@ const AuditCreate = () => {
           <Col xs={24} md={12}>
             <Form.Item
               name="externalAuditorIds"
-              label="External Auditors"
+              label="외부 감사원"
             >
               <Select
                 mode="multiple"
-                placeholder="Select external auditors"
+                placeholder="외부 감사원 선택"
                 optionFilterProp="children"
                 allowClear
               >
@@ -230,14 +230,14 @@ const AuditCreate = () => {
 
         <Divider />
 
-        <Title level={5}>Select Control Items</Title>
+        <Title level={5}>통제항목 선택</Title>
         <Form.Item
           name="controlItemIds"
-          label="Control Items in Scope"
+          label="범위 내 통제항목"
         >
           <Transfer
             dataSource={controlTransferData}
-            titles={['Available', 'Selected']}
+            titles={['선택 가능', '선택됨']}
             targetKeys={selectedControls}
             onChange={handleControlChange}
             filterOption={filterOption}
@@ -253,9 +253,9 @@ const AuditCreate = () => {
         <Form.Item style={{ marginTop: 24 }}>
           <Space>
             <Button type="primary" htmlType="submit" loading={loading}>
-              Create
+              등록
             </Button>
-            <Button onClick={handleCancel}>Cancel</Button>
+            <Button onClick={handleCancel}>취소</Button>
           </Space>
         </Form.Item>
       </Form>

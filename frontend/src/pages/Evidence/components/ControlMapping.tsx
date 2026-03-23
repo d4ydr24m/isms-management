@@ -66,23 +66,23 @@ const ControlMapping = ({
 
   const columns: ColumnsType<ControlItem> = [
     {
-      title: 'Number',
+      title: '번호',
       dataIndex: 'number',
       key: 'number',
       width: 100,
     },
     {
-      title: 'Title',
+      title: '항목명',
       dataIndex: 'title',
       key: 'title',
     },
     {
-      title: 'Required',
+      title: '필수 여부',
       dataIndex: 'isRequired',
       key: 'isRequired',
       width: 100,
       render: (isRequired: boolean) =>
-        isRequired ? <Tag color="red">Required</Tag> : <Tag>Optional</Tag>,
+        isRequired ? <Tag color="red">필수</Tag> : <Tag>선택</Tag>,
     },
   ]
 
@@ -96,7 +96,7 @@ const ControlMapping = ({
   return (
     <Spin spinning={loading}>
       <Card
-        title="Control Item Mapping"
+        title="통제항목 매핑"
         extra={
           !readOnly && (
             <Button
@@ -104,14 +104,14 @@ const ControlMapping = ({
               icon={<PlusOutlined />}
               onClick={handleOpenModal}
             >
-              Add Control
+              통제항목 추가
             </Button>
           )
         }
       >
         {mappedControls.length === 0 ? (
           <Empty
-            description="No control items mapped"
+            description="매핑된 통제항목이 없습니다"
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         ) : (
@@ -133,16 +133,16 @@ const ControlMapping = ({
         )}
 
         <Modal
-          title="Select Control Items"
+          title="통제항목 선택"
           open={isModalOpen}
           onOk={handleOk}
           onCancel={handleCloseModal}
           width={800}
-          okText="Apply"
-          cancelText="Cancel"
+          okText="적용"
+          cancelText="취소"
         >
           <Input
-            placeholder="Search by number or title"
+            placeholder="번호 또는 제목으로 검색"
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}

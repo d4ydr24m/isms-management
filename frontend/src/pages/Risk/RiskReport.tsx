@@ -126,7 +126,7 @@ const RiskReportPage = () => {
     setExporting(true)
     try {
       const result = await exportRiskReport(selectedScenarioId, format)
-      window.open(result.download_url, '_blank')
+      window.open(result.downloadUrl, '_blank')
       message.success('보고서 내보내기가 완료되었습니다.')
     } catch {
       message.error('보고서 내보내기에 실패했습니다.')
@@ -156,34 +156,34 @@ const RiskReportPage = () => {
       width: 150,
       render: (_, record) => (
         <div>
-          <div>{record.asset_name}</div>
-          <Text type="secondary" style={{ fontSize: 11 }}>{record.asset_code}</Text>
+          <div>{record.assetName}</div>
+          <Text type="secondary" style={{ fontSize: 11 }}>{record.assetCode}</Text>
         </div>
       ),
     },
     {
       title: '위협',
-      dataIndex: 'threat_name',
-      key: 'threat_name',
+      dataIndex: 'threatName',
+      key: 'threatName',
       width: 130,
       ellipsis: true,
     },
     {
       title: '취약점',
-      dataIndex: 'vulnerability_name',
-      key: 'vulnerability_name',
+      dataIndex: 'vulnerabilityName',
+      key: 'vulnerabilityName',
       width: 130,
       ellipsis: true,
     },
     {
       title: '위험점수',
-      dataIndex: 'risk_score',
-      key: 'risk_score',
+      dataIndex: 'riskScore',
+      key: 'riskScore',
       width: 90,
       align: 'center',
-      sorter: (a, b) => (b.risk_score || 0) - (a.risk_score || 0),
+      sorter: (a, b) => (b.riskScore || 0) - (a.riskScore || 0),
       render: (score: number | null, record) => {
-        const config = getRiskLevelConfig(record.risk_level)
+        const config = getRiskLevelConfig(record.riskLevel)
         return (
           <Tag color={config.color} style={{ fontWeight: 700, fontSize: 14 }}>
             {score ?? '-'}
@@ -193,8 +193,8 @@ const RiskReportPage = () => {
     },
     {
       title: '위험등급',
-      dataIndex: 'risk_level',
-      key: 'risk_level',
+      dataIndex: 'riskLevel',
+      key: 'riskLevel',
       width: 80,
       align: 'center',
       render: (level: RiskLevel | null) => {
@@ -204,8 +204,8 @@ const RiskReportPage = () => {
     },
     {
       title: 'DoA 초과',
-      dataIndex: 'exceeds_doa',
-      key: 'exceeds_doa',
+      dataIndex: 'exceedsDoa',
+      key: 'exceedsDoa',
       width: 80,
       align: 'center',
       render: (val: boolean) =>
@@ -297,13 +297,13 @@ const RiskReportPage = () => {
                       <span>총 위험 건수</span>
                     </Space>
                   }
-                  value={report?.total_risks || 0}
+                  value={report?.totalRisks || 0}
                   suffix="건"
                   valueStyle={{ color: '#1890ff', fontSize: 28 }}
                 />
                 {report && (
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    평가 대상 자산: {report.total_assets}건
+                    평가 대상 자산: {report.totalAssets}건
                   </Text>
                 )}
               </Card>
@@ -317,14 +317,14 @@ const RiskReportPage = () => {
                       <span>고위험</span>
                     </Space>
                   }
-                  value={report?.risk_distribution.high || 0}
+                  value={report?.riskDistribution.high || 0}
                   suffix="건"
                   valueStyle={{ color: '#ff4d4f', fontSize: 28 }}
                   prefix={<WarningOutlined />}
                 />
-                {report && report.total_risks > 0 && (
+                {report && report.totalRisks > 0 && (
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    전체 대비 {((report.risk_distribution.high / report.total_risks) * 100).toFixed(1)}%
+                    전체 대비 {((report.riskDistribution.high / report.totalRisks) * 100).toFixed(1)}%
                   </Text>
                 )}
               </Card>
@@ -338,7 +338,7 @@ const RiskReportPage = () => {
                       <span>DoA 초과</span>
                     </Space>
                   }
-                  value={report?.exceeding_doa_count || 0}
+                  value={report?.exceedingDoaCount || 0}
                   suffix="건"
                   valueStyle={{ color: '#fa8c16', fontSize: 28 }}
                 />
@@ -356,19 +356,19 @@ const RiskReportPage = () => {
                       <span>처리 완료율</span>
                     </Space>
                   }
-                  value={report?.treatment_progress.completion_rate || 0}
+                  value={report?.treatmentProgress.completionRate || 0}
                   suffix="%"
                   valueStyle={{
-                    color: (report?.treatment_progress.completion_rate || 0) >= 80 ? '#52c41a' : '#fa8c16',
+                    color: (report?.treatmentProgress.completionRate || 0) >= 80 ? '#52c41a' : '#fa8c16',
                     fontSize: 28,
                   }}
                 />
                 {report && (
                   <Progress
-                    percent={report.treatment_progress.completion_rate}
+                    percent={report.treatmentProgress.completionRate}
                     size="small"
                     showInfo={false}
-                    strokeColor={(report.treatment_progress.completion_rate || 0) >= 80 ? '#52c41a' : '#fa8c16'}
+                    strokeColor={(report.treatmentProgress.completionRate || 0) >= 80 ? '#52c41a' : '#fa8c16'}
                   />
                 )}
               </Card>
@@ -376,7 +376,7 @@ const RiskReportPage = () => {
           </Row>
 
           {/* 위험 등급 분포 바 */}
-          {report && report.total_risks > 0 && (
+          {report && report.totalRisks > 0 && (
             <Card size="small" style={{ marginBottom: 16 }}>
               <Row align="middle" gutter={8}>
                 <Col flex="100px">
@@ -385,8 +385,8 @@ const RiskReportPage = () => {
                 <Col flex="auto">
                   <div style={{ display: 'flex', height: 28, borderRadius: 4, overflow: 'hidden' }}>
                     {RISK_LEVELS.map(level => {
-                      const count = report.risk_distribution[level.value as keyof RiskDistribution] as number
-                      const pct = report.total_risks > 0 ? (count / report.total_risks) * 100 : 0
+                      const count = report.riskDistribution[level.value as keyof RiskDistribution] as number
+                      const pct = report.totalRisks > 0 ? (count / report.totalRisks) * 100 : 0
                       if (pct === 0) return null
                       return (
                         <Tooltip key={level.value} title={`${level.label}: ${count}건 (${pct.toFixed(1)}%)`}>
@@ -445,7 +445,7 @@ const RiskReportPage = () => {
               <RiskDistributionChart
                 data={distribution}
                 loading={reportLoading}
-                doaExceedingCount={report?.exceeding_doa_count}
+                doaExceedingCount={report?.exceedingDoaCount}
               />
             </Col>
           </Row>
@@ -469,7 +469,7 @@ const RiskReportPage = () => {
                       <Col span={12}>
                         <Statistic
                           title="전체"
-                          value={report.treatment_progress.total}
+                          value={report.treatmentProgress.total}
                           suffix="건"
                           valueStyle={{ fontSize: 20 }}
                         />
@@ -477,7 +477,7 @@ const RiskReportPage = () => {
                       <Col span={12}>
                         <Statistic
                           title="완료"
-                          value={report.treatment_progress.completed}
+                          value={report.treatmentProgress.completed}
                           suffix="건"
                           valueStyle={{ fontSize: 20, color: '#52c41a' }}
                           prefix={<CheckCircleOutlined />}
@@ -486,7 +486,7 @@ const RiskReportPage = () => {
                       <Col span={8}>
                         <Statistic
                           title="진행중"
-                          value={report.treatment_progress.in_progress}
+                          value={report.treatmentProgress.inProgress}
                           suffix="건"
                           valueStyle={{ fontSize: 16, color: '#1890ff' }}
                         />
@@ -494,7 +494,7 @@ const RiskReportPage = () => {
                       <Col span={8}>
                         <Statistic
                           title="계획됨"
-                          value={report.treatment_progress.planned}
+                          value={report.treatmentProgress.planned}
                           suffix="건"
                           valueStyle={{ fontSize: 16 }}
                         />
@@ -502,7 +502,7 @@ const RiskReportPage = () => {
                       <Col span={8}>
                         <Statistic
                           title="취소"
-                          value={report.treatment_progress.cancelled}
+                          value={report.treatmentProgress.cancelled}
                           suffix="건"
                           valueStyle={{ fontSize: 16, color: '#8c8c8c' }}
                         />
@@ -513,7 +513,7 @@ const RiskReportPage = () => {
                         완료율
                       </Text>
                       <Progress
-                        percent={report.treatment_progress.completion_rate}
+                        percent={report.treatmentProgress.completionRate}
                         strokeColor={{
                           '0%': '#ff4d4f',
                           '50%': '#faad14',
@@ -541,7 +541,7 @@ const RiskReportPage = () => {
                 extra={
                   executive && (
                     <Text type="secondary" style={{ fontSize: 12 }}>
-                      {executive.report_date}
+                      {executive.reportDate}
                     </Text>
                   )
                 }
@@ -556,7 +556,7 @@ const RiskReportPage = () => {
                       </Text>
                       <List
                         size="small"
-                        dataSource={executive.key_findings}
+                        dataSource={executive.keyFindings}
                         renderItem={(item) => (
                           <List.Item style={{ padding: '4px 0', borderBottom: 'none' }}>
                             <Text style={{ fontSize: 13 }}>
@@ -610,10 +610,10 @@ const RiskReportPage = () => {
               }
             >
               <Descriptions size="small" bordered column={4}>
-                <Descriptions.Item label="시나리오명">{report.scenario_name}</Descriptions.Item>
-                <Descriptions.Item label="평가 기간">{report.assessment_period}</Descriptions.Item>
-                <Descriptions.Item label="평가 대상 자산">{report.total_assets}건</Descriptions.Item>
-                <Descriptions.Item label="총 위험 건수">{report.total_risks}건</Descriptions.Item>
+                <Descriptions.Item label="시나리오명">{report.scenarioName}</Descriptions.Item>
+                <Descriptions.Item label="평가 기간">{report.assessmentPeriod}</Descriptions.Item>
+                <Descriptions.Item label="평가 대상 자산">{report.totalAssets}건</Descriptions.Item>
+                <Descriptions.Item label="총 위험 건수">{report.totalRisks}건</Descriptions.Item>
               </Descriptions>
             </Card>
           )}
@@ -630,7 +630,7 @@ const RiskReportPage = () => {
           >
             <Table
               columns={topRiskColumns}
-              dataSource={report?.top_risks || []}
+              dataSource={report?.topRisks || []}
               rowKey="id"
               pagination={false}
               size="small"

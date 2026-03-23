@@ -23,14 +23,14 @@ const FileUpload = ({
   multiple = false,
   maxSize,
   disabled = false,
-  uploadText = 'Click or drag file to this area to upload',
-  hintText = 'Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.',
+  uploadText = '클릭하거나 파일을 이 영역으로 드래그하여 업로드',
+  hintText = '단일 또는 다수 파일 업로드를 지원합니다.',
   showUploadList = true,
 }: FileUploadProps) => {
   const handleBeforeUpload: UploadProps['beforeUpload'] = (file, _fileList) => {
     // Validate file size
     if (maxSize && file.size > maxSize * 1024 * 1024) {
-      const errorMsg = `File size must be less than ${maxSize}MB`
+      const errorMsg = `파일 크기는 ${maxSize}MB 이하여야 합니다`
       message.error(errorMsg)
       if (onError) {
         onError(errorMsg)

@@ -76,10 +76,10 @@ const SOAManagement = () => {
     try {
       const params: Record<string, unknown> = {}
       if (filterApplicable !== 'all') {
-        params.is_applicable = filterApplicable === 'true'
+        params.isApplicable = filterApplicable === 'true'
       }
       if (filterStatus !== 'all') {
-        params.implementation_status = filterStatus
+        params.implementationStatus = filterStatus
       }
       const result = await getSOARecords(params)
       setData(result)
@@ -115,11 +115,11 @@ const SOAManagement = () => {
       setExporting(true)
       const request: SOAExportRequest = {
         format: values.format,
-        template_type: values.template_type,
+        templateType: values.templateType,
       }
       const result = await exportSOA(request)
       message.success('SOA 내보내기 파일이 생성되었습니다.')
-      window.open(result.download_url, '_blank')
+      window.open(result.downloadUrl, '_blank')
       setExportModalOpen(false)
       exportForm.resetFields()
     } catch {
@@ -133,12 +133,12 @@ const SOAManagement = () => {
   const openEditModal = (record: SOARecord) => {
     setEditingRecord(record)
     editForm.setFieldsValue({
-      is_applicable: record.is_applicable,
-      exclusion_reason: record.exclusion_reason,
-      implementation_status: record.implementation_status,
-      implementation_evidence: record.implementation_evidence,
-      related_assets: record.related_assets,
-      related_risks: record.related_risks,
+      isApplicable: record.isApplicable,
+      exclusionReason: record.exclusionReason,
+      implementationStatus: record.implementationStatus,
+      implementationEvidence: record.implementationEvidence,
+      relatedAssets: record.relatedAssets,
+      relatedRisks: record.relatedRisks,
       remarks: record.remarks,
     })
     setEditModalOpen(true)
@@ -151,15 +151,15 @@ const SOAManagement = () => {
       const values = await editForm.validateFields()
       setSaving(true)
       const updateData: SOARecordUpdate = {
-        is_applicable: values.is_applicable,
-        exclusion_reason: values.is_applicable ? null : values.exclusion_reason,
-        implementation_status: values.implementation_status,
-        implementation_evidence: values.implementation_evidence,
-        related_assets: values.related_assets,
-        related_risks: values.related_risks,
+        isApplicable: values.isApplicable,
+        exclusionReason: values.isApplicable ? null : values.exclusionReason,
+        implementationStatus: values.implementationStatus,
+        implementationEvidence: values.implementationEvidence,
+        relatedAssets: values.relatedAssets,
+        relatedRisks: values.relatedRisks,
         remarks: values.remarks,
       }
-      await updateSOARecord(editingRecord.control_item_id, updateData)
+      await updateSOARecord(editingRecord.controlItemId, updateData)
       message.success('SOA 레코드가 수정되었습니다.')
       setEditModalOpen(false)
       setEditingRecord(null)
@@ -177,15 +177,15 @@ const SOAManagement = () => {
     const stats: Record<string, number> = {}
     IMPLEMENTATION_STATUSES.forEach(s => { stats[s.value] = 0 })
     data.items.forEach(item => {
-      if (stats[item.implementation_status] !== undefined) {
-        stats[item.implementation_status]++
+      if (stats[item.implementationStatus] !== undefined) {
+        stats[item.implementationStatus]++
       }
     })
     return stats
   }
 
   const statusStats = getStatusStats()
-  const applicableItems = data?.items.filter(i => i.is_applicable) || []
+  const applicableItems = data?.items.filter(i => i.isApplicable) || []
   const fullyImplementedCount = statusStats['fully_implemented'] || 0
   const implementationRate = applicableItems.length > 0
     ? Math.round((fullyImplementedCount / applicableItems.length) * 100)
@@ -195,28 +195,28 @@ const SOAManagement = () => {
   const columns: ColumnsType<SOARecord> = [
     {
       title: '통제 코드',
-      dataIndex: 'control_code',
-      key: 'control_code',
+      dataIndex: 'controlCode',
+      key: 'controlCode',
       width: 100,
       fixed: 'left',
-      sorter: (a, b) => (a.control_code || '').localeCompare(b.control_code || ''),
+      sorter: (a, b) => (a.controlCode || '').localeCompare(b.controlCode || ''),
     },
     {
       title: '통제 항목',
-      dataIndex: 'control_title',
-      key: 'control_title',
+      dataIndex: 'controlTitle',
+      key: 'controlTitle',
       width: 250,
       ellipsis: { showTitle: false },
       render: (text: string, record) => (
-        <Tooltip title={record.control_description}>
+        <Tooltip title={record.controlDescription}>
           <span>{text}</span>
         </Tooltip>
       ),
     },
     {
       title: '적용 여부',
-      dataIndex: 'is_applicable',
-      key: 'is_applicable',
+      dataIndex: 'isApplicable',
+      key: 'isApplicable',
       width: 100,
       align: 'center',
       render: (val: boolean) =>
@@ -228,17 +228,17 @@ const SOAManagement = () => {
     },
     {
       title: '제외 사유',
-      dataIndex: 'exclusion_reason',
-      key: 'exclusion_reason',
+      dataIndex: 'exclusionReason',
+      key: 'exclusionReason',
       width: 180,
       ellipsis: true,
       render: (text: string | null, record) =>
-        !record.is_applicable ? (text || '-') : '-',
+        !record.isApplicable ? (text || '-') : '-',
     },
     {
       title: '구현 상태',
-      dataIndex: 'implementation_status',
-      key: 'implementation_status',
+      dataIndex: 'implementationStatus',
+      key: 'implementationStatus',
       width: 120,
       align: 'center',
       render: (status: ImplementationStatus) => {
@@ -252,24 +252,24 @@ const SOAManagement = () => {
     },
     {
       title: '구현 증적',
-      dataIndex: 'implementation_evidence',
-      key: 'implementation_evidence',
+      dataIndex: 'implementationEvidence',
+      key: 'implementationEvidence',
       width: 200,
       ellipsis: true,
       render: (text: string | null) => text || '-',
     },
     {
       title: '관련 자산',
-      dataIndex: 'related_assets',
-      key: 'related_assets',
+      dataIndex: 'relatedAssets',
+      key: 'relatedAssets',
       width: 150,
       ellipsis: true,
       render: (text: string | null) => text || '-',
     },
     {
       title: '관련 위험',
-      dataIndex: 'related_risks',
-      key: 'related_risks',
+      dataIndex: 'relatedRisks',
+      key: 'relatedRisks',
       width: 150,
       ellipsis: true,
       render: (text: string | null) => text || '-',
@@ -328,7 +328,7 @@ const SOAManagement = () => {
             <Button
               icon={<DownloadOutlined />}
               onClick={() => {
-                exportForm.setFieldsValue({ format: 'excel', template_type: 'isms_p' })
+                exportForm.setFieldsValue({ format: 'excel', templateType: 'isms_p' })
                 setExportModalOpen(true)
               }}
             >
@@ -354,7 +354,7 @@ const SOAManagement = () => {
           <Card size="small">
             <Statistic
               title="적용 항목"
-              value={data?.applicable_count || 0}
+              value={data?.applicableCount || 0}
               suffix="건"
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
@@ -365,7 +365,7 @@ const SOAManagement = () => {
           <Card size="small">
             <Statistic
               title="적용 제외"
-              value={data?.not_applicable_count || 0}
+              value={data?.notApplicableCount || 0}
               suffix="건"
               prefix={<CloseCircleOutlined />}
               valueStyle={{ color: '#8c8c8c' }}
@@ -505,7 +505,7 @@ const SOAManagement = () => {
             pageSizeOptions: ['10', '20', '50', '100'],
           }}
           size="middle"
-          rowClassName={(record) => !record.is_applicable ? 'soa-row-excluded' : ''}
+          rowClassName={(record) => !record.isApplicable ? 'soa-row-excluded' : ''}
         />
       </Card>
 
@@ -516,7 +516,7 @@ const SOAManagement = () => {
             <EditOutlined />
             <span>SOA 레코드 수정</span>
             {editingRecord && (
-              <Tag color="blue">{editingRecord.control_code}</Tag>
+              <Tag color="blue">{editingRecord.controlCode}</Tag>
             )}
           </Space>
         }
@@ -538,19 +538,19 @@ const SOAManagement = () => {
               size="small"
               style={{ marginBottom: 16, backgroundColor: '#fafafa' }}
             >
-              <Text strong>{editingRecord.control_code}</Text>
-              <Text style={{ marginLeft: 8 }}>{editingRecord.control_title}</Text>
-              {editingRecord.control_description && (
+              <Text strong>{editingRecord.controlCode}</Text>
+              <Text style={{ marginLeft: 8 }}>{editingRecord.controlTitle}</Text>
+              {editingRecord.controlDescription && (
                 <div style={{ marginTop: 4 }}>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {editingRecord.control_description}
+                    {editingRecord.controlDescription}
                   </Text>
                 </div>
               )}
             </Card>
             <Form form={editForm} layout="vertical">
               <Form.Item
-                name="is_applicable"
+                name="isApplicable"
                 label="적용 여부"
                 valuePropName="checked"
               >
@@ -562,12 +562,12 @@ const SOAManagement = () => {
 
               <Form.Item
                 noStyle
-                shouldUpdate={(prev, cur) => prev.is_applicable !== cur.is_applicable}
+                shouldUpdate={(prev, cur) => prev.isApplicable !== cur.isApplicable}
               >
                 {({ getFieldValue }) =>
-                  !getFieldValue('is_applicable') && (
+                  !getFieldValue('isApplicable') && (
                     <Form.Item
-                      name="exclusion_reason"
+                      name="exclusionReason"
                       label="제외 사유"
                       rules={[{ required: true, message: '제외 사유를 입력해주세요.' }]}
                     >
@@ -578,7 +578,7 @@ const SOAManagement = () => {
               </Form.Item>
 
               <Form.Item
-                name="implementation_status"
+                name="implementationStatus"
                 label="구현 상태"
                 rules={[{ required: true, message: '구현 상태를 선택해주세요.' }]}
               >
@@ -602,7 +602,7 @@ const SOAManagement = () => {
               </Form.Item>
 
               <Form.Item
-                name="implementation_evidence"
+                name="implementationEvidence"
                 label={
                   <Space>
                     <span>구현 증적</span>
@@ -617,12 +617,12 @@ const SOAManagement = () => {
 
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item name="related_assets" label="관련 자산">
+                  <Form.Item name="relatedAssets" label="관련 자산">
                     <Input placeholder="관련 자산 정보" />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item name="related_risks" label="관련 위험">
+                  <Form.Item name="relatedRisks" label="관련 위험">
                     <Input placeholder="관련 위험 정보" />
                   </Form.Item>
                 </Col>
@@ -656,7 +656,7 @@ const SOAManagement = () => {
         width={480}
         destroyOnClose
       >
-        <Form form={exportForm} layout="vertical" initialValues={{ format: 'excel', template_type: 'isms_p' }}>
+        <Form form={exportForm} layout="vertical" initialValues={{ format: 'excel', templateType: 'isms_p' }}>
           <Form.Item
             name="format"
             label="파일 형식"
@@ -675,7 +675,7 @@ const SOAManagement = () => {
           </Form.Item>
 
           <Form.Item
-            name="template_type"
+            name="templateType"
             label="템플릿 유형"
             rules={[{ required: true }]}
           >

@@ -52,14 +52,14 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       return (
         <div style={{ padding: '40px', textAlign: 'center' }}>
           <Alert
-            message="Something went wrong"
-            description={this.state.error?.message || 'An unexpected error occurred'}
+            message="오류가 발생했습니다"
+            description={this.state.error?.message || '예기치 않은 오류가 발생했습니다'}
             type="error"
             showIcon
             style={{ marginBottom: 16, textAlign: 'left' }}
           />
           <Button type="primary" onClick={this.handleReset}>
-            Try Again
+            다시 시도
           </Button>
         </div>
       )

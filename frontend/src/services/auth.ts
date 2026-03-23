@@ -10,18 +10,13 @@ import type {
   ApiResponse,
 } from '@/types'
 
+// Authentication is handled via HttpOnly cookies set by the backend.
+// Tokens are never exposed to JavaScript — all cookie management is server-side.
 export const authService = {
   // 로그인
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
       const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', credentials)
-      const { accessToken, refreshToken, requiresMfa } = response.data.data!
-
-      if (!requiresMfa) {
-        localStorage.setItem('accessToken', accessToken)
-        localStorage.setItem('refreshToken', refreshToken)
-      }
-
       return response.data.data!
     } catch (error) {
       return handleApiError(error)
@@ -31,12 +26,10 @@ export const authService = {
   // 로그아웃
   async logout(): Promise<void> {
     try {
+      // Backend clears HttpOnly cookies in the response
       await apiClient.post('/auth/logout')
-    } catch (error) {
+    } catch {
       // 로그아웃은 항상 성공으로 처리
-    } finally {
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
     }
   },
 
@@ -85,11 +78,22 @@ export const authService = {
   async verifyMfa(data: MfaVerifyRequest): Promise<LoginResponse> {
     try {
       const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/mfa/verify', data)
-      const { accessToken, refreshToken } = response.data.data!
+      return response.data.data!
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
 
-      localStorage.setItem('accessToken', accessToken)
-      localStorage.setItem('refreshToken', refreshToken)
-
+  // 백업 코드 재생성
+  async regenerateBackupCodes(
+    password: string,
+    otpCode: string,
+  ): Promise<{ backupCodes: string[] }> {
+    try {
+      const response = await apiClient.post<ApiResponse<{ backupCodes: string[] }>>(
+        '/auth/mfa/backup-codes/regenerate',
+        { password, otpCode },
+      )
       return response.data.data!
     } catch (error) {
       return handleApiError(error)

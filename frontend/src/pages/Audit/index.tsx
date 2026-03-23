@@ -23,17 +23,17 @@ const statusColors: Record<AuditStatus, string> = {
 }
 
 const statusLabels: Record<AuditStatus, string> = {
-  planned: 'Planned',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
+  planned: '예정',
+  in_progress: '진행 중',
+  completed: '완료',
+  cancelled: '취소',
 }
 
 const auditTypeLabels: Record<string, string> = {
-  internal: 'Internal',
-  external: 'External',
-  certification: 'Certification',
-  surveillance: 'Surveillance',
+  internal: '내부 감사',
+  external: '외부 감사',
+  certification: '인증 심사',
+  surveillance: '사후 심사',
 }
 
 const AuditListPage = () => {
@@ -109,7 +109,7 @@ const AuditListPage = () => {
 
   const columns: ColumnsType<AuditPlan> = [
     {
-      title: 'Title',
+      title: '제목',
       dataIndex: 'title',
       key: 'title',
       render: (text, record) => (
@@ -122,7 +122,7 @@ const AuditListPage = () => {
       ),
     },
     {
-      title: 'Type',
+      title: '유형',
       dataIndex: 'auditType',
       key: 'auditType',
       width: 120,
@@ -131,7 +131,7 @@ const AuditListPage = () => {
       ),
     },
     {
-      title: 'Period',
+      title: '기간',
       key: 'period',
       width: 200,
       render: (_, record) => (
@@ -141,7 +141,7 @@ const AuditListPage = () => {
       ),
     },
     {
-      title: 'Status',
+      title: '상태',
       dataIndex: 'status',
       key: 'status',
       width: 120,
@@ -150,7 +150,7 @@ const AuditListPage = () => {
       ),
     },
     {
-      title: 'Auditors',
+      title: '감사원',
       dataIndex: 'auditors',
       key: 'auditors',
       width: 150,
@@ -159,14 +159,14 @@ const AuditListPage = () => {
       ),
     },
     {
-      title: 'Non-conformities',
+      title: '부적합',
       dataIndex: 'nonConformityCount',
       key: 'nonConformityCount',
       width: 130,
       align: 'center',
     },
     {
-      title: 'Actions',
+      title: '작업',
       key: 'actions',
       width: 100,
       align: 'center',
@@ -175,9 +175,9 @@ const AuditListPage = () => {
           type="link"
           icon={<EyeOutlined />}
           onClick={() => handleRowClick(record)}
-          aria-label="View"
+          aria-label="보기"
         >
-          View
+          보기
         </Button>
       ),
     },
@@ -193,10 +193,10 @@ const AuditListPage = () => {
   return (
     <div>
       <Card
-        title="Audit Management"
+        title="감사 관리"
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-            Create Audit Plan
+            감사 계획 등록
           </Button>
         }
       >
@@ -204,22 +204,22 @@ const AuditListPage = () => {
           <Row gutter={16}>
             <Col span={6}>
               <Card size="small">
-                <Statistic title="Planned" value={stats.planned} valueStyle={{ color: '#1890ff' }} />
+                <Statistic title="예정" value={stats.planned} valueStyle={{ color: '#1890ff' }} />
               </Card>
             </Col>
             <Col span={6}>
               <Card size="small">
-                <Statistic title="In Progress" value={stats.inProgress} valueStyle={{ color: '#fa8c16' }} />
+                <Statistic title="진행 중" value={stats.inProgress} valueStyle={{ color: '#fa8c16' }} />
               </Card>
             </Col>
             <Col span={6}>
               <Card size="small">
-                <Statistic title="Completed" value={stats.completed} valueStyle={{ color: '#52c41a' }} />
+                <Statistic title="완료" value={stats.completed} valueStyle={{ color: '#52c41a' }} />
               </Card>
             </Col>
             <Col span={6}>
               <Card size="small">
-                <Statistic title="Total" value={pagination.total} />
+                <Statistic title="전체" value={pagination.total} />
               </Card>
             </Col>
           </Row>
@@ -227,7 +227,7 @@ const AuditListPage = () => {
           <Row gutter={16}>
             <Col xs={24} sm={12} md={8}>
               <Input
-                placeholder="Search by title"
+                placeholder="제목으로 검색"
                 prefix={<SearchOutlined />}
                 onChange={(e) => handleSearch(e.target.value)}
                 allowClear
@@ -235,32 +235,32 @@ const AuditListPage = () => {
             </Col>
             <Col xs={24} sm={6} md={4}>
               <Select
-                placeholder="Filter by Status"
+                placeholder="상태 필터"
                 style={{ width: '100%' }}
                 allowClear
                 onChange={handleStatusChange}
                 value={filters.status}
               >
-                <Option value={undefined}>All Status</Option>
-                <Option value="planned">Planned</Option>
-                <Option value="in_progress">In Progress</Option>
-                <Option value="completed">Completed</Option>
-                <Option value="cancelled">Cancelled</Option>
+                <Option value={undefined}>전체 상태</Option>
+                <Option value="planned">예정</Option>
+                <Option value="in_progress">진행 중</Option>
+                <Option value="completed">완료</Option>
+                <Option value="cancelled">취소</Option>
               </Select>
             </Col>
             <Col xs={24} sm={6} md={4}>
               <Select
-                placeholder="Filter by Type"
+                placeholder="유형 필터"
                 style={{ width: '100%' }}
                 allowClear
                 onChange={handleTypeChange}
                 value={filters.auditType}
               >
-                <Option value={undefined}>All Types</Option>
-                <Option value="internal">Internal</Option>
-                <Option value="external">External</Option>
-                <Option value="certification">Certification</Option>
-                <Option value="surveillance">Surveillance</Option>
+                <Option value={undefined}>전체 유형</Option>
+                <Option value="internal">내부 감사</Option>
+                <Option value="external">외부 감사</Option>
+                <Option value="certification">인증 심사</Option>
+                <Option value="surveillance">사후 심사</Option>
               </Select>
             </Col>
           </Row>
@@ -273,7 +273,7 @@ const AuditListPage = () => {
             pagination={{
               ...pagination,
               showSizeChanger: true,
-              showTotal: (total) => `Total ${total} items`,
+              showTotal: (total) => `총 ${total}건`,
             }}
             onChange={handleTableChange}
             onRow={(record) => ({

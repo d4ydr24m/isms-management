@@ -5,7 +5,6 @@ import type {
   UserUpdate,
   UserListItem,
   Role,
-  ApiResponse,
   PaginatedResponse,
   PaginationParams,
 } from '@/types'
@@ -24,8 +23,8 @@ export const userService = {
   // 사용자 상세 조회
   async getUser(id: number): Promise<User> {
     try {
-      const response = await apiClient.get<ApiResponse<User>>(`/users/${id}`)
-      return response.data.data!
+      const response = await apiClient.get<User>(`/users/${id}`)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -34,8 +33,8 @@ export const userService = {
   // 사용자 생성
   async createUser(data: UserCreate): Promise<User> {
     try {
-      const response = await apiClient.post<ApiResponse<User>>('/users', data)
-      return response.data.data!
+      const response = await apiClient.post<User>('/users', data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -44,8 +43,8 @@ export const userService = {
   // 사용자 수정
   async updateUser(id: number, data: UserUpdate): Promise<User> {
     try {
-      const response = await apiClient.put<ApiResponse<User>>(`/users/${id}`, data)
-      return response.data.data!
+      const response = await apiClient.put<User>(`/users/${id}`, data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -72,8 +71,8 @@ export const userService = {
   // 역할 목록 조회
   async getRoles(): Promise<Role[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Role[]>>('/roles')
-      return response.data.data!
+      const response = await apiClient.get<{ items: Role[]; total: number }>('/roles')
+      return response.data.items
     } catch (error) {
       return handleApiError(error)
     }

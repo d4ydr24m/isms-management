@@ -10,14 +10,18 @@ import {
   WarningOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 
 const { Sider } = Layout
 
-const Sidebar = () => {
+interface SidebarProps {
+  collapsed: boolean
+  onCollapse: (collapsed: boolean) => void
+}
+
+const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
   const navigate = useNavigate()
   const location = useLocation()
-  const [collapsed, setCollapsed] = useState(false)
 
   const menuItems = [
     {
@@ -119,7 +123,7 @@ const Sidebar = () => {
     <Sider
       collapsible
       collapsed={collapsed}
-      onCollapse={(value) => setCollapsed(value)}
+      onCollapse={onCollapse}
       style={{
         overflow: 'auto',
         height: '100vh',

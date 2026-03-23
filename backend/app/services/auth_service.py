@@ -3,9 +3,10 @@
 로그인, 비밀번호 관리, MFA, 토큰 관리
 """
 import io
+import json
 import base64
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import qrcode
 from sqlalchemy.orm import Session
@@ -21,6 +22,9 @@ from app.core.security import (
     generate_totp_secret,
     verify_totp,
     get_totp_uri,
+    generate_backup_codes,
+    hash_backup_code,
+    verify_backup_code,
 )
 from app.models.user import User
 
@@ -80,7 +84,9 @@ class AuthService:
                 }
 
             if not verify_totp(user.mfa_secret, otp_code):
-                return {"success": False, "error": "OTP 코드가 올바르지 않습니다."}
+                # TOTP 실패 시 백업 코드로 시도
+                if not self._verify_and_consume_backup_code(user, otp_code):
+                    return {"success": False, "error": "OTP 코드가 올바르지 않습니다."}
 
         # 로그인 성공 처리
         self._handle_successful_login(user)
@@ -264,12 +270,21 @@ class AuthService:
         if not verify_totp(secret, otp_code):
             return {"success": False, "error": "OTP 코드가 올바르지 않습니다."}
 
+        # 백업 코드 생성
+        plain_codes = generate_backup_codes(count=settings.MFA_BACKUP_CODES_COUNT)
+        hashed_codes = [hash_backup_code(code) for code in plain_codes]
+
         # MFA 활성화
         user.mfa_secret = secret
         user.is_mfa_enabled = True
+        user.mfa_backup_codes = json.dumps(hashed_codes)
         self.db.commit()
 
-        return {"success": True, "message": "2단계 인증이 활성화되었습니다."}
+        return {
+            "success": True,
+            "message": "2단계 인증이 활성화되었습니다.",
+            "backup_codes": plain_codes,
+        }
 
     def disable_mfa(
         self,
@@ -299,9 +314,80 @@ class AuthService:
         # MFA 비활성화
         user.mfa_secret = None
         user.is_mfa_enabled = False
+        user.mfa_backup_codes = None
         self.db.commit()
 
         return {"success": True, "message": "2단계 인증이 비활성화되었습니다."}
+
+    def _verify_and_consume_backup_code(self, user: User, code: str) -> bool:
+        """
+        백업 코드 검증 및 소비 (일회용)
+
+        Args:
+            user: 사용자
+            code: 입력된 백업 코드
+
+        Returns:
+            bool: 유효한 백업 코드인지 여부
+        """
+        if not user.mfa_backup_codes:
+            return False
+
+        try:
+            hashed_codes: List[str] = json.loads(user.mfa_backup_codes)
+        except (json.JSONDecodeError, TypeError):
+            return False
+
+        for i, hashed in enumerate(hashed_codes):
+            if verify_backup_code(code, hashed):
+                # 사용된 코드 제거
+                hashed_codes.pop(i)
+                user.mfa_backup_codes = json.dumps(hashed_codes)
+                self.db.commit()
+                return True
+
+        return False
+
+    def regenerate_backup_codes(
+        self,
+        user: User,
+        password: str,
+        otp_code: str,
+    ) -> Dict[str, Any]:
+        """
+        MFA 백업 코드 재생성
+
+        Args:
+            user: 사용자
+            password: 비밀번호
+            otp_code: OTP 코드
+
+        Returns:
+            Dict with success and new backup_codes or error
+        """
+        # 비밀번호 확인
+        if not verify_password(password, user.hashed_password):
+            return {"success": False, "error": "비밀번호가 올바르지 않습니다."}
+
+        # MFA 활성화 상태 확인
+        if not user.is_mfa_enabled:
+            return {"success": False, "error": "2단계 인증이 활성화되어 있지 않습니다."}
+
+        # OTP 확인
+        if not verify_totp(user.mfa_secret, otp_code):
+            return {"success": False, "error": "OTP 코드가 올바르지 않습니다."}
+
+        # 새 백업 코드 생성
+        plain_codes = generate_backup_codes(count=settings.MFA_BACKUP_CODES_COUNT)
+        hashed_codes = [hash_backup_code(code) for code in plain_codes]
+
+        user.mfa_backup_codes = json.dumps(hashed_codes)
+        self.db.commit()
+
+        return {
+            "success": True,
+            "backup_codes": plain_codes,
+        }
 
     def logout(self, user: User, token: str) -> Dict[str, Any]:
         """

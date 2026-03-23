@@ -27,10 +27,10 @@ import type { Evidence, EvidenceVersion, ControlItem } from '@/types'
 const { Title } = Typography
 
 const statusConfig: Record<string, { color: string; text: string }> = {
-  active: { color: 'green', text: 'Active' },
-  draft: { color: 'orange', text: 'Draft' },
-  expired: { color: 'red', text: 'Expired' },
-  archived: { color: 'default', text: 'Archived' },
+  active: { color: 'green', text: '유효' },
+  draft: { color: 'orange', text: '초안' },
+  expired: { color: 'red', text: '만료' },
+  archived: { color: 'default', text: '보관' },
 }
 
 const formatFileSize = (bytes: number): string => {
@@ -60,7 +60,7 @@ const EvidenceDetail = () => {
       const data = await evidenceService.getEvidence(Number(id))
       setEvidence(data)
     } catch {
-      message.error('Failed to load evidence')
+      message.error('증적을 불러오는데 실패했습니다')
       navigate('/evidence')
     } finally {
       setLoading(false)
@@ -75,7 +75,7 @@ const EvidenceDetail = () => {
       const data = await evidenceService.getVersions(Number(id))
       setVersions(data)
     } catch {
-      message.error('Failed to load version history')
+      message.error('버전 이력을 불러오는데 실패했습니다')
     } finally {
       setVersionsLoading(false)
     }
@@ -101,7 +101,7 @@ const EvidenceDetail = () => {
       const response = await controlService.getControls({ limit: 100 })
       setAvailableControls(response.data || [])
     } catch {
-      message.error('Failed to load control items')
+      message.error('통제항목을 불러오는데 실패했습니다')
     }
   }, [])
 
@@ -117,18 +117,18 @@ const EvidenceDetail = () => {
 
     try {
       await evidenceService.downloadEvidence(evidence.id, evidence.fileName)
-      message.success('Download started')
+      message.success('다운로드가 시작되었습니다')
     } catch {
-      message.error('Failed to download file')
+      message.error('파일 다운로드에 실패했습니다')
     }
   }
 
   const handleVersionDownload = async (versionId: number, fileName: string) => {
     try {
       await evidenceService.downloadEvidence(versionId, fileName)
-      message.success('Download started')
+      message.success('다운로드가 시작되었습니다')
     } catch {
-      message.error('Failed to download file')
+      message.error('파일 다운로드에 실패했습니다')
     }
   }
 
@@ -137,10 +137,10 @@ const EvidenceDetail = () => {
 
     try {
       await evidenceService.mapControls(evidence.id, controlIds)
-      message.success('Control mapping updated')
+      message.success('통제항목 매핑이 수정되었습니다')
       fetchEvidence()
     } catch {
-      message.error('Failed to update control mapping')
+      message.error('통제항목 매핑 수정에 실패했습니다')
     }
   }
 
@@ -167,7 +167,7 @@ const EvidenceDetail = () => {
               icon={<ArrowLeftOutlined />}
               onClick={() => navigate('/evidence')}
             >
-              Back
+              뒤로
             </Button>
           </Space>
 
@@ -184,50 +184,50 @@ const EvidenceDetail = () => {
             <Col>
               <Space>
                 <Link to={`/evidence/${evidence.id}/edit`}>
-                  <Button icon={<EditOutlined />}>Edit</Button>
+                  <Button icon={<EditOutlined />}>수정</Button>
                 </Link>
                 <Link to={`/evidence/${evidence.id}/upload`}>
-                  <Button icon={<UploadOutlined />}>Upload New Version</Button>
+                  <Button icon={<UploadOutlined />}>새 버전 업로드</Button>
                 </Link>
                 <Button
                   type="primary"
                   icon={<DownloadOutlined />}
                   onClick={handleDownload}
                 >
-                  Download
+                  다운로드
                 </Button>
               </Space>
             </Col>
           </Row>
 
           <Descriptions bordered column={{ xs: 1, sm: 2, md: 3 }}>
-            <Descriptions.Item label="Description" span={3}>
+            <Descriptions.Item label="설명" span={3}>
               {evidence.description}
             </Descriptions.Item>
-            <Descriptions.Item label="File Name">
+            <Descriptions.Item label="파일명">
               {evidence.fileName}
             </Descriptions.Item>
-            <Descriptions.Item label="File Size">
+            <Descriptions.Item label="파일 크기">
               {formatFileSize(evidence.fileSize)}
             </Descriptions.Item>
-            <Descriptions.Item label="File Hash">
+            <Descriptions.Item label="파일 해시">
               <Typography.Text code copyable>
                 {evidence.fileHash}
               </Typography.Text>
             </Descriptions.Item>
-            <Descriptions.Item label="Valid From">
+            <Descriptions.Item label="유효 시작일">
               {evidence.validFrom ? dayjs(evidence.validFrom).format('YYYY-MM-DD') : '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="Valid Until">
+            <Descriptions.Item label="유효 기한">
               {evidence.validUntil ? dayjs(evidence.validUntil).format('YYYY-MM-DD') : '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="Uploader">
+            <Descriptions.Item label="등록자">
               {evidence.uploaderName}
             </Descriptions.Item>
-            <Descriptions.Item label="Created">
+            <Descriptions.Item label="등록일">
               {dayjs(evidence.createdAt).format('YYYY-MM-DD HH:mm')}
             </Descriptions.Item>
-            <Descriptions.Item label="Last Updated">
+            <Descriptions.Item label="최종 수정일">
               {dayjs(evidence.updatedAt).format('YYYY-MM-DD HH:mm')}
             </Descriptions.Item>
           </Descriptions>

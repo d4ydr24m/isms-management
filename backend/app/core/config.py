@@ -63,12 +63,25 @@ class Settings(BaseSettings):
     ACCOUNT_LOCKOUT_DURATION_MINUTES: int = 30
     SESSION_TIMEOUT_MINUTES: int = 30
 
+    # MFA / TOTP
+    TOTP_VALID_WINDOW: int = 1  # ±1 time step (±30초). 0=현재만, 1=±30초
+    MFA_BACKUP_CODES_COUNT: int = 10
+
     # File Upload
     MAX_UPLOAD_SIZE_MB: int = 100
     ALLOWED_EXTENSIONS: list = [
         "pdf", "doc", "docx", "xls", "xlsx",
         "ppt", "pptx", "txt", "jpg", "jpeg", "png"
     ]
+
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_DEFAULT_REQUESTS: int = 100  # per window
+    RATE_LIMIT_DEFAULT_WINDOW: int = 60  # seconds
+    RATE_LIMIT_LOGIN_REQUESTS: int = 5  # login attempts per window
+    RATE_LIMIT_LOGIN_WINDOW: int = 300  # 5 minutes
+    RATE_LIMIT_API_REQUESTS: int = 200  # API calls per window
+    RATE_LIMIT_API_WINDOW: int = 60  # 1 minute
 
     # Logging
     LOG_LEVEL: str = "INFO"

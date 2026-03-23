@@ -74,8 +74,8 @@ interface ListParams {
   page?: number
   size?: number
   search?: string
-  sort_by?: string
-  sort_order?: 'asc' | 'desc'
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
   [key: string]: unknown
 }
 
@@ -250,7 +250,7 @@ export async function getVulnerabilityAssessments(params?: ListParams): Promise<
  */
 export async function getRiskScenarios(params?: ListParams): Promise<RiskScenarioList> {
   try {
-    const response = await apiClient.get<RiskScenarioList>('/risk-scenarios', { params })
+    const response = await apiClient.get<RiskScenarioList>('/risks/scenarios', { params })
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -262,7 +262,7 @@ export async function getRiskScenarios(params?: ListParams): Promise<RiskScenari
  */
 export async function getRiskScenario(id: number): Promise<RiskScenario> {
   try {
-    const response = await apiClient.get<RiskScenario>(`/risk-scenarios/${id}`)
+    const response = await apiClient.get<RiskScenario>(`/risks/scenarios/${id}`)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -274,7 +274,7 @@ export async function getRiskScenario(id: number): Promise<RiskScenario> {
  */
 export async function createRiskScenario(data: RiskScenarioCreate): Promise<RiskScenario> {
   try {
-    const response = await apiClient.post<RiskScenario>('/risk-scenarios', data)
+    const response = await apiClient.post<RiskScenario>('/risks/scenarios', data)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -286,7 +286,7 @@ export async function createRiskScenario(data: RiskScenarioCreate): Promise<Risk
  */
 export async function updateRiskScenario(id: number, data: RiskScenarioUpdate): Promise<RiskScenario> {
   try {
-    const response = await apiClient.put<RiskScenario>(`/risk-scenarios/${id}`, data)
+    const response = await apiClient.put<RiskScenario>(`/risks/scenarios/${id}`, data)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -298,7 +298,7 @@ export async function updateRiskScenario(id: number, data: RiskScenarioUpdate): 
  */
 export async function deleteRiskScenario(id: number): Promise<void> {
   try {
-    await apiClient.delete(`/risk-scenarios/${id}`)
+    await apiClient.delete(`/risks/scenarios/${id}`)
   } catch (error) {
     throw handleApiError(error)
   }
@@ -309,8 +309,8 @@ export async function deleteRiskScenario(id: number): Promise<void> {
  */
 export async function compareRiskScenarios(scenario1Id: number, scenario2Id: number): Promise<ScenarioComparison> {
   try {
-    const response = await apiClient.get<ScenarioComparison>('/risk-scenarios/compare', {
-      params: { scenario1_id: scenario1Id, scenario2_id: scenario2Id },
+    const response = await apiClient.get<ScenarioComparison>('/risks/scenarios/compare', {
+      params: { scenario1Id, scenario2Id },
     })
     return response.data
   } catch (error) {
@@ -327,7 +327,7 @@ export async function compareRiskScenarios(scenario1Id: number, scenario2Id: num
  */
 export async function getRiskAssessments(scenarioId: number, params?: ListParams): Promise<RiskAssessmentList> {
   try {
-    const response = await apiClient.get<RiskAssessmentList>(`/risk-scenarios/${scenarioId}/assessments`, { params })
+    const response = await apiClient.get<RiskAssessmentList>(`/risks/scenarios/${scenarioId}/assessments`, { params })
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -339,7 +339,7 @@ export async function getRiskAssessments(scenarioId: number, params?: ListParams
  */
 export async function getRiskAssessment(id: number): Promise<RiskAssessment> {
   try {
-    const response = await apiClient.get<RiskAssessment>(`/risk-assessments/${id}`)
+    const response = await apiClient.get<RiskAssessment>(`/risks/assessments/${id}`)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -351,7 +351,7 @@ export async function getRiskAssessment(id: number): Promise<RiskAssessment> {
  */
 export async function createRiskAssessment(scenarioId: number, data: RiskAssessmentCreate): Promise<RiskAssessment> {
   try {
-    const response = await apiClient.post<RiskAssessment>(`/risk-scenarios/${scenarioId}/assessments`, data)
+    const response = await apiClient.post<RiskAssessment>(`/risks/scenarios/${scenarioId}/assessments`, data)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -363,7 +363,7 @@ export async function createRiskAssessment(scenarioId: number, data: RiskAssessm
  */
 export async function bulkCreateRiskAssessments(scenarioId: number, data: RiskAssessmentBulkCreate): Promise<{ count: number }> {
   try {
-    const response = await apiClient.post<{ count: number }>(`/risk-scenarios/${scenarioId}/assessments/bulk`, data)
+    const response = await apiClient.post<{ count: number }>(`/risks/scenarios/${scenarioId}/assessments/bulk`, data)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -375,7 +375,7 @@ export async function bulkCreateRiskAssessments(scenarioId: number, data: RiskAs
  */
 export async function updateRiskAssessment(id: number, data: RiskAssessmentUpdate): Promise<RiskAssessment> {
   try {
-    const response = await apiClient.put<RiskAssessment>(`/risk-assessments/${id}`, data)
+    const response = await apiClient.put<RiskAssessment>(`/risks/assessments/${id}`, data)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -387,7 +387,7 @@ export async function updateRiskAssessment(id: number, data: RiskAssessmentUpdat
  */
 export async function deleteRiskAssessment(id: number): Promise<void> {
   try {
-    await apiClient.delete(`/risk-assessments/${id}`)
+    await apiClient.delete(`/risks/assessments/${id}`)
   } catch (error) {
     throw handleApiError(error)
   }
@@ -398,7 +398,7 @@ export async function deleteRiskAssessment(id: number): Promise<void> {
  */
 export async function calculateRiskScenario(scenarioId: number): Promise<{ message: string }> {
   try {
-    const response = await apiClient.post<{ message: string }>(`/risk-scenarios/${scenarioId}/calculate`)
+    const response = await apiClient.post<{ message: string }>(`/risks/scenarios/${scenarioId}/calculate`)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -414,7 +414,7 @@ export async function calculateRiskScenario(scenarioId: number): Promise<{ messa
  */
 export async function getCurrentDoA(): Promise<DoAConfig> {
   try {
-    const response = await apiClient.get<DoAConfig>('/doa')
+    const response = await apiClient.get<DoAConfig>('/risks/doa')
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -426,7 +426,7 @@ export async function getCurrentDoA(): Promise<DoAConfig> {
  */
 export async function createDoAConfig(data: DoAConfigCreate): Promise<DoAConfig> {
   try {
-    const response = await apiClient.post<DoAConfig>('/doa', data)
+    const response = await apiClient.post<DoAConfig>('/risks/doa', data)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -438,7 +438,7 @@ export async function createDoAConfig(data: DoAConfigCreate): Promise<DoAConfig>
  */
 export async function getDoAHistory(): Promise<DoAHistory[]> {
   try {
-    const response = await apiClient.get<DoAHistory[]>('/doa/history')
+    const response = await apiClient.get<DoAHistory[]>('/risks/doa/history')
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -466,7 +466,7 @@ export async function getRisksExceedingDoA(params?: ListParams): Promise<RiskAss
  */
 export async function getRiskTreatmentPlans(params?: ListParams): Promise<RiskTreatmentPlanList> {
   try {
-    const response = await apiClient.get<RiskTreatmentPlanList>('/risk-treatments', { params })
+    const response = await apiClient.get<RiskTreatmentPlanList>('/risks/treatments', { params })
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -478,7 +478,7 @@ export async function getRiskTreatmentPlans(params?: ListParams): Promise<RiskTr
  */
 export async function getRiskTreatmentPlan(id: number): Promise<RiskTreatmentPlan> {
   try {
-    const response = await apiClient.get<RiskTreatmentPlan>(`/risk-treatments/${id}`)
+    const response = await apiClient.get<RiskTreatmentPlan>(`/risks/treatments/${id}`)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -490,7 +490,7 @@ export async function getRiskTreatmentPlan(id: number): Promise<RiskTreatmentPla
  */
 export async function createRiskTreatmentPlan(assessmentId: number, data: RiskTreatmentPlanCreate): Promise<RiskTreatmentPlan> {
   try {
-    const response = await apiClient.post<RiskTreatmentPlan>(`/risk-assessments/${assessmentId}/treatments`, data)
+    const response = await apiClient.post<RiskTreatmentPlan>(`/risks/assessments/${assessmentId}/treatments`, data)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -502,7 +502,7 @@ export async function createRiskTreatmentPlan(assessmentId: number, data: RiskTr
  */
 export async function updateRiskTreatmentPlan(id: number, data: RiskTreatmentPlanUpdate): Promise<RiskTreatmentPlan> {
   try {
-    const response = await apiClient.put<RiskTreatmentPlan>(`/risk-treatments/${id}`, data)
+    const response = await apiClient.put<RiskTreatmentPlan>(`/risks/treatments/${id}`, data)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -514,7 +514,7 @@ export async function updateRiskTreatmentPlan(id: number, data: RiskTreatmentPla
  */
 export async function createRiskTreatmentAction(planId: number, data: RiskTreatmentActionCreate): Promise<RiskTreatmentAction> {
   try {
-    const response = await apiClient.post<RiskTreatmentAction>(`/risk-treatments/${planId}/actions`, data)
+    const response = await apiClient.post<RiskTreatmentAction>(`/risks/treatments/${planId}/actions`, data)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -526,7 +526,7 @@ export async function createRiskTreatmentAction(planId: number, data: RiskTreatm
  */
 export async function getRiskTreatmentProgress(): Promise<RiskTreatmentProgress> {
   try {
-    const response = await apiClient.get<RiskTreatmentProgress>('/risk-treatments/progress')
+    const response = await apiClient.get<RiskTreatmentProgress>('/risks/treatments/progress')
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -576,9 +576,9 @@ export async function generateSOA(): Promise<{ message: string; count: number }>
 /**
  * SOA 내보내기
  */
-export async function exportSOA(request: SOAExportRequest): Promise<{ download_url: string }> {
+export async function exportSOA(request: SOAExportRequest): Promise<{ downloadUrl: string }> {
   try {
-    const response = await apiClient.get<{ download_url: string }>('/soa/export', { params: request })
+    const response = await apiClient.get<{ downloadUrl: string }>('/soa/export', { params: request })
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -594,7 +594,7 @@ export async function exportSOA(request: SOAExportRequest): Promise<{ download_u
  */
 export async function getRiskReport(scenarioId: number): Promise<RiskReportSummary> {
   try {
-    const response = await apiClient.get<RiskReportSummary>(`/risk-scenarios/${scenarioId}/report`)
+    const response = await apiClient.get<RiskReportSummary>(`/risks/scenarios/${scenarioId}/report`)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -606,7 +606,7 @@ export async function getRiskReport(scenarioId: number): Promise<RiskReportSumma
  */
 export async function getExecutiveSummary(scenarioId: number): Promise<ExecutiveSummary> {
   try {
-    const response = await apiClient.get<ExecutiveSummary>(`/risk-scenarios/${scenarioId}/executive-summary`)
+    const response = await apiClient.get<ExecutiveSummary>(`/risks/scenarios/${scenarioId}/executive-summary`)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -618,7 +618,7 @@ export async function getExecutiveSummary(scenarioId: number): Promise<Executive
  */
 export async function getRiskMatrixData(scenarioId: number): Promise<RiskMatrixData> {
   try {
-    const response = await apiClient.get<RiskMatrixData>(`/risk-scenarios/${scenarioId}/risk-matrix`)
+    const response = await apiClient.get<RiskMatrixData>(`/risks/scenarios/${scenarioId}/matrix`)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -630,7 +630,7 @@ export async function getRiskMatrixData(scenarioId: number): Promise<RiskMatrixD
  */
 export async function getRiskDistribution(scenarioId: number): Promise<RiskDistribution> {
   try {
-    const response = await apiClient.get<RiskDistribution>(`/risk-scenarios/${scenarioId}/risk-distribution`)
+    const response = await apiClient.get<RiskDistribution>(`/risks/scenarios/${scenarioId}/risk-distribution`)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -640,9 +640,9 @@ export async function getRiskDistribution(scenarioId: number): Promise<RiskDistr
 /**
  * 위험 평가 보고서 내보내기
  */
-export async function exportRiskReport(scenarioId: number, format: 'excel' | 'word'): Promise<{ download_url: string }> {
+export async function exportRiskReport(scenarioId: number, format: 'excel' | 'word'): Promise<{ downloadUrl: string }> {
   try {
-    const response = await apiClient.get<{ download_url: string }>(`/risk-scenarios/${scenarioId}/report/export`, {
+    const response = await apiClient.get<{ downloadUrl: string }>(`/risks/scenarios/${scenarioId}/report/export`, {
       params: { format },
     })
     return response.data
@@ -660,7 +660,7 @@ export async function exportRiskReport(scenarioId: number, format: 'excel' | 'wo
  */
 export async function linkControlsToTreatmentPlan(data: RiskTreatmentControlLinkCreate): Promise<{ count: number }> {
   try {
-    const response = await apiClient.post<{ count: number }>('/risk-treatment-controls', data)
+    const response = await apiClient.post<{ count: number }>('/risk-control-linkage/link', data)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -672,7 +672,7 @@ export async function linkControlsToTreatmentPlan(data: RiskTreatmentControlLink
  */
 export async function getLinkedControls(treatmentPlanId: number): Promise<LinkedControlDetail[]> {
   try {
-    const response = await apiClient.get<LinkedControlDetail[]>(`/risk-treatments/${treatmentPlanId}/controls`)
+    const response = await apiClient.get<LinkedControlDetail[]>(`/risk-control-linkage/treatment/${treatmentPlanId}/controls`)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -684,7 +684,7 @@ export async function getLinkedControls(treatmentPlanId: number): Promise<Linked
  */
 export async function getControlEffectivenessAnalysis(controlItemId: number): Promise<ControlEffectivenessAnalysis> {
   try {
-    const response = await apiClient.get<ControlEffectivenessAnalysis>(`/controls/${controlItemId}/effectiveness`)
+    const response = await apiClient.get<ControlEffectivenessAnalysis>(`/risk-control-linkage/control/${controlItemId}/effectiveness`)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -696,7 +696,9 @@ export async function getControlEffectivenessAnalysis(controlItemId: number): Pr
  */
 export async function getRiskControlMatrix(scenarioId: number): Promise<RiskControlMatrixResponse> {
   try {
-    const response = await apiClient.get<RiskControlMatrixResponse>(`/risk-scenarios/${scenarioId}/control-matrix`)
+    const response = await apiClient.get<RiskControlMatrixResponse>('/risk-control-linkage/matrix', {
+      params: { scenarioId },
+    })
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -708,7 +710,7 @@ export async function getRiskControlMatrix(scenarioId: number): Promise<RiskCont
  */
 export async function getResidualRiskTrend(treatmentPlanId: number): Promise<ResidualRiskTrendResponse> {
   try {
-    const response = await apiClient.get<ResidualRiskTrendResponse>(`/risk-treatments/${treatmentPlanId}/residual-risk-trend`)
+    const response = await apiClient.get<ResidualRiskTrendResponse>(`/risk-control-linkage/treatment/${treatmentPlanId}/residual-trend`)
     return response.data
   } catch (error) {
     throw handleApiError(error)

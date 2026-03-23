@@ -155,8 +155,8 @@ const RiskTreatmentPage = () => {
     editForm.setFieldsValue({
       strategy: plan.strategy,
       description: plan.description,
-      assignee_id: plan.assignee_id,
-      due_date: plan.due_date ? dayjs(plan.due_date) : null,
+      assigneeId: plan.assigneeId,
+      dueDate: plan.dueDate ? dayjs(plan.dueDate) : null,
       budget: plan.budget,
       status: plan.status,
     })
@@ -173,7 +173,7 @@ const RiskTreatmentPage = () => {
       const data: RiskTreatmentPlanUpdate = {
         strategy: values.strategy,
         description: values.description || null,
-        due_date: values.due_date ? values.due_date.format('YYYY-MM-DD') : null,
+        dueDate: values.dueDate ? values.dueDate.format('YYYY-MM-DD') : null,
         budget: values.budget ?? null,
         status: values.status,
       }
@@ -206,10 +206,10 @@ const RiskTreatmentPage = () => {
       setActionLoading(true)
 
       const data: RiskTreatmentActionCreate = {
-        action_description: values.action_description,
+        actionDescription: values.actionDescription,
         result: values.result || null,
-        residual_risk_score: values.residual_risk_score ?? null,
-        evidence_file_path: values.evidence_file_path || null,
+        residualRiskScore: values.residualRiskScore ?? null,
+        evidenceFilePath: values.evidenceFilePath || null,
       }
 
       await createRiskTreatmentAction(actionTargetPlan.id, data)
@@ -267,23 +267,23 @@ const RiskTreatmentPage = () => {
       width: 200,
       render: (_: unknown, record: RiskTreatmentPlan) => (
         <Space direction="vertical" size={0}>
-          <span style={{ fontWeight: 500 }}>{record.asset_name || '-'}</span>
+          <span style={{ fontWeight: 500 }}>{record.assetName || '-'}</span>
           <span style={{ fontSize: 12, color: '#8c8c8c' }}>
-            {record.threat_name || '-'} / {record.vulnerability_name || '-'}
+            {record.threatName || '-'} / {record.vulnerabilityName || '-'}
           </span>
         </Space>
       ),
     },
     {
       title: '위험 점수',
-      dataIndex: 'risk_score',
-      key: 'risk_score',
+      dataIndex: 'riskScore',
+      key: 'riskScore',
       width: 100,
       align: 'center',
-      sorter: (a, b) => (a.risk_score ?? 0) - (b.risk_score ?? 0),
+      sorter: (a, b) => (a.riskScore ?? 0) - (b.riskScore ?? 0),
       render: (score: number | null, record: RiskTreatmentPlan) => {
         if (score === null) return '-'
-        const levelConfig = RISK_LEVELS.find((l) => l.value === record.risk_level)
+        const levelConfig = RISK_LEVELS.find((l) => l.value === record.riskLevel)
         return (
           <Tag color={levelConfig?.color} style={{ fontWeight: 'bold' }}>
             {score}
@@ -312,15 +312,15 @@ const RiskTreatmentPage = () => {
     },
     {
       title: '담당자',
-      dataIndex: 'assignee_name',
-      key: 'assignee_name',
+      dataIndex: 'assigneeName',
+      key: 'assigneeName',
       width: 100,
       render: (name: string | null) => name || '-',
     },
     {
       title: '기한',
-      dataIndex: 'due_date',
-      key: 'due_date',
+      dataIndex: 'dueDate',
+      key: 'dueDate',
       width: 110,
       render: (date: string | null) => {
         if (!date) return '-'
@@ -338,8 +338,8 @@ const RiskTreatmentPage = () => {
     },
     {
       title: '조치',
-      dataIndex: 'action_count',
-      key: 'action_count',
+      dataIndex: 'actionCount',
+      key: 'actionCount',
       width: 60,
       align: 'center',
       render: (count: number) => (
@@ -348,13 +348,13 @@ const RiskTreatmentPage = () => {
     },
     {
       title: '잔여 위험',
-      dataIndex: 'latest_residual_risk',
-      key: 'latest_residual_risk',
+      dataIndex: 'latestResidualRisk',
+      key: 'latestResidualRisk',
       width: 100,
       align: 'center',
       render: (score: number | null, record: RiskTreatmentPlan) => {
         if (score === null) return <span style={{ color: '#d9d9d9' }}>-</span>
-        const originalScore = record.risk_score ?? 0
+        const originalScore = record.riskScore ?? 0
         const reduction = originalScore - score
         return (
           <Tooltip title={`원래 ${originalScore} → 잔여 ${score} (${reduction > 0 ? '-' : ''}${reduction})`}>
@@ -422,7 +422,7 @@ const RiskTreatmentPage = () => {
           <Col span={4}>
             <Statistic
               title="진행 중"
-              value={progress?.in_progress ?? 0}
+              value={progress?.inProgress ?? 0}
               suffix="건"
               valueStyle={{ color: '#1890ff' }}
             />
@@ -448,12 +448,12 @@ const RiskTreatmentPage = () => {
               <div style={{ fontSize: 13, color: '#8c8c8c', marginBottom: 8 }}>완료율</div>
               <Progress
                 type="circle"
-                percent={Math.round(progress?.completion_rate ?? 0)}
+                percent={Math.round(progress?.completionRate ?? 0)}
                 size={64}
                 strokeColor={
-                  (progress?.completion_rate ?? 0) >= 80
+                  (progress?.completionRate ?? 0) >= 80
                     ? '#52c41a'
-                    : (progress?.completion_rate ?? 0) >= 50
+                    : (progress?.completionRate ?? 0) >= 50
                       ? '#faad14'
                       : '#ff4d4f'
                 }
@@ -514,7 +514,7 @@ const RiskTreatmentPage = () => {
           onChange={handleTableChange}
           rowClassName={(record) => {
             if (record.status === 'completed') return ''
-            if (record.due_date && dayjs(record.due_date).isBefore(dayjs(), 'day')) {
+            if (record.dueDate && dayjs(record.dueDate).isBefore(dayjs(), 'day')) {
               return 'overdue-row'
             }
             return ''
@@ -538,18 +538,18 @@ const RiskTreatmentPage = () => {
       >
         {editingPlan && (
           <Descriptions bordered size="small" column={2} style={{ marginBottom: 16 }}>
-            <Descriptions.Item label="자산">{editingPlan.asset_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="자산">{editingPlan.assetName || '-'}</Descriptions.Item>
             <Descriptions.Item label="위험 점수">
               <Tag
                 color={
-                  RISK_LEVELS.find((l) => l.value === editingPlan.risk_level)?.color
+                  RISK_LEVELS.find((l) => l.value === editingPlan.riskLevel)?.color
                 }
               >
-                {editingPlan.risk_score ?? '-'}
+                {editingPlan.riskScore ?? '-'}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="위협">{editingPlan.threat_name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="취약점">{editingPlan.vulnerability_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="위협">{editingPlan.threatName || '-'}</Descriptions.Item>
+            <Descriptions.Item label="취약점">{editingPlan.vulnerabilityName || '-'}</Descriptions.Item>
           </Descriptions>
         )}
 
@@ -592,7 +592,7 @@ const RiskTreatmentPage = () => {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="due_date" label="기한">
+              <Form.Item name="dueDate" label="기한">
                 <DatePicker style={{ width: '100%' }} />
               </Form.Item>
             </Col>
@@ -629,22 +629,22 @@ const RiskTreatmentPage = () => {
       >
         {actionTargetPlan && (
           <Descriptions bordered size="small" column={2} style={{ marginBottom: 16 }}>
-            <Descriptions.Item label="자산">{actionTargetPlan.asset_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="자산">{actionTargetPlan.assetName || '-'}</Descriptions.Item>
             <Descriptions.Item label="전략">
               {renderStrategyTag(actionTargetPlan.strategy)}
             </Descriptions.Item>
             <Descriptions.Item label="현재 위험 점수">
-              {actionTargetPlan.risk_score ?? '-'}
+              {actionTargetPlan.riskScore ?? '-'}
             </Descriptions.Item>
             <Descriptions.Item label="최근 잔여 위험">
-              {actionTargetPlan.latest_residual_risk ?? '없음'}
+              {actionTargetPlan.latestResidualRisk ?? '없음'}
             </Descriptions.Item>
           </Descriptions>
         )}
 
         <Form form={actionForm} layout="vertical">
           <Form.Item
-            name="action_description"
+            name="actionDescription"
             label="조치 내용"
             rules={[{ required: true, message: '조치 내용을 입력해주세요' }]}
           >
@@ -657,7 +657,7 @@ const RiskTreatmentPage = () => {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="residual_risk_score" label="잔여 위험 점수">
+              <Form.Item name="residualRiskScore" label="잔여 위험 점수">
                 <InputNumber
                   style={{ width: '100%' }}
                   min={1}
@@ -667,7 +667,7 @@ const RiskTreatmentPage = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="evidence_file_path" label="증적 파일 경로">
+              <Form.Item name="evidenceFilePath" label="증적 파일 경로">
                 <Input placeholder="증적 파일 경로 (선택)" />
               </Form.Item>
             </Col>
@@ -709,23 +709,23 @@ const RiskTreatmentPage = () => {
         ) : detailPlan ? (
           <>
             <Descriptions bordered size="small" column={2} style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="자산">{detailPlan.asset_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="자산">{detailPlan.assetName || '-'}</Descriptions.Item>
               <Descriptions.Item label="위험 점수">
-                <Tag color={RISK_LEVELS.find((l) => l.value === detailPlan.risk_level)?.color}>
-                  {detailPlan.risk_score ?? '-'}
+                <Tag color={RISK_LEVELS.find((l) => l.value === detailPlan.riskLevel)?.color}>
+                  {detailPlan.riskScore ?? '-'}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="위협">{detailPlan.threat_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="취약점">{detailPlan.vulnerability_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="위협">{detailPlan.threatName || '-'}</Descriptions.Item>
+              <Descriptions.Item label="취약점">{detailPlan.vulnerabilityName || '-'}</Descriptions.Item>
               <Descriptions.Item label="처리 전략">
                 {renderStrategyTag(detailPlan.strategy)}
               </Descriptions.Item>
               <Descriptions.Item label="상태">
                 {renderStatusTag(detailPlan.status)}
               </Descriptions.Item>
-              <Descriptions.Item label="담당자">{detailPlan.assignee_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="담당자">{detailPlan.assigneeName || '-'}</Descriptions.Item>
               <Descriptions.Item label="기한">
-                {detailPlan.due_date ? dayjs(detailPlan.due_date).format('YYYY-MM-DD') : '-'}
+                {detailPlan.dueDate ? dayjs(detailPlan.dueDate).format('YYYY-MM-DD') : '-'}
               </Descriptions.Item>
               <Descriptions.Item label="예산" span={2}>
                 {detailPlan.budget
@@ -736,35 +736,35 @@ const RiskTreatmentPage = () => {
                 {detailPlan.description || '-'}
               </Descriptions.Item>
               <Descriptions.Item label="잔여 위험">
-                {detailPlan.latest_residual_risk ?? '없음'}
+                {detailPlan.latestResidualRisk ?? '없음'}
               </Descriptions.Item>
               <Descriptions.Item label="조치 횟수">
-                {detailPlan.action_count}회
+                {detailPlan.actionCount}회
               </Descriptions.Item>
             </Descriptions>
 
             {/* 위험 감소 시각화 */}
-            {detailPlan.risk_score && detailPlan.latest_residual_risk !== null && (
+            {detailPlan.riskScore && detailPlan.latestResidualRisk !== null && (
               <Card size="small" title="위험 감소 현황" style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 12, color: '#8c8c8c' }}>원래 위험</div>
                     <div style={{ fontSize: 24, fontWeight: 'bold', color: '#ff4d4f' }}>
-                      {detailPlan.risk_score}
+                      {detailPlan.riskScore}
                     </div>
                   </div>
                   <div style={{ fontSize: 24, color: '#8c8c8c' }}>→</div>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 12, color: '#8c8c8c' }}>잔여 위험</div>
                     <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>
-                      {detailPlan.latest_residual_risk}
+                      {detailPlan.latestResidualRisk}
                     </div>
                   </div>
                   <div style={{ flex: 1 }}>
                     <Progress
                       percent={Math.round(
-                        ((detailPlan.risk_score - detailPlan.latest_residual_risk) /
-                          detailPlan.risk_score) *
+                        ((detailPlan.riskScore - detailPlan.latestResidualRisk) /
+                          detailPlan.riskScore) *
                           100
                       )}
                       strokeColor="#52c41a"
@@ -788,27 +788,27 @@ const RiskTreatmentPage = () => {
               {detailActions.length > 0 ? (
                 <Timeline
                   items={detailActions.map((action) => ({
-                    color: action.residual_risk_score ? 'green' : 'blue',
+                    color: action.residualRiskScore ? 'green' : 'blue',
                     children: (
                       <div>
                         <div style={{ fontWeight: 500, marginBottom: 4 }}>
-                          {action.action_description}
+                          {action.actionDescription}
                         </div>
                         {action.result && (
                           <div style={{ fontSize: 12, color: '#595959', marginBottom: 2 }}>
                             결과: {action.result}
                           </div>
                         )}
-                        {action.residual_risk_score !== null && (
+                        {action.residualRiskScore !== null && (
                           <div style={{ fontSize: 12 }}>
-                            잔여 위험: <Tag>{action.residual_risk_score}</Tag>
+                            잔여 위험: <Tag>{action.residualRiskScore}</Tag>
                           </div>
                         )}
                         <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>
-                          {action.completer_name && `${action.completer_name} · `}
-                          {action.completed_at
-                            ? dayjs(action.completed_at).format('YYYY-MM-DD HH:mm')
-                            : dayjs(action.created_at).format('YYYY-MM-DD HH:mm')}
+                          {action.completerName && `${action.completerName} · `}
+                          {action.completedAt
+                            ? dayjs(action.completedAt).format('YYYY-MM-DD HH:mm')
+                            : dayjs(action.createdAt).format('YYYY-MM-DD HH:mm')}
                         </div>
                       </div>
                     ),

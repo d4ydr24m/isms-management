@@ -28,10 +28,10 @@ const FilePreview = ({
       return (
         <Empty
           image={<FileOutlined style={{ fontSize: 64, color: '#ccc' }} />}
-          description="No preview available"
+          description="미리보기를 사용할 수 없습니다"
         >
           <Button type="primary" icon={<DownloadOutlined />} onClick={onDownload}>
-            Download File
+            파일 다운로드
           </Button>
         </Empty>
       )
@@ -73,13 +73,13 @@ const FilePreview = ({
         image={<FileOutlined style={{ fontSize: 64, color: '#ccc' }} />}
         description={
           <Space direction="vertical" size="small">
-            <Text>Preview not available for this file type</Text>
+            <Text>이 파일 유형은 미리보기를 지원하지 않습니다</Text>
             <Text type="secondary">{mimeType}</Text>
           </Space>
         }
       >
         <Button type="primary" icon={<DownloadOutlined />} onClick={onDownload}>
-          Download to View
+          다운로드하여 보기
         </Button>
       </Empty>
     )
@@ -88,7 +88,7 @@ const FilePreview = ({
   return (
     <Spin spinning={loading}>
       <Card
-        title="File Preview"
+        title="파일 미리보기"
         extra={
           <Space>
             <Text type="secondary">{fileName}</Text>
@@ -99,7 +99,7 @@ const FilePreview = ({
                 onClick={() => window.open(previewUrl!, '_blank')}
                 aria-label="fullscreen"
               >
-                Fullscreen
+                전체 화면
               </Button>
             )}
             <Button
@@ -107,7 +107,7 @@ const FilePreview = ({
               icon={<DownloadOutlined />}
               onClick={onDownload}
             >
-              Download
+              다운로드
             </Button>
           </Space>
         }

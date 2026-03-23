@@ -19,8 +19,8 @@ const ConfirmModal = ({
   children,
   onConfirm,
   onCancel,
-  okText = 'OK',
-  cancelText = 'Cancel',
+  okText = '확인',
+  cancelText = '취소',
   type = 'default',
 }: ConfirmModalProps) => {
   return (

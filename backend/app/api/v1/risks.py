@@ -4,7 +4,7 @@
 Phase 2: FR-603 ~ FR-607
 """
 from io import BytesIO
-from typing import List, Optional
+from typing import Dict, List, Optional
 from datetime import datetime
 from urllib.parse import quote
 

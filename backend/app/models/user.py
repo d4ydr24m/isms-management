@@ -48,6 +48,7 @@ class User(Base):
     # 2FA 관련
     is_mfa_enabled = Column(Boolean, default=False, nullable=False, comment="2FA 활성화")
     mfa_secret = Column(String(255), nullable=True, comment="TOTP 시크릿")
+    mfa_backup_codes = Column(Text, nullable=True, comment="MFA 백업 코드 (해시, JSON 배열)")
 
     # 계정 보안
     failed_login_attempts = Column(

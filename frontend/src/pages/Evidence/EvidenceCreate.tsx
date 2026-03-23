@@ -35,7 +35,7 @@ const EvidenceCreate = () => {
       const response = await controlService.getControls({ limit: 100 })
       setControls(response.data || [])
     } catch {
-      message.error('Failed to load control items')
+      message.error('통제항목을 불러오는데 실패했습니다')
     } finally {
       setControlsLoading(false)
     }
@@ -54,7 +54,7 @@ const EvidenceCreate = () => {
 
   const handleSubmit = async (values: any) => {
     if (fileList.length === 0) {
-      message.error('Please upload a file')
+      message.error('파일을 업로드해 주세요')
       return
     }
 
@@ -75,10 +75,10 @@ const EvidenceCreate = () => {
         setUploadProgress(progress)
       })
 
-      message.success('Evidence created successfully')
+      message.success('증적이 등록되었습니다')
       navigate('/evidence')
     } catch {
-      message.error('Failed to create evidence')
+      message.error('증적 등록에 실패했습니다')
     } finally {
       setLoading(false)
       setUploadProgress(0)
@@ -92,7 +92,7 @@ const EvidenceCreate = () => {
   const validateValidUntil = (_: any, value: any) => {
     const validFrom = form.getFieldValue('validFrom')
     if (value && validFrom && value.isBefore(validFrom)) {
-      return Promise.reject(new Error('Valid until must be after valid from'))
+      return Promise.reject(new Error('유효 기한은 유효 시작일 이후여야 합니다'))
     }
     return Promise.resolve()
   }
@@ -107,7 +107,7 @@ const EvidenceCreate = () => {
               onClick={handleCancel}
               type="text"
             />
-            <span>Create Evidence</span>
+            <span>증적 등록</span>
           </Space>
         }
       >
@@ -119,18 +119,18 @@ const EvidenceCreate = () => {
         >
           <Form.Item
             name="title"
-            label="Title"
-            rules={[{ required: true, message: 'Title is required' }]}
+            label="제목"
+            rules={[{ required: true, message: '제목을 입력해 주세요' }]}
           >
-            <Input placeholder="Enter evidence title" maxLength={200} />
+            <Input placeholder="증적 제목을 입력하세요" maxLength={200} />
           </Form.Item>
 
           <Form.Item
             name="description"
-            label="Description"
+            label="설명"
           >
             <TextArea
-              placeholder="Enter description"
+              placeholder="설명을 입력하세요"
               rows={4}
               maxLength={2000}
               showCount
@@ -139,8 +139,8 @@ const EvidenceCreate = () => {
 
           <Form.Item
             name="file"
-            label="File"
-            rules={[{ required: true, message: 'Please upload a file' }]}
+            label="파일"
+            rules={[{ required: true, message: '파일을 업로드해 주세요' }]}
           >
             <Dragger
               multiple={false}
@@ -155,10 +155,10 @@ const EvidenceCreate = () => {
                 <InboxOutlined />
               </p>
               <p className="ant-upload-text">
-                Click or drag file to this area to upload
+                클릭하거나 파일을 이 영역으로 드래그하여 업로드하세요
               </p>
               <p className="ant-upload-hint">
-                Support for a single file upload. Strictly prohibited from uploading company data or other banned files.
+                단일 파일 업로드만 지원됩니다. 회사 기밀 자료 또는 금지된 파일의 업로드는 엄격히 금지됩니다.
               </p>
             </Dragger>
           </Form.Item>
@@ -172,7 +172,7 @@ const EvidenceCreate = () => {
           <Space style={{ width: '100%' }} size="large">
             <Form.Item
               name="validFrom"
-              label="Valid From"
+              label="유효 시작일"
               style={{ flex: 1 }}
             >
               <DatePicker style={{ width: '100%' }} />
@@ -180,7 +180,7 @@ const EvidenceCreate = () => {
 
             <Form.Item
               name="validUntil"
-              label="Valid Until"
+              label="유효 기한"
               style={{ flex: 1 }}
               rules={[{ validator: validateValidUntil }]}
             >
@@ -190,11 +190,11 @@ const EvidenceCreate = () => {
 
           <Form.Item
             name="controlItemIds"
-            label="Control Items"
+            label="통제항목"
           >
             <Select
               mode="multiple"
-              placeholder="Select control items"
+              placeholder="통제항목을 선택하세요"
               loading={controlsLoading}
               optionFilterProp="label"
               allowClear
@@ -209,9 +209,9 @@ const EvidenceCreate = () => {
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit" loading={loading}>
-                Create
+                등록
               </Button>
-              <Button onClick={handleCancel}>Cancel</Button>
+              <Button onClick={handleCancel}>취소</Button>
             </Space>
           </Form.Item>
         </Form>

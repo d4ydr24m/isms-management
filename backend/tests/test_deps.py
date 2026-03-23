@@ -3,6 +3,7 @@
 """
 import pytest
 from datetime import datetime, timedelta
+from unittest.mock import MagicMock
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -17,20 +18,27 @@ from app.core.security import create_access_token
 from app.models.user import User, Role
 
 
+def _mock_request():
+    """쿠키 없는 mock Request 객체 생성"""
+    request = MagicMock()
+    request.cookies = {}
+    return request
+
+
 class TestGetCurrentUser:
     """현재 사용자 의존성 테스트"""
 
     def test_valid_token(self, db: Session, test_user: User):
         """유효한 토큰으로 사용자 조회"""
         token = create_access_token({"sub": test_user.email, "user_id": test_user.id})
-        user = get_current_user(token=token, db=db)
+        user = get_current_user(request=_mock_request(), token=token, db=db)
         assert user.id == test_user.id
         assert user.email == test_user.email
 
     def test_invalid_token(self, db: Session):
         """잘못된 토큰으로 사용자 조회 실패"""
         with pytest.raises(HTTPException) as excinfo:
-            get_current_user(token="invalid_token", db=db)
+            get_current_user(request=_mock_request(), token="invalid_token", db=db)
         assert excinfo.value.status_code == 401
 
     def test_expired_token(self, db: Session, test_user: User):
@@ -40,14 +48,14 @@ class TestGetCurrentUser:
             expires_delta=timedelta(seconds=-1)
         )
         with pytest.raises(HTTPException) as excinfo:
-            get_current_user(token=token, db=db)
+            get_current_user(request=_mock_request(), token=token, db=db)
         assert excinfo.value.status_code == 401
 
     def test_user_not_found(self, db: Session):
         """존재하지 않는 사용자"""
         token = create_access_token({"sub": "nonexistent@example.com", "user_id": 9999})
         with pytest.raises(HTTPException) as excinfo:
-            get_current_user(token=token, db=db)
+            get_current_user(request=_mock_request(), token=token, db=db)
         assert excinfo.value.status_code == 401
 
 

@@ -50,12 +50,12 @@ const ControlDetailPage = () => {
     try {
       const data = await controlService.getControl(parseInt(id, 10))
       if (!data) {
-        setError('Control not found')
+        setError('통제항목을 찾을 수 없습니다')
       } else {
         setControl(data)
       }
     } catch {
-      setError('Failed to load control item')
+      setError('통제항목을 불러오는 데 실패했습니다')
     } finally {
       setLoading(false)
     }
@@ -96,11 +96,11 @@ const ControlDetailPage = () => {
     return (
       <Result
         status="error"
-        title={error === 'Control not found' ? 'Not Found' : 'Failed to Load'}
-        subTitle={error || 'The control item could not be found'}
+        title={error === '통제항목을 찾을 수 없습니다' ? '찾을 수 없음' : '불러오기 실패'}
+        subTitle={error || '통제항목을 찾을 수 없습니다'}
         extra={
           <Button type="primary" onClick={handleBack}>
-            Go Back
+            뒤로 가기
           </Button>
         }
       />
@@ -116,9 +116,9 @@ const ControlDetailPage = () => {
               type="text"
               icon={<ArrowLeftOutlined />}
               onClick={handleBack}
-              aria-label="Back"
+              aria-label="뒤로"
             >
-              Back
+              뒤로
             </Button>
 
             <Row justify="space-between" align="middle">
@@ -130,7 +130,7 @@ const ControlDetailPage = () => {
                   <Title level={3} style={{ margin: 0 }}>
                     {control.title}
                   </Title>
-                  {control.isRequired && <Tag color="red">Required</Tag>}
+                  {control.isRequired && <Tag color="red">필수</Tag>}
                 </Space>
               </Col>
             </Row>
@@ -144,7 +144,7 @@ const ControlDetailPage = () => {
             <Divider />
 
             <Descriptions column={1}>
-              <Descriptions.Item label="Description">
+              <Descriptions.Item label="설명">
                 <Paragraph>{control.description}</Paragraph>
               </Descriptions.Item>
             </Descriptions>
@@ -156,7 +156,7 @@ const ControlDetailPage = () => {
             <Card
               title={
                 <Space>
-                  <span>Linked Evidence</span>
+                  <span>연결된 증적</span>
                   <Badge
                     count={control.evidenceCount}
                     style={{ backgroundColor: '#52c41a' }}
@@ -168,9 +168,9 @@ const ControlDetailPage = () => {
                   type="primary"
                   icon={<LinkOutlined />}
                   onClick={handleLinkEvidence}
-                  aria-label="Link Evidence"
+                  aria-label="증적 연결"
                 >
-                  Link Evidence
+                  증적 연결
                 </Button>
               }
             >
@@ -200,11 +200,11 @@ const ControlDetailPage = () => {
                         description={
                           <Space>
                             <Text type="secondary">
-                              Uploaded by {evidence.uploaderName}
+                              업로더: {evidence.uploaderName}
                             </Text>
                             {evidence.validUntil && (
                               <Text type="secondary">
-                                Valid until {evidence.validUntil}
+                                유효기간: {evidence.validUntil}
                               </Text>
                             )}
                           </Space>
@@ -215,7 +215,7 @@ const ControlDetailPage = () => {
                 />
               ) : (
                 <Empty
-                  description="No evidence linked"
+                  description="연결된 증적이 없습니다"
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               )}
@@ -223,7 +223,7 @@ const ControlDetailPage = () => {
           </Col>
 
           <Col xs={24} md={8}>
-            <Card title="Related Controls">
+            <Card title="관련 통제항목">
               {control.relatedItems && control.relatedItems.length > 0 ? (
                 <List
                   size="small"
@@ -258,7 +258,7 @@ const ControlDetailPage = () => {
                 />
               ) : (
                 <Empty
-                  description="No related controls"
+                  description="관련 통제항목이 없습니다"
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               )}

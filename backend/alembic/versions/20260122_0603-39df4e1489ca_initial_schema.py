@@ -214,7 +214,7 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('user_id')
+    sa.UniqueConstraint('user_id', 'notification_type')
     )
     op.create_index(op.f('ix_notification_settings_id'), 'notification_settings', ['id'], unique=False)
     op.create_table('notifications',

@@ -13,7 +13,7 @@ interface SearchInputProps {
 }
 
 const SearchInput = ({
-  placeholder = 'Search...',
+  placeholder = '검색...',
   onSearch,
   debounceMs = 500,
   allowClear = true,

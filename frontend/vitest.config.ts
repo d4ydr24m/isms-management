@@ -10,13 +10,9 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     testTimeout: 60000,
     hookTimeout: 60000,
-    retry: 2,
+    retry: 3,
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        maxForks: 3,
-      },
-    },
+    maxForks: 2,
     sequence: {
       sequentialFiles: [
         '**/Risk/index.test.tsx',

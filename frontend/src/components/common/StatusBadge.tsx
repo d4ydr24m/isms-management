@@ -12,12 +12,12 @@ const statusConfig: Record<
   StatusType,
   { color: PresetStatusColorType; defaultText: string }
 > = {
-  active: { color: 'success', defaultText: 'Active' },
-  inactive: { color: 'default', defaultText: 'Inactive' },
-  pending: { color: 'processing', defaultText: 'Pending' },
-  completed: { color: 'success', defaultText: 'Completed' },
-  failed: { color: 'error', defaultText: 'Failed' },
-  draft: { color: 'warning', defaultText: 'Draft' },
+  active: { color: 'success', defaultText: '활성' },
+  inactive: { color: 'default', defaultText: '비활성' },
+  pending: { color: 'processing', defaultText: '대기' },
+  completed: { color: 'success', defaultText: '완료' },
+  failed: { color: 'error', defaultText: '실패' },
+  draft: { color: 'warning', defaultText: '초안' },
 }
 
 const StatusBadge = ({ status, text }: StatusBadgeProps) => {
