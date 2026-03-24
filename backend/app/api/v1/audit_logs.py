@@ -12,7 +12,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_db, get_current_superuser
+from app.core.deps import get_db, require_permission
 from app.models.user import User
 from app.services.audit_log_service import AuditLogService
 from app.schemas.audit import AuditLogResponse, AuditLogList
@@ -32,7 +32,7 @@ def list_audit_logs(
     end_date: Optional[datetime] = None,
     ip_address: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(require_permission("system:admin")),
 ):
     """
     감사 로그 조회
@@ -98,7 +98,7 @@ def export_audit_logs(
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(require_permission("system:admin")),
 ):
     """
     감사 로그 내보내기
@@ -136,7 +136,7 @@ def export_audit_logs(
 def verify_hash_chain(
     limit: int = Query(1000, ge=1, le=10000),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(require_permission("system:admin")),
 ):
     """
     해시 체인 무결성 검증

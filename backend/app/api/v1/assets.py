@@ -180,17 +180,56 @@ def get_asset_categories(
         is_active=is_active,
     )
 
-    # 자식 분류 추가 (1단계만)
-    responses = []
-    for item in items:
-        response = AssetCategoryResponse.model_validate(item)
-        response.children = [
-            AssetCategoryResponse.model_validate(child)
-            for child in (item.children or [])
-        ]
-        responses.append(response)
+    # 계층 구조로 변환 (level 1만 top-level, 나머지는 children으로 중첩)
+    if not parent_id and not level:
+        # 전체 조회 시: 트리 구조로 반환
+        items_by_id = {item.id: item for item in items}
+        top_level = []
 
-    return AssetCategoryList(items=responses, total=total)
+        def build_response(item):
+            resp = AssetCategoryResponse(
+                id=item.id,
+                code=item.code,
+                name=item.name,
+                description=item.description,
+                level=item.level,
+                parent_id=item.parent_id,
+                sort_order=item.sort_order,
+                is_active=item.is_active,
+                created_at=item.created_at,
+                updated_at=item.updated_at,
+                children=[],
+            )
+            child_items = [i for i in items if i.parent_id == item.id]
+            child_items.sort(key=lambda x: (x.sort_order, x.id))
+            resp.children = [build_response(c) for c in child_items]
+            return resp
+
+        for item in items:
+            if item.level == 1:
+                top_level.append(build_response(item))
+        top_level.sort(key=lambda x: (x.sort_order, x.id))
+
+        return AssetCategoryList(items=top_level, total=len(top_level))
+    else:
+        # 필터 조회 시: flat 리스트 반환
+        responses = []
+        for item in items:
+            resp = AssetCategoryResponse(
+                id=item.id,
+                code=item.code,
+                name=item.name,
+                description=item.description,
+                level=item.level,
+                parent_id=item.parent_id,
+                sort_order=item.sort_order,
+                is_active=item.is_active,
+                created_at=item.created_at,
+                updated_at=item.updated_at,
+                children=[],
+            )
+            responses.append(resp)
+        return AssetCategoryList(items=responses, total=total)
 
 
 @router.post("/categories", response_model=AssetCategoryResponse, status_code=status.HTTP_201_CREATED)

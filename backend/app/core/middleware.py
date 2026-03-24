@@ -23,41 +23,136 @@ class IPWhitelistMiddleware(BaseHTTPMiddleware):
     """
     IP 화이트리스트 미들웨어
 
-    허용된 IP 주소에서만 접근 가능하도록 제한합니다.
+    system_settings 테이블에서 설정을 동적으로 읽어 IP를 제한합니다.
+    CIDR 표기법(예: 10.0.0.0/8)도 지원합니다.
     """
 
     def __init__(
         self,
         app: FastAPI,
-        whitelist: Optional[List[str]] = None,
-        enabled: bool = False,
         exempt_paths: Optional[List[str]] = None,
     ):
         super().__init__(app)
-        self.whitelist: Set[str] = set(whitelist) if whitelist else set()
-        self.enabled = enabled
-        self.exempt_paths = exempt_paths or ["/health", "/docs", "/redoc", "/openapi.json"]
+        self.exempt_paths = exempt_paths or [
+            "/health", "/docs", "/redoc", "/openapi.json",
+        ]
+        # 캐시: (enabled, whitelist_entries, timestamp)
+        self._cache: Optional[tuple] = None
+        self._cache_ttl = 10  # 10초마다 DB 재조회
 
-    def add_ip(self, ip: str) -> None:
-        """IP 추가"""
-        self.whitelist.add(ip)
+    def _load_settings(self) -> tuple:
+        """DB에서 IP 화이트리스트 설정 로드 (캐시 적용)"""
+        now = time.time()
+        if self._cache and (now - self._cache[2]) < self._cache_ttl:
+            return self._cache[0], self._cache[1]
 
-    def remove_ip(self, ip: str) -> None:
-        """IP 제거"""
-        self.whitelist.discard(ip)
+        try:
+            from app.core.deps import SessionLocal
+            from app.models.system_setting import SystemSetting
 
-    def is_allowed(self, ip: str) -> bool:
+            db = SessionLocal()
+            try:
+                enabled_row = db.query(SystemSetting).filter(
+                    SystemSetting.key == "ip_whitelist_enabled"
+                ).first()
+                whitelist_row = db.query(SystemSetting).filter(
+                    SystemSetting.key == "ip_whitelist"
+                ).first()
+
+                enabled = enabled_row.value == "true" if enabled_row else False
+                raw = whitelist_row.value if whitelist_row else ""
+                entries = [e.strip() for e in raw.split(",") if e.strip()] if raw else []
+            finally:
+                db.close()
+
+            self._cache = (enabled, entries, now)
+            return enabled, entries
+        except Exception as e:
+            logger.error(f"IP 화이트리스트 설정 로드 실패: {e}")
+            # 설정 로드 실패 시 접근 허용 (안전 장치)
+            return False, []
+
+    def _ip_matches(self, client_ip: str, entry: str) -> bool:
+        """IP가 항목과 일치하는지 확인 (CIDR 지원)"""
+        import ipaddress
+        try:
+            client = ipaddress.ip_address(client_ip)
+            if "/" in entry:
+                return client in ipaddress.ip_network(entry, strict=False)
+            else:
+                return client == ipaddress.ip_address(entry)
+        except ValueError:
+            return False
+
+    def is_allowed(self, client_ip: str, enabled: bool, entries: List[str]) -> bool:
         """IP 허용 여부 확인"""
-        if not self.enabled:
+        if not enabled:
             return True
-        if not self.whitelist:
+        if not entries:
             return True
 
         # 로컬호스트는 항상 허용
-        if ip in ("127.0.0.1", "localhost", "::1"):
+        if client_ip in ("127.0.0.1", "localhost", "::1"):
             return True
 
-        return ip in self.whitelist
+        for entry in entries:
+            if self._ip_matches(client_ip, entry):
+                return True
+
+        return False
+
+    def _check_user_ip(self, client_ip: str, request: Request) -> Optional[Response]:
+        """사용자별 IP 제한 확인. 차단 시 Response 반환, 허용 시 None."""
+        try:
+            import jwt
+            from app.core.config import settings as app_settings
+            from app.core.deps import SessionLocal
+            from app.models.user import User
+
+            # JWT 토큰 추출 (쿠키 또는 헤더)
+            token = request.cookies.get("access_token")
+            if not token:
+                auth_header = request.headers.get("Authorization", "")
+                if auth_header.startswith("Bearer "):
+                    token = auth_header[7:]
+            if not token:
+                return None  # 인증 없는 요청은 여기서 차단하지 않음
+
+            # 토큰 디코딩 (검증은 auth에서 수행)
+            try:
+                payload = jwt.decode(token, app_settings.SECRET_KEY, algorithms=["HS256"])
+                user_id = payload.get("sub")
+                if not user_id:
+                    return None
+            except Exception:
+                return None
+
+            # DB에서 사용자 IP 제한 확인
+            db = SessionLocal()
+            try:
+                user = db.query(User).filter(User.id == int(user_id)).first()
+                if not user or not user.ip_whitelist_enabled or not user.allowed_ips:
+                    return None
+
+                allowed = [ip.strip() for ip in user.allowed_ips.split(",") if ip.strip()]
+                if not allowed:
+                    return None
+
+                for entry in allowed:
+                    if self._ip_matches(client_ip, entry):
+                        return None  # 허용
+
+                logger.warning(f"사용자별 IP 차단: user_id={user_id}, ip={client_ip}")
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": f"이 사용자에게 허용되지 않은 IP 주소입니다. ({client_ip})"}
+                )
+            finally:
+                db.close()
+
+        except Exception as e:
+            logger.error(f"사용자별 IP 확인 실패: {e}")
+            return None  # 실패 시 허용
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # 제외 경로 확인
@@ -65,15 +160,30 @@ class IPWhitelistMiddleware(BaseHTTPMiddleware):
         if any(path.startswith(exempt) for exempt in self.exempt_paths):
             return await call_next(request)
 
+        # 설정 API 자체는 항상 허용 (잠금 방지)
+        if path.startswith("/api/v1/system-settings"):
+            return await call_next(request)
+
+        # 로그인 경로는 글로벌 IP만 체크 (사용자별 체크 불가)
+        is_login = path.startswith("/api/v1/auth/login")
+
         # 클라이언트 IP 확인
         client_ip = self._get_client_ip(request)
 
-        if not self.is_allowed(client_ip):
-            logger.warning(f"IP 차단: {client_ip}, 경로: {path}")
+        # 1. 글로벌 IP 화이트리스트 체크
+        enabled, entries = self._load_settings()
+        if not self.is_allowed(client_ip, enabled, entries):
+            logger.warning(f"글로벌 IP 차단: {client_ip}, 경로: {path}")
             return JSONResponse(
                 status_code=403,
-                content={"detail": "접근이 허용되지 않은 IP 주소입니다."}
+                content={"detail": f"접근이 허용되지 않은 IP 주소입니다. ({client_ip})"}
             )
+
+        # 2. 사용자별 IP 화이트리스트 체크 (로그인 제외)
+        if not is_login:
+            user_block = self._check_user_ip(client_ip, request)
+            if user_block:
+                return user_block
 
         return await call_next(request)
 
@@ -82,7 +192,6 @@ class IPWhitelistMiddleware(BaseHTTPMiddleware):
         # X-Forwarded-For 헤더 확인 (프록시 뒤)
         forwarded_for = request.headers.get("X-Forwarded-For")
         if forwarded_for:
-            # 첫 번째 IP가 원본 클라이언트 IP
             return forwarded_for.split(",")[0].strip()
 
         # X-Real-IP 헤더 확인
@@ -113,6 +222,45 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         self.log_response_body = log_response_body
         self.exempt_paths = exempt_paths or ["/health", "/docs", "/redoc", "/openapi.json"]
 
+    # 감사 로그 대상: 데이터 변경 요청만 DB에 기록
+    AUDIT_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
+
+    def _extract_user_info(self, request: Request) -> dict:
+        """JWT 토큰에서 사용자 정보 추출"""
+        try:
+            import jwt
+            from app.core.config import settings as app_settings
+
+            token = request.cookies.get("access_token")
+            if not token:
+                auth_header = request.headers.get("Authorization", "")
+                if auth_header.startswith("Bearer "):
+                    token = auth_header[7:]
+            if not token:
+                return {}
+
+            payload = jwt.decode(token, app_settings.SECRET_KEY, algorithms=["HS256"])
+            return {
+                "user_id": payload.get("user_id"),
+                "user_email": payload.get("sub"),
+            }
+        except Exception:
+            return {}
+
+    def _get_action(self, method: str, path: str) -> str:
+        """HTTP 메서드와 경로에서 액션 이름 추출"""
+        if method == "POST" and "login" in path:
+            return "login"
+        if method == "POST" and "logout" in path:
+            return "logout"
+        action_map = {"POST": "create", "PUT": "update", "DELETE": "delete", "PATCH": "update"}
+        return action_map.get(method, method.lower())
+
+    def _get_resource_type(self, path: str) -> str:
+        """경로에서 리소스 타입 추출"""
+        parts = path.replace("/api/v1/", "").split("/")
+        return parts[0] if parts else "unknown"
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # 제외 경로 확인
         path = request.url.path
@@ -131,7 +279,7 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         # 처리 시간 계산
         process_time = (datetime.utcnow() - start_time).total_seconds()
 
-        # 로그 기록
+        # 콘솔 로그 (모든 요청)
         log_data = {
             "timestamp": start_time.isoformat(),
             "method": request.method,
@@ -139,15 +287,55 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
             "client_ip": client_ip,
             "status_code": response.status_code,
             "process_time_ms": round(process_time * 1000, 2),
-            "user_agent": request.headers.get("User-Agent", ""),
         }
-
-        # 인증된 사용자 정보 추출 (있는 경우)
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header:
-            log_data["has_auth"] = True
-
         logger.info(f"API 요청: {json.dumps(log_data, ensure_ascii=False)}")
+
+        # DB 감사 로그 (데이터 변경 요청만)
+        if request.method in self.AUDIT_METHODS and path.startswith("/api/"):
+            try:
+                from app.core.deps import SessionLocal
+                from app.models.audit_log import AuditLog
+
+                user_info = self._extract_user_info(request)
+                user_name = None
+                if user_info.get("user_id"):
+                    try:
+                        db_temp = SessionLocal()
+                        from app.models.user import User
+                        u = db_temp.query(User).filter(User.id == user_info["user_id"]).first()
+                        if u:
+                            user_name = u.name
+                        db_temp.close()
+                    except Exception:
+                        pass
+
+                db = SessionLocal()
+                try:
+                    import hashlib
+                    action = self._get_action(request.method, path)
+                    resource_type = self._get_resource_type(path)
+                    hash_input = f"{start_time.isoformat()}|{user_info.get('user_id','')}|{action}|{resource_type}|{path}|{response.status_code}"
+                    current_hash = hashlib.sha256(hash_input.encode()).hexdigest()
+
+                    audit_log = AuditLog(
+                        user_id=user_info.get("user_id"),
+                        user_email=user_info.get("user_email", ""),
+                        user_name=user_name or "",
+                        action=action,
+                        resource_type=resource_type,
+                        ip_address=client_ip,
+                        user_agent=request.headers.get("User-Agent", "")[:500],
+                        request_method=request.method,
+                        request_path=path[:500],
+                        status_code=response.status_code,
+                        current_hash=current_hash,
+                    )
+                    db.add(audit_log)
+                    db.commit()
+                finally:
+                    db.close()
+            except Exception as e:
+                logger.error(f"감사 로그 DB 기록 실패: {e}")
 
         return response
 

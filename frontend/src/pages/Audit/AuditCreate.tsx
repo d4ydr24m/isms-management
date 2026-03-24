@@ -57,13 +57,13 @@ const AuditCreate = () => {
   const fetchData = useCallback(async () => {
     try {
       const [usersData, auditorsData, controlsData] = await Promise.all([
-        userService.getUsers({ limit: 100 }),
-        auditorAccountService.getAuditorAccounts({ limit: 100 }),
-        controlService.getControls({ limit: 200 }),
+        userService.getUsers({ size: 100 }),
+        auditorAccountService.getAuditorAccounts({ size: 100 }),
+        controlService.getControls({ pageSize: 200 }),
       ])
-      setUsers(usersData.data || [])
-      setExternalAuditors(auditorsData.data || [])
-      setControls(controlsData.data || [])
+      setUsers(usersData.items || [])
+      setExternalAuditors(auditorsData.items || [])
+      setControls(controlsData.items || [])
     } catch {
       message.error('데이터를 불러오는데 실패했습니다')
     }
@@ -107,7 +107,7 @@ const AuditCreate = () => {
 
   const controlTransferData: TransferItem[] = controls.map((control) => ({
     key: String(control.id),
-    title: `${control.number} - ${control.title}`,
+    title: `${control.code} - ${control.title}`,
     description: control.isRequired ? '필수' : '선택',
   }))
 

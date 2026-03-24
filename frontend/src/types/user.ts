@@ -8,8 +8,12 @@ export interface User {
   roles: Role[]
   isActive: boolean
   isMfaEnabled: boolean
+  ipWhitelistEnabled: boolean
+  allowedIps: string | null
   createdAt: string
   updatedAt: string
+  lastLoginAt: string | null
+  lastLoginIp: string | null
 }
 
 export interface Department {
@@ -45,6 +49,8 @@ export interface UserUpdate {
   departmentId?: number
   isActive?: boolean
   roleIds?: number[]
+  ipWhitelistEnabled?: boolean
+  allowedIps?: string
 }
 
 // 사용자 목록 응답
@@ -53,9 +59,11 @@ export interface UserListItem {
   email: string
   name: string
   department: string | null
-  roles: string[]
+  departmentName: string | null
+  roles: Role[]
   isActive: boolean
   createdAt: string
+  lastLoginAt: string | null
 }
 
 // 부서 생성 요청

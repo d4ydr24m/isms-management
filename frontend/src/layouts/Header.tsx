@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Layout, Space, Badge, Avatar, Dropdown, Input } from 'antd'
 import {
   BellOutlined,
@@ -23,12 +24,6 @@ const Header = () => {
   }
 
   const userMenuItems: MenuProps['items'] = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: '프로필',
-      onClick: () => navigate('/profile'),
-    },
     {
       key: 'settings',
       icon: <SettingOutlined />,
@@ -59,9 +54,15 @@ const Header = () => {
     >
       <Input
         prefix={<SearchOutlined />}
-        placeholder="검색..."
-        style={{ width: 300 }}
+        placeholder="통제항목, 증적, 사용자, 자산 검색..."
+        style={{ width: 350 }}
         allowClear
+        onPressEnter={(e) => {
+          const value = (e.target as HTMLInputElement).value.trim()
+          if (value) {
+            navigate(`/search?q=${encodeURIComponent(value)}`)
+          }
+        }}
       />
 
       <Space size="large">

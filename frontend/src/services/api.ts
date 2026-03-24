@@ -74,9 +74,21 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest)
       } catch (refreshError) {
         // 토큰 갱신 실패 시 로그아웃 처리
-        window.location.href = '/auth/login'
+        // Clear persisted auth state
+        try {
+          localStorage.removeItem('auth-storage')
+        } catch { /* ignore */ }
+        window.location.href = '/login'
         return Promise.reject(refreshError)
       }
+    }
+
+    // 401 에러이고 이미 재시도한 경우 (or non-401)
+    if (error.response?.status === 401) {
+      try {
+        localStorage.removeItem('auth-storage')
+      } catch { /* ignore */ }
+      window.location.href = '/login'
     }
 
     return Promise.reject(error)
@@ -128,7 +140,17 @@ export const uploadFile = async (
 
   if (additionalData) {
     Object.entries(additionalData).forEach(([key, value]) => {
-      formData.append(key, typeof value === 'object' ? JSON.stringify(value) : value)
+      // Convert camelCase key to snake_case for FormData
+      const snakeKey = toSnakeCase(key)
+      if (value === null || value === undefined) return
+      if (Array.isArray(value)) {
+        // Arrays sent as comma-separated string
+        formData.append(snakeKey, value.join(','))
+      } else if (typeof value === 'object') {
+        formData.append(snakeKey, JSON.stringify(value))
+      } else {
+        formData.append(snakeKey, String(value))
+      }
     })
   }
 

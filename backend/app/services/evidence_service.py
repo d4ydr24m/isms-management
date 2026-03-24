@@ -243,25 +243,48 @@ class EvidenceService:
 
         return evidence
 
-    def delete_evidence(self, evidence_id: int) -> Evidence:
+    def delete_evidence(self, evidence_id: int) -> None:
         """
-        증적 삭제 (soft delete)
+        증적 완전 삭제 (hard delete)
+
+        증적, 버전 이력, 통제항목 매핑, MinIO 파일을 모두 삭제합니다.
 
         Args:
             evidence_id: 증적 ID
-
-        Returns:
-            Evidence: 삭제된 증적
         """
         evidence = self.db.query(Evidence).filter(Evidence.id == evidence_id).first()
         if not evidence:
             raise ValueError("증적을 찾을 수 없습니다.")
 
-        evidence.status = "archived"
-        self.db.commit()
-        self.db.refresh(evidence)
+        # MinIO에서 파일 삭제
+        try:
+            if evidence.file_path:
+                self.file_service.delete_file(evidence.file_path)
+            # 버전 파일도 삭제
+            for version in evidence.versions:
+                if version.file_path and version.file_path != evidence.file_path:
+                    try:
+                        self.file_service.delete_file(version.file_path)
+                    except Exception:
+                        pass
+        except Exception:
+            pass  # 파일 삭제 실패해도 DB 삭제는 진행
 
-        return evidence
+        # 통제항목 매핑 삭제
+        from app.models.evidence import control_item_evidences
+        self.db.execute(
+            control_item_evidences.delete().where(
+                control_item_evidences.c.evidence_id == evidence_id
+            )
+        )
+
+        # 버전 이력 삭제
+        for version in evidence.versions:
+            self.db.delete(version)
+
+        # 증적 삭제
+        self.db.delete(evidence)
+        self.db.commit()
 
     def update_control_mappings(
         self,
@@ -299,6 +322,40 @@ class EvidenceService:
                 if control in evidence.control_items:
                     evidence.control_items.remove(control)
 
+        self.db.commit()
+        self.db.refresh(evidence)
+
+        return evidence
+
+    def replace_control_mappings(
+        self,
+        evidence_id: int,
+        control_ids: List[int],
+    ) -> Evidence:
+        """
+        증적-통제항목 매핑 전체 교체
+
+        기존 매핑을 모두 제거하고 새로운 매핑으로 교체합니다.
+
+        Args:
+            evidence_id: 증적 ID
+            control_ids: 새로운 통제항목 ID 목록
+
+        Returns:
+            Evidence: 업데이트된 증적
+        """
+        evidence = self.db.query(Evidence).filter(Evidence.id == evidence_id).first()
+        if not evidence:
+            raise ValueError("증적을 찾을 수 없습니다.")
+
+        # 새 통제항목 목록으로 교체
+        controls = (
+            self.db.query(ControlItem)
+            .filter(ControlItem.id.in_(control_ids))
+            .all()
+        ) if control_ids else []
+
+        evidence.control_items = controls
         self.db.commit()
         self.db.refresh(evidence)
 

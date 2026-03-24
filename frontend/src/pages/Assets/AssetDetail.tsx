@@ -19,15 +19,21 @@ import {
   List,
   Avatar,
   Spin,
+  Form,
+  Select,
+  Input,
 } from 'antd'
 import {
   HomeOutlined,
   EditOutlined,
   DeleteOutlined,
+  CopyOutlined,
+  PlusOutlined,
   ExclamationCircleOutlined,
   UserOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
+import { apiClient } from '@/services/api'
 import CIAEvaluation from './components/CIAEvaluation'
 import AssetHistory from './components/AssetHistory'
 import { assetService } from '@/services/assets'
@@ -66,6 +72,9 @@ const AssetDetailPage = () => {
   const [assignments, setAssignments] = useState<AssetAssignment[]>([])
   const [loading, setLoading] = useState(true)
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [assignModalVisible, setAssignModalVisible] = useState(false)
+  const [availableUsers, setAvailableUsers] = useState<Array<{ id: number; name: string; email: string }>>([])
+  const [assignForm] = Form.useForm()
 
   // 자산 상세 정보 로드
   const fetchAsset = useCallback(async () => {
@@ -130,6 +139,38 @@ const AssetDetailPage = () => {
     await assetService.createAssetValuation(assetId, data)
     await fetchValuation()
     await fetchHistory()
+  }
+
+  // 사용자 목록 로드
+  const loadUsers = useCallback(async () => {
+    try {
+      const res = await apiClient.get<{ items: Array<{ id: number; name: string; email: string }> }>('/users', { params: { size: 100 } })
+      setAvailableUsers(res.data.items || [])
+    } catch { /* ignore */ }
+  }, [])
+
+  // 담당자 추가 핸들러
+  const handleAddAssignment = async (values: { userId: number; role: string; remarks?: string }) => {
+    try {
+      await assetService.createAssetAssignment(assetId, values)
+      message.success('담당자가 추가되었습니다')
+      setAssignModalVisible(false)
+      assignForm.resetFields()
+      await fetchAssignments()
+    } catch {
+      message.error('담당자 추가에 실패했습니다')
+    }
+  }
+
+  // 담당자 삭제 핸들러
+  const handleRemoveAssignment = async (assignmentId: number) => {
+    try {
+      await assetService.updateAssetAssignment(assetId, assignmentId, { isActive: false })
+      message.success('담당자가 제거되었습니다')
+      await fetchAssignments()
+    } catch {
+      message.error('담당자 제거에 실패했습니다')
+    }
   }
 
   // 삭제 핸들러
@@ -287,42 +328,121 @@ const AssetDetailPage = () => {
       key: 'assignments',
       label: '담당자',
       children: (
-        <Card title="담당자 목록">
-          {assignments.length > 0 ? (
-            <List
-              itemLayout="horizontal"
-              dataSource={assignments.filter(a => a.isActive)}
-              renderItem={(item) => (
-                <List.Item>
-                  <List.Item.Meta
-                    avatar={<Avatar icon={<UserOutlined />} />}
-                    title={
-                      <Space>
-                        {item.userName}
-                        <Tag color={item.role === 'owner' ? 'gold' : item.role === 'manager' ? 'blue' : 'default'}>
-                          {item.role === 'owner' ? '소유자' : item.role === 'manager' ? '관리자' : '사용자'}
-                        </Tag>
-                      </Space>
-                    }
-                    description={
-                      <>
-                        <div>{item.userEmail}</div>
-                        <div>
-                          <small>할당일: {item.assignedAt?.substring(0, 10)}</small>
-                          {item.remarks && <small> | {item.remarks}</small>}
-                        </div>
-                      </>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-          ) : (
-            <div style={{ textAlign: 'center', padding: 24, color: '#999' }}>
-              등록된 담당자가 없습니다.
-            </div>
-          )}
-        </Card>
+        <>
+          <Card
+            title="담당자 목록"
+            extra={
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  loadUsers()
+                  setAssignModalVisible(true)
+                }}
+              >
+                담당자 추가
+              </Button>
+            }
+          >
+            {assignments.filter(a => a.isActive).length > 0 ? (
+              <List
+                itemLayout="horizontal"
+                dataSource={assignments.filter(a => a.isActive)}
+                renderItem={(item) => (
+                  <List.Item
+                    actions={[
+                      <Button
+                        type="link"
+                        danger
+                        size="small"
+                        onClick={() => handleRemoveAssignment(item.id)}
+                      >
+                        제거
+                      </Button>,
+                    ]}
+                  >
+                    <List.Item.Meta
+                      avatar={<Avatar icon={<UserOutlined />} />}
+                      title={
+                        <Space>
+                          {item.userName}
+                          <Tag color={item.role === 'owner' ? 'gold' : item.role === 'manager' ? 'blue' : 'default'}>
+                            {item.role === 'owner' ? '소유자' : item.role === 'manager' ? '관리자' : '사용자'}
+                          </Tag>
+                        </Space>
+                      }
+                      description={
+                        <>
+                          <div>{item.userEmail}</div>
+                          <div>
+                            <small>할당일: {item.assignedAt?.substring(0, 10)}</small>
+                            {item.remarks && <small> | {item.remarks}</small>}
+                          </div>
+                        </>
+                      }
+                    />
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: 24, color: '#999' }}>
+                등록된 담당자가 없습니다.
+              </div>
+            )}
+          </Card>
+
+          <Modal
+            title="담당자 추가"
+            open={assignModalVisible}
+            onCancel={() => {
+              setAssignModalVisible(false)
+              assignForm.resetFields()
+            }}
+            footer={null}
+          >
+            <Form form={assignForm} layout="vertical" onFinish={handleAddAssignment}>
+              <Form.Item
+                name="userId"
+                label="사용자"
+                rules={[{ required: true, message: '사용자를 선택해주세요' }]}
+              >
+                <Select
+                  placeholder="사용자 선택"
+                  showSearch
+                  optionFilterProp="label"
+                  options={availableUsers.map((u) => ({
+                    value: u.id,
+                    label: `${u.name} (${u.email})`,
+                  }))}
+                />
+              </Form.Item>
+              <Form.Item
+                name="role"
+                label="역할"
+                rules={[{ required: true, message: '역할을 선택해주세요' }]}
+                initialValue="user"
+              >
+                <Select>
+                  <Select.Option value="owner">소유자</Select.Option>
+                  <Select.Option value="manager">관리자</Select.Option>
+                  <Select.Option value="user">사용자</Select.Option>
+                </Select>
+              </Form.Item>
+              <Form.Item name="remarks" label="비고">
+                <Input placeholder="비고 사항 입력" />
+              </Form.Item>
+              <Form.Item>
+                <Space>
+                  <Button type="primary" htmlType="submit">추가</Button>
+                  <Button onClick={() => {
+                    setAssignModalVisible(false)
+                    assignForm.resetFields()
+                  }}>취소</Button>
+                </Space>
+              </Form.Item>
+            </Form>
+          </Modal>
+        </>
       ),
     },
     {
@@ -367,6 +487,12 @@ const AssetDetailPage = () => {
         }
         extra={
           <Space>
+            <Button
+              icon={<CopyOutlined />}
+              onClick={() => navigate('/assets/create', { state: { copyFrom: asset } })}
+            >
+              복제
+            </Button>
             <Link to={`/assets/${assetId}/edit`}>
               <Button icon={<EditOutlined />}>수정</Button>
             </Link>

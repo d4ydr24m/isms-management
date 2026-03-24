@@ -51,7 +51,7 @@ def get_departments(
     tree: bool = Query(False, description="트리 구조로 반환"),
     is_active: Optional[bool] = Query(None, description="활성 상태"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:read")),
 ) -> DepartmentList:
     """
     부서 목록 조회
@@ -88,7 +88,7 @@ def get_departments(
 @router.get("/tree", response_model=List[DepartmentTree])
 def get_department_tree(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:read")),
 ) -> List[DepartmentTree]:
     """
     부서 트리 구조 조회
@@ -154,7 +154,7 @@ def create_department(
 def get_department(
     dept_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:read")),
 ) -> DepartmentResponse:
     """
     부서 상세 조회
@@ -277,7 +277,7 @@ def get_department_users(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:read")),
 ) -> UserList:
     """
     부서 소속 사용자 목록 조회

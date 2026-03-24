@@ -56,14 +56,14 @@ const AuditListPage = () => {
     try {
       const response = await auditService.getAudits({
         page: pagination.current,
-        limit: pagination.pageSize,
+        size: pagination.pageSize,
         search: filters.search || undefined,
         status: filters.status,
       })
-      setAudits(response.data || [])
+      setAudits(response.items || [])
       setPagination((prev) => ({
         ...prev,
-        total: response.meta?.total || 0,
+        total: response.total || 0,
       }))
     } catch {
       // Error handling is done silently

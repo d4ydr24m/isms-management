@@ -70,6 +70,10 @@ def get_evidence_simple_response(evidence: Evidence) -> dict:
     """Evidence 모델을 간략 응답 딕셔너리로 변환"""
     control_ids = [ci.id for ci in evidence.control_items]
     control_codes = [ci.code for ci in evidence.control_items]
+    control_items_info = [
+        {"id": ci.id, "code": ci.code, "title": ci.title}
+        for ci in evidence.control_items
+    ]
 
     return {
         "id": evidence.id,
@@ -87,6 +91,7 @@ def get_evidence_simple_response(evidence: Evidence) -> dict:
         "uploader_name": evidence.uploader.name if evidence.uploader else None,
         "control_ids": control_ids,
         "control_codes": control_codes,
+        "control_items_info": control_items_info,
         "created_at": evidence.created_at,
         "updated_at": evidence.updated_at,
     }
@@ -236,6 +241,8 @@ def create_evidence(
             author=author,
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"증적 생성 실패: {str(e)}",
@@ -296,28 +303,29 @@ def update_evidence(
     return get_evidence_response(evidence)
 
 
-@router.delete("/{evidence_id}", response_model=EvidenceResponse)
+@router.delete("/{evidence_id}")
 def delete_evidence(
     evidence_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["CISO", "보안담당자"])),
 ):
     """
-    증적 삭제 (soft delete)
+    증적 삭제 (완전 삭제)
 
+    증적 파일, 버전 이력, 통제항목 매핑을 모두 삭제합니다.
     CISO 또는 보안담당자만 삭제 가능
     """
     service = EvidenceService(db)
 
     try:
-        evidence = service.delete_evidence(evidence_id)
+        service.delete_evidence(evidence_id)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
 
-    return get_evidence_response(evidence)
+    return {"message": "증적이 삭제되었습니다."}
 
 
 @router.post("/{evidence_id}/versions", response_model=EvidenceResponse, status_code=status.HTTP_201_CREATED)
@@ -455,6 +463,50 @@ def download_evidence(
     )
 
 
+@router.get("/{evidence_id}/versions/{version_id}/download")
+def download_evidence_version(
+    evidence_id: int,
+    version_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    특정 버전 파일 다운로드
+    """
+    from app.models.evidence import EvidenceVersion as EvidenceVersionModel
+
+    version = db.query(EvidenceVersionModel).filter(
+        EvidenceVersionModel.id == version_id,
+        EvidenceVersionModel.evidence_id == evidence_id,
+    ).first()
+
+    if not version:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="버전을 찾을 수 없습니다.",
+        )
+
+    try:
+        file_service = FileService()
+        content = file_service.download_file(version.file_path)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="파일을 찾을 수 없습니다.",
+        )
+
+    encoded_filename = quote(version.file_name)
+
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="application/octet-stream",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
+            "Content-Length": str(len(content)),
+        },
+    )
+
+
 @router.get("/{evidence_id}/preview")
 def get_preview_url(
     evidence_id: int,
@@ -507,22 +559,21 @@ def get_preview_url(
 
 
 @router.post("/{evidence_id}/controls", response_model=EvidenceResponse)
-def add_control_mapping(
+def set_control_mapping(
     evidence_id: int,
     mapping_request: EvidenceMappingRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """
-    통제항목 매핑 추가
+    통제항목 매핑 설정 (기존 매핑을 대체)
     """
     service = EvidenceService(db)
 
     try:
-        evidence = service.update_control_mappings(
+        evidence = service.replace_control_mappings(
             evidence_id=evidence_id,
             control_ids=mapping_request.control_ids,
-            add=True,
         )
     except ValueError as e:
         raise HTTPException(

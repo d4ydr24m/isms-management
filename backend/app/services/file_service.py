@@ -9,7 +9,7 @@ import os
 import re
 import uuid
 from datetime import datetime, timedelta
-from typing import BinaryIO, Dict, Optional
+from typing import BinaryIO, Dict, List, Optional
 
 from minio import Minio
 from minio.error import S3Error
@@ -19,18 +19,36 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 # MIME type whitelist mapping
-ALLOWED_MIME_TYPES: Dict[str, str] = {
-    "pdf": "application/pdf",
-    "doc": "application/msword",
-    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "xls": "application/vnd.ms-excel",
-    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "ppt": "application/vnd.ms-powerpoint",
-    "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    "txt": "text/plain",
-    "jpg": "image/jpeg",
-    "jpeg": "image/jpeg",
-    "png": "image/png",
+ALLOWED_MIME_TYPES: Dict[str, List[str]] = {
+    "pdf": ["application/pdf"],
+    "doc": ["application/msword"],
+    "docx": [
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/haansoftdocx",
+        "application/octet-stream",
+    ],
+    "xls": ["application/vnd.ms-excel"],
+    "xlsx": [
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/haansoftxlsx",
+        "application/octet-stream",
+    ],
+    "ppt": ["application/vnd.ms-powerpoint"],
+    "pptx": [
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/haansoftpptx",
+        "application/octet-stream",
+    ],
+    "hwp": ["application/x-hwp", "application/haansofthwp", "application/octet-stream"],
+    "hwpx": ["application/haansofthwpx", "application/octet-stream"],
+    "txt": ["text/plain"],
+    "csv": ["text/csv", "text/plain", "application/csv"],
+    "jpg": ["image/jpeg"],
+    "jpeg": ["image/jpeg"],
+    "png": ["image/png"],
+    "gif": ["image/gif"],
+    "zip": ["application/zip", "application/x-zip-compressed"],
+    "7z": ["application/x-7z-compressed"],
 }
 
 
@@ -89,12 +107,15 @@ class FileService:
 
     def _validate_mime_type(self, content_type: str, extension: str) -> None:
         """MIME 타입과 확장자 일치 여부 검증"""
-        expected_mime = ALLOWED_MIME_TYPES.get(extension)
-        if expected_mime and content_type != expected_mime:
+        allowed_mimes = ALLOWED_MIME_TYPES.get(extension)
+        if allowed_mimes and content_type not in allowed_mimes:
             logger.warning(
                 f"MIME 타입 불일치: 확장자={extension}, "
-                f"기대={expected_mime}, 실제={content_type}"
+                f"허용={allowed_mimes}, 실제={content_type}"
             )
+            # application/octet-stream은 항상 허용 (브라우저가 정확한 타입을 모를 때)
+            if content_type == "application/octet-stream":
+                return
             raise ValueError(
                 f"파일의 MIME 타입({content_type})이 확장자(.{extension})와 일치하지 않습니다."
             )

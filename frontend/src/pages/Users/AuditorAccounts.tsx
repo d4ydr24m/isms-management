@@ -49,7 +49,7 @@ function AuditorAccounts() {
     try {
       const response = await auditorAccountService.getAuditorAccounts({
         page,
-        limit: pageSize,
+        size: pageSize,
         search: search || undefined,
       })
       setAccounts(response.items)

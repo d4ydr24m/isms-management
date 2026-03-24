@@ -58,13 +58,13 @@ const NonConformitiesPage = () => {
     try {
       const response = await auditService.getNonConformities({
         page: pagination.current,
-        limit: pagination.pageSize,
+        size: pagination.pageSize,
         status: filters.status,
       })
-      setNonConformities(response.data || [])
+      setNonConformities(response.items || [])
       setPagination((prev) => ({
         ...prev,
-        total: response.meta?.total || 0,
+        total: response.total || 0,
       }))
     } catch {
       // Error handling

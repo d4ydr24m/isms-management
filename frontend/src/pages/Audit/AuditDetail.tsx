@@ -70,11 +70,11 @@ const AuditDetail = () => {
       const [auditData, checklistData, ncData] = await Promise.all([
         auditService.getAudit(Number(id)),
         auditService.getChecklist(Number(id)),
-        auditService.getNonConformities({ auditId: Number(id), limit: 100 }),
+        auditService.getNonConformities({ auditId: Number(id), size: 100 }),
       ])
       setAudit(auditData)
       setChecklist(checklistData)
-      setNonConformities(ncData.data || [])
+      setNonConformities(ncData.items || [])
     } catch {
       // Error handling
     } finally {

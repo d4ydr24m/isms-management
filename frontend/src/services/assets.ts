@@ -32,7 +32,6 @@ import type {
   AssetByDepartmentStats,
   AssetByImportanceStats,
   AssetFilterParams,
-  ApiResponse,
   PaginationParams,
 } from '@/types'
 
@@ -58,8 +57,8 @@ export const assetService = {
    */
   async createAssetType(data: AssetTypeCreate): Promise<AssetType> {
     try {
-      const response = await apiClient.post<ApiResponse<AssetType>>('/assets/types', data)
-      return response.data.data!
+      const response = await apiClient.post<AssetType>('/assets/types', data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -86,8 +85,8 @@ export const assetService = {
    */
   async createAssetCategory(data: AssetCategoryCreate): Promise<AssetCategory> {
     try {
-      const response = await apiClient.post<ApiResponse<AssetCategory>>('/assets/categories', data)
-      return response.data.data!
+      const response = await apiClient.post<AssetCategory>('/assets/categories', data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -98,8 +97,8 @@ export const assetService = {
    */
   async updateAssetCategory(id: number, data: AssetCategoryUpdate): Promise<AssetCategory> {
     try {
-      const response = await apiClient.put<ApiResponse<AssetCategory>>(`/assets/categories/${id}`, data)
-      return response.data.data!
+      const response = await apiClient.put<AssetCategory>(`/assets/categories/${id}`, data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -126,8 +125,8 @@ export const assetService = {
    */
   async getAsset(id: number): Promise<Asset> {
     try {
-      const response = await apiClient.get<ApiResponse<Asset>>(`/assets/${id}`)
-      return response.data.data!
+      const response = await apiClient.get<Asset>(`/assets/${id}`)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -138,8 +137,8 @@ export const assetService = {
    */
   async createAsset(data: AssetCreate): Promise<Asset> {
     try {
-      const response = await apiClient.post<ApiResponse<Asset>>('/assets', data)
-      return response.data.data!
+      const response = await apiClient.post<Asset>('/assets', data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -150,8 +149,8 @@ export const assetService = {
    */
   async updateAsset(id: number, data: AssetUpdate): Promise<Asset> {
     try {
-      const response = await apiClient.put<ApiResponse<Asset>>(`/assets/${id}`, data)
-      return response.data.data!
+      const response = await apiClient.put<Asset>(`/assets/${id}`, data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -177,8 +176,8 @@ export const assetService = {
    */
   async getAssetValuation(assetId: number): Promise<AssetValuation> {
     try {
-      const response = await apiClient.get<ApiResponse<AssetValuation>>(`/assets/${assetId}/valuation`)
-      return response.data.data!
+      const response = await apiClient.get<AssetValuation>(`/assets/${assetId}/valuation`)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -189,8 +188,8 @@ export const assetService = {
    */
   async createAssetValuation(assetId: number, data: AssetValuationCreate): Promise<AssetValuation> {
     try {
-      const response = await apiClient.post<ApiResponse<AssetValuation>>(`/assets/${assetId}/valuation`, data)
-      return response.data.data!
+      const response = await apiClient.post<AssetValuation>(`/assets/${assetId}/valuation`, data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -201,8 +200,8 @@ export const assetService = {
    */
   async getAssetValuationHistory(assetId: number): Promise<AssetValuationHistory> {
     try {
-      const response = await apiClient.get<ApiResponse<AssetValuationHistory>>(`/assets/${assetId}/valuation/history`)
-      return response.data.data!
+      const response = await apiClient.get<AssetValuationHistory>(`/assets/${assetId}/valuation/history`)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -217,8 +216,8 @@ export const assetService = {
    */
   async getAssetHistory(assetId: number): Promise<AssetHistory[]> {
     try {
-      const response = await apiClient.get<ApiResponse<AssetHistory[]>>(`/assets/${assetId}/history`)
-      return response.data.data!
+      const response = await apiClient.get<AssetHistory[]>(`/assets/${assetId}/history`)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -229,8 +228,8 @@ export const assetService = {
    */
   async disposeAsset(assetId: number, data: AssetDisposalCreate): Promise<AssetDisposal> {
     try {
-      const response = await apiClient.post<ApiResponse<AssetDisposal>>(`/assets/${assetId}/dispose`, data)
-      return response.data.data!
+      const response = await apiClient.post<AssetDisposal>(`/assets/${assetId}/dispose`, data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -241,8 +240,8 @@ export const assetService = {
    */
   async getLifecycleStats(): Promise<AssetLifecycleStats> {
     try {
-      const response = await apiClient.get<ApiResponse<AssetLifecycleStats>>('/assets/lifecycle-stats')
-      return response.data.data!
+      const response = await apiClient.get<AssetLifecycleStats>('/assets/lifecycle-stats')
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -257,8 +256,8 @@ export const assetService = {
    */
   async getAssetAssignments(assetId: number): Promise<AssetAssignment[]> {
     try {
-      const response = await apiClient.get<ApiResponse<AssetAssignment[]>>(`/assets/${assetId}/assignments`)
-      return response.data.data!
+      const response = await apiClient.get<AssetAssignment[]>(`/assets/${assetId}/assignments`)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -269,8 +268,8 @@ export const assetService = {
    */
   async createAssetAssignment(assetId: number, data: AssetAssignmentCreate): Promise<AssetAssignment> {
     try {
-      const response = await apiClient.post<ApiResponse<AssetAssignment>>(`/assets/${assetId}/assignments`, data)
-      return response.data.data!
+      const response = await apiClient.post<AssetAssignment>(`/assets/${assetId}/assignments`, data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -281,8 +280,8 @@ export const assetService = {
    */
   async updateAssetAssignment(assetId: number, assignmentId: number, data: AssetAssignmentUpdate): Promise<AssetAssignment> {
     try {
-      const response = await apiClient.put<ApiResponse<AssetAssignment>>(`/assets/${assetId}/assignments/${assignmentId}`, data)
-      return response.data.data!
+      const response = await apiClient.put<AssetAssignment>(`/assets/${assetId}/assignments/${assignmentId}`, data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -304,8 +303,8 @@ export const assetService = {
    */
   async getAssetHandover(assetId: number): Promise<AssetHandover> {
     try {
-      const response = await apiClient.get<ApiResponse<AssetHandover>>(`/assets/${assetId}/handover`)
-      return response.data.data!
+      const response = await apiClient.get<AssetHandover>(`/assets/${assetId}/handover`)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -369,8 +368,8 @@ export const assetService = {
    */
   async getAssetStats(): Promise<AssetStats> {
     try {
-      const response = await apiClient.get<ApiResponse<AssetStats>>('/assets/stats')
-      return response.data.data!
+      const response = await apiClient.get<AssetStats>('/assets/stats')
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -381,8 +380,8 @@ export const assetService = {
    */
   async getAssetsByType(): Promise<AssetByTypeStats[]> {
     try {
-      const response = await apiClient.get<ApiResponse<AssetByTypeStats[]>>('/assets/by-type')
-      return response.data.data!
+      const response = await apiClient.get<AssetByTypeStats[]>('/assets/by-type')
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -393,8 +392,8 @@ export const assetService = {
    */
   async getAssetsByDepartment(): Promise<AssetByDepartmentStats[]> {
     try {
-      const response = await apiClient.get<ApiResponse<AssetByDepartmentStats[]>>('/assets/by-department')
-      return response.data.data!
+      const response = await apiClient.get<AssetByDepartmentStats[]>('/assets/by-department')
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -405,8 +404,8 @@ export const assetService = {
    */
   async getAssetsByImportance(): Promise<AssetByImportanceStats[]> {
     try {
-      const response = await apiClient.get<ApiResponse<AssetByImportanceStats[]>>('/assets/by-importance')
-      return response.data.data!
+      const response = await apiClient.get<AssetByImportanceStats[]>('/assets/by-importance')
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }

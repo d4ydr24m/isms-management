@@ -12,6 +12,7 @@ from app.core.deps import get_db, get_current_active_user
 from app.models.control import ControlDomain, ControlCategory, ControlItem
 from app.models.evidence import control_item_evidences
 from app.models.user import User
+from app.api.v1.system_settings import get_certification_type
 from app.schemas.control import (
     ControlDomainResponse,
     ControlCategoryResponse,
@@ -35,6 +36,9 @@ def get_control_domains(
 
     ISMS-P 통제영역 목록을 반환합니다.
     """
+    cert_type = get_certification_type(db)
+    is_isms_only = cert_type == "ISMS"
+
     domains = (
         db.query(ControlDomain)
         .options(
@@ -47,34 +51,40 @@ def get_control_domains(
 
     result = []
     for domain in domains:
-        domain_dict = {
-            "id": domain.id,
-            "code": domain.code,
-            "name": domain.name,
-            "description": domain.description,
-            "sort_order": domain.sort_order,
-            "categories": [
+        categories = []
+        for cat in domain.categories:
+            items = [
                 {
+                    "id": item.id,
+                    "code": item.code,
+                    "title": item.title,
+                    "is_required": item.is_required,
+                }
+                for item in cat.control_items
+                if not (is_isms_only and item.is_personal_info)
+            ]
+            # ISMS 모드에서 개인정보 항목만 있는 카테고리는 제외
+            if items or not is_isms_only:
+                categories.append({
                     "id": cat.id,
                     "domain_id": cat.domain_id,
                     "code": cat.code,
                     "name": cat.name,
                     "description": cat.description,
                     "sort_order": cat.sort_order,
-                    "control_items": [
-                        {
-                            "id": item.id,
-                            "code": item.code,
-                            "title": item.title,
-                            "is_required": item.is_required,
-                        }
-                        for item in cat.control_items
-                    ]
-                }
-                for cat in domain.categories
-            ]
-        }
-        result.append(domain_dict)
+                    "control_items": items,
+                })
+
+        # ISMS 모드에서 카테고리가 없는 영역은 제외
+        if categories or not is_isms_only:
+            result.append({
+                "id": domain.id,
+                "code": domain.code,
+                "name": domain.name,
+                "description": domain.description,
+                "sort_order": domain.sort_order,
+                "categories": categories,
+            })
 
     return result
 
@@ -150,7 +160,7 @@ def get_control_progress(
 @router.get("", response_model=ControlItemList)
 def get_controls(
     page: int = Query(1, ge=1, description="페이지 번호"),
-    page_size: int = Query(20, ge=1, le=100, description="페이지 크기"),
+    page_size: int = Query(20, ge=1, le=200, description="페이지 크기"),
     domain_id: Optional[int] = Query(None, description="통제영역 ID"),
     category_id: Optional[int] = Query(None, description="통제항목 카테고리 ID"),
     search: Optional[str] = Query(None, description="검색어 (제목, 설명)"),
@@ -164,6 +174,11 @@ def get_controls(
     페이지네이션 및 필터링 지원
     """
     query = db.query(ControlItem).join(ControlCategory)
+
+    # ISMS 모드일 경우 개인정보 항목 제외
+    cert_type = get_certification_type(db)
+    if cert_type == "ISMS":
+        query = query.filter(ControlItem.is_personal_info == False)
 
     # 영역 필터
     if domain_id:
@@ -282,7 +297,7 @@ def get_control(
 def get_control_evidences(
     control_id: int,
     page: int = Query(1, ge=1, description="페이지 번호"),
-    page_size: int = Query(20, ge=1, le=100, description="페이지 크기"),
+    page_size: int = Query(20, ge=1, le=200, description="페이지 크기"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):

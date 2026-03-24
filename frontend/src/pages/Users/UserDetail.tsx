@@ -13,9 +13,12 @@ import {
   message,
   Spin,
   Switch,
+  Alert,
+  Typography,
 } from 'antd'
-import { EditOutlined, ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
+import { EditOutlined, ArrowLeftOutlined, PlusOutlined, SafetyOutlined } from '@ant-design/icons'
 import { userService } from '@/services/users'
+import { apiClient } from '@/services/api'
 import type { User, Role } from '@/types'
 
 const { confirm } = Modal
@@ -25,6 +28,7 @@ function UserDetail() {
   const navigate = useNavigate()
   const [user, setUser] = useState<User | null>(null)
   const [roles, setRoles] = useState<Role[]>([])
+  const [departments, setDepartments] = useState<Array<{ id: number; name: string }>>([])
   const [loading, setLoading] = useState(false)
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [addRoleModalVisible, setAddRoleModalVisible] = useState(false)
@@ -34,6 +38,7 @@ function UserDetail() {
   useEffect(() => {
     loadUserDetail()
     loadRoles()
+    loadDepartments()
   }, [id])
 
   const loadUserDetail = async () => {
@@ -60,6 +65,15 @@ function UserDetail() {
       setRoles(rolesData)
     } catch (error) {
       message.error('역할 목록을 불러오는데 실패했습니다')
+    }
+  }
+
+  const loadDepartments = async () => {
+    try {
+      const response = await apiClient.get<{ items: Array<{ id: number; name: string }>; total: number }>('/departments', { params: { isActive: true } })
+      setDepartments(response.data.items || [])
+    } catch {
+      // 부서 목록 로드 실패 시 무시
     }
   }
 
@@ -171,7 +185,7 @@ function UserDetail() {
           <Descriptions.Item label="이름">{user.name}</Descriptions.Item>
           <Descriptions.Item label="이메일">{user.email}</Descriptions.Item>
           <Descriptions.Item label="부서">
-            {user.department?.name || '-'}
+            {(user as any).departmentName || '-'}
           </Descriptions.Item>
           <Descriptions.Item label="상태">
             <Tag color={user.isActive ? 'green' : 'red'}>
@@ -184,7 +198,13 @@ function UserDetail() {
             </Tag>
           </Descriptions.Item>
           <Descriptions.Item label="생성일">
-            {new Date(user.createdAt).toLocaleString('ko-KR')}
+            {new Date(user.createdAt.endsWith('Z') ? user.createdAt : user.createdAt + 'Z').toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}
+          </Descriptions.Item>
+          <Descriptions.Item label="마지막 로그인">
+            {user.lastLoginAt ? new Date(user.lastLoginAt.endsWith('Z') ? user.lastLoginAt : user.lastLoginAt + 'Z').toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="마지막 접속 IP">
+            {user.lastLoginIp || '-'}
           </Descriptions.Item>
         </Descriptions>
       </Card>
@@ -217,6 +237,74 @@ function UserDetail() {
         </Space>
       </Card>
 
+      <Card
+        title={
+          <Space>
+            <SafetyOutlined />
+            <span>IP 접근 제한</span>
+          </Space>
+        }
+        style={{ marginTop: '16px' }}
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <div>
+            <Space>
+              <Switch
+                checked={user.ipWhitelistEnabled}
+                onChange={async (checked) => {
+                  try {
+                    await userService.updateUser(parseInt(id!), { ipWhitelistEnabled: checked })
+                    message.success(checked ? 'IP 제한이 활성화되었습니다' : 'IP 제한이 비활성화되었습니다')
+                    loadUserDetail()
+                  } catch {
+                    message.error('설정 변경에 실패했습니다')
+                  }
+                }}
+              />
+              <Typography.Text strong>IP 화이트리스트 활성화</Typography.Text>
+            </Space>
+          </div>
+          <div>
+            <Typography.Text strong>허용 IP 주소 목록</Typography.Text>
+            <Typography.Text type="secondary" style={{ marginLeft: 8 }}>(한 줄에 하나의 IP, CIDR 지원)</Typography.Text>
+            <Input.TextArea
+              rows={4}
+              placeholder={'예시:\n192.168.1.1\n10.0.0.0/24'}
+              value={(user.allowedIps || '').replace(/,/g, '\n')}
+              disabled={!user.ipWhitelistEnabled}
+              onChange={(e) => {
+                // 로컬 상태 업데이트 (저장은 버튼 클릭 시)
+                setUser({ ...user, allowedIps: e.target.value.replace(/\n/g, ',') })
+              }}
+              style={{ marginTop: 8 }}
+            />
+          </div>
+          <Button
+            type="primary"
+            disabled={!user.ipWhitelistEnabled}
+            onClick={async () => {
+              try {
+                await userService.updateUser(parseInt(id!), { allowedIps: user.allowedIps || '' })
+                message.success('IP 목록이 저장되었습니다')
+                loadUserDetail()
+              } catch {
+                message.error('IP 목록 저장에 실패했습니다')
+              }
+            }}
+          >
+            IP 목록 저장
+          </Button>
+          {user.ipWhitelistEnabled && (
+            <Alert
+              type="warning"
+              showIcon
+              message="주의"
+              description="잘못된 IP 설정 시 이 사용자의 접근이 차단됩니다. 현재 접속 IP가 목록에 포함되어 있는지 확인하세요."
+            />
+          )}
+        </Space>
+      </Card>
+
       <Modal
         title="사용자 정보 수정"
         open={editModalVisible}
@@ -231,8 +319,14 @@ function UserDetail() {
           >
             <Input />
           </Form.Item>
-          <Form.Item label="부서 ID" name="departmentId">
-            <Input type="number" />
+          <Form.Item label="부서" name="departmentId">
+            <Select placeholder="부서 선택" allowClear showSearch optionFilterProp="label">
+              {departments.map((dept) => (
+                <Select.Option key={dept.id} value={dept.id} label={dept.name}>
+                  {dept.name}
+                </Select.Option>
+              ))}
+            </Select>
           </Form.Item>
           <Form.Item label="활성 상태" name="isActive" valuePropName="checked">
             <Switch />

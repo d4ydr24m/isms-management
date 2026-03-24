@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import PrivateRoute from './PrivateRoute'
 import LoginPage from '@/pages/Auth/LoginPage'
+import MFAVerifyPage from '@/pages/Auth/MFAVerifyPage'
 import DashboardPage from '@/pages/DashboardPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import UserList from '@/pages/Users'
@@ -26,6 +27,10 @@ import AssetListPage from '@/pages/Assets'
 import AssetDetail from '@/pages/Assets/AssetDetail'
 import AssetCreate from '@/pages/Assets/AssetCreate'
 import AssetImport from '@/pages/Assets/AssetImport'
+// Department Management
+import DepartmentsPage from '@/pages/Departments'
+// Audit Logs
+import AuditLogsPage from '@/pages/AuditLogs'
 // Controls Management
 import ControlsPage from '@/pages/Controls'
 import ControlDetail from '@/pages/Controls/ControlDetail'
@@ -64,6 +69,12 @@ const AppRouter = () => {
         path="/login"
         element={
           isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />
+        }
+      />
+      <Route
+        path="/auth/mfa-verify"
+        element={
+          isAuthenticated ? <Navigate to="/dashboard" replace /> : <MFAVerifyPage />
         }
       />
 
@@ -111,6 +122,26 @@ const AppRouter = () => {
         }
       />
 
+      {/* Department Management route */}
+      <Route
+        path="/departments"
+        element={
+          <PrivateRoute>
+            <DepartmentsPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Audit Logs route */}
+      <Route
+        path="/audit-logs"
+        element={
+          <PrivateRoute>
+            <AuditLogsPage />
+          </PrivateRoute>
+        }
+      />
+
       {/* Evidence Management routes */}
       <Route
         path="/evidence"
@@ -130,6 +161,14 @@ const AppRouter = () => {
       />
       <Route
         path="/evidence/:id"
+        element={
+          <PrivateRoute>
+            <EvidenceDetail />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/evidence/:id/edit"
         element={
           <PrivateRoute>
             <EvidenceDetail />

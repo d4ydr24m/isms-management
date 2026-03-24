@@ -3,33 +3,26 @@
  * FR-502: 자산 등록
  */
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { Card, message, Breadcrumb } from 'antd'
 import { HomeOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import AssetForm from './components/AssetForm'
 import { assetService } from '@/services/assets'
-import type { AssetCreate as AssetCreateType, AssetType, AssetCategory } from '@/types'
-
-// TODO: 실제 부서/사용자 API 연동 필요
-const mockDepartments = [
-  { id: 1, name: 'IT부서' },
-  { id: 2, name: '경영지원부' },
-  { id: 3, name: '개발팀' },
-  { id: 4, name: '보안팀' },
-]
-
-const mockUsers = [
-  { id: 1, name: '김철수', email: 'chulsoo@example.com' },
-  { id: 2, name: '이영희', email: 'younghee@example.com' },
-  { id: 3, name: '박지민', email: 'jimin@example.com' },
-  { id: 4, name: '최수현', email: 'suhyun@example.com' },
-]
+import { apiClient } from '@/services/api'
+import type { AssetCreate as AssetCreateType, AssetType, AssetCategory, Asset, AssetUpdate } from '@/types'
 
 const AssetCreatePage = () => {
+  const { id } = useParams<{ id: string }>()
+  const isEdit = !!id
   const navigate = useNavigate()
+  const location = useLocation()
+  const copyFrom = (location.state as any)?.copyFrom as Asset | undefined
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([])
   const [categories, setCategories] = useState<AssetCategory[]>([])
+  const [departments, setDepartments] = useState<Array<{ id: number; name: string }>>([])
+  const [users, setUsers] = useState<Array<{ id: number; name: string; email: string }>>([])
+  const [existingAsset, setExistingAsset] = useState<Asset | undefined>(undefined)
   const [loading, setLoading] = useState(true)
 
   // 초기 데이터 로드
@@ -40,27 +33,72 @@ const AssetCreatePage = () => {
         assetService.getAssetTypes(),
         assetService.getAssetCategories(),
       ])
-      setAssetTypes(typesRes.items)
-      setCategories(categoriesRes.items)
+      setAssetTypes(typesRes.items || [])
+      setCategories(categoriesRes.items || [])
     } catch {
-      message.error('초기 데이터를 불러오는데 실패했습니다')
-    } finally {
-      setLoading(false)
+      message.error('자산 유형/분류를 불러오는데 실패했습니다')
     }
-  }, [])
+    // 부서/사용자는 별도 로드 (실패해도 폼 표시)
+    try {
+      const deptRes = await apiClient.get<{ items: Array<{ id: number; name: string }>; total: number }>('/departments', { params: { isActive: true } })
+      setDepartments(deptRes.data.items || [])
+    } catch { /* ignore */ }
+    try {
+      const usersRes = await apiClient.get<{ items: Array<{ id: number; name: string; email: string }>; total: number }>('/users', { params: { size: 100 } })
+      setUsers(usersRes.data.items || [])
+    } catch (e) {
+      console.warn('사용자 목록 로드 실패:', e)
+    }
+    // 수정 모드: 기존 자산 및 CIA 평가 로드
+    if (id) {
+      try {
+        const asset = await assetService.getAsset(parseInt(id))
+        // CIA 평가 데이터도 가져와서 자산 데이터에 병합
+        try {
+          const valuation = await assetService.getAssetValuation(parseInt(id))
+          if (valuation) {
+            (asset as any).confidentiality = valuation.confidentiality;
+            (asset as any).integrity = valuation.integrity;
+            (asset as any).availability = valuation.availability;
+            (asset as any).evaluationReason = valuation.evaluationReason
+          }
+        } catch { /* 평가 없는 경우 무시 */ }
+        setExistingAsset(asset)
+      } catch {
+        message.error('자산 정보를 불러오는데 실패했습니다')
+      }
+    }
+    setLoading(false)
+  }, [id])
 
   useEffect(() => {
     fetchInitialData()
   }, [fetchInitialData])
 
-  // 자산 등록 핸들러
-  const handleSubmit = async (values: AssetCreateType) => {
+  // 자산 등록/수정 핸들러
+  const handleSubmit = async (values: AssetCreateType | AssetUpdate, ciaData?: { confidentiality: number; integrity: number; availability: number; evaluationReason?: string }) => {
     try {
-      const result = await assetService.createAsset(values)
-      message.success(`자산이 등록되었습니다. (자산코드: ${result.assetCode})`)
-      navigate(`/assets/${result.id}`)
+      let assetId: number
+      if (isEdit) {
+        await assetService.updateAsset(parseInt(id!), values as AssetUpdate)
+        assetId = parseInt(id!)
+        message.success('자산이 수정되었습니다')
+      } else {
+        const result = await assetService.createAsset(values as AssetCreateType)
+        assetId = result.id
+        message.success(`자산이 등록되었습니다. (자산코드: ${result.assetCode})`)
+      }
+      // CIA 평가 데이터가 있으면 저장
+      if (ciaData) {
+        try {
+          await assetService.createAssetValuation(assetId, ciaData)
+        } catch {
+          message.warning('자산은 저장되었으나 중요도 평가 저장에 실패했습니다')
+        }
+      }
+      navigate(`/assets/${assetId}`)
     } catch {
-      message.error('자산 등록에 실패했습니다')
+      message.error(isEdit ? '자산 수정에 실패했습니다' : '자산 등록에 실패했습니다')
     }
   }
 
@@ -76,18 +114,19 @@ const AssetCreatePage = () => {
         items={[
           { title: <Link to="/"><HomeOutlined /></Link> },
           { title: <Link to="/assets">정보자산 관리</Link> },
-          { title: '자산 등록' },
+          { title: isEdit ? '자산 수정' : copyFrom ? '자산 복제' : '자산 등록' },
         ]}
       />
 
-      <Card title="자산 등록">
+      <Card title={isEdit ? '자산 수정' : copyFrom ? '자산 복제' : '자산 등록'}>
         <AssetForm
+          initialValues={isEdit ? existingAsset : copyFrom ? { ...copyFrom, name: `${copyFrom.name} (복제)`, id: undefined as any, assetCode: undefined } : undefined}
           assetTypes={assetTypes}
           categories={categories}
-          departments={mockDepartments}
-          users={mockUsers}
+          departments={departments}
+          users={users}
           loading={loading}
-          onSubmit={handleSubmit as (values: AssetCreateType | import('@/types').AssetUpdate) => Promise<void>}
+          onSubmit={handleSubmit}
           onCancel={handleCancel}
         />
       </Card>

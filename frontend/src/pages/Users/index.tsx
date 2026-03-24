@@ -29,7 +29,7 @@ function UserList() {
     try {
       const response = await userService.getUsers({
         page,
-        limit: pageSize,
+        size: pageSize,
         search: search || undefined,
         isActive: statusFilter,
       })
@@ -79,21 +79,21 @@ function UserList() {
     },
     {
       title: '부서',
-      dataIndex: 'department',
-      key: 'department',
+      dataIndex: 'departmentName',
+      key: 'departmentName',
       width: 150,
-      render: (department: string | null) => department || '-',
+      render: (departmentName: string | null) => departmentName || '-',
     },
     {
       title: '역할',
       dataIndex: 'roles',
       key: 'roles',
       width: 200,
-      render: (roles: string[]) => (
+      render: (roles: Array<{ id: number; name: string }>) => (
         <>
           {roles.map((role) => (
-            <Tag key={role} color="blue">
-              {role}
+            <Tag key={role.id} color="blue">
+              {role.name}
             </Tag>
           ))}
         </>
@@ -114,6 +114,14 @@ function UserList() {
       key: 'createdAt',
       width: 150,
       render: (date: string) => new Date(date).toLocaleDateString('ko-KR'),
+    },
+    {
+      title: '마지막 로그인',
+      dataIndex: 'lastLoginAt',
+      key: 'lastLoginAt',
+      width: 170,
+      render: (date: string | null) =>
+        date ? new Date(date.endsWith('Z') ? date : date + 'Z').toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '-',
     },
     {
       title: '작업',

@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1 import api_router
 from app.core.config import settings
-from app.core.middleware import AuditLogMiddleware, RateLimitMiddleware
+from app.core.middleware import AuditLogMiddleware, IPWhitelistMiddleware, RateLimitMiddleware
 from app.websocket.handlers import websocket_endpoint
 
 API_DESCRIPTION = """
@@ -137,6 +137,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
 )
+
+# IP 화이트리스트 미들웨어 (가장 먼저 체크)
+app.add_middleware(IPWhitelistMiddleware)
 
 # Rate Limiting 미들웨어 (감사 로그 전에 등록하여 먼저 체크)
 if settings.RATE_LIMIT_ENABLED:

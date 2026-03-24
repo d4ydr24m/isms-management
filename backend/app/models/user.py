@@ -59,6 +59,10 @@ class User(Base):
         DateTime, default=datetime.utcnow, nullable=False, comment="비밀번호 변경 시간"
     )
 
+    # IP 접근 제한 (사용자별)
+    ip_whitelist_enabled = Column(Boolean, default=False, nullable=False, comment="사용자별 IP 제한 활성화")
+    allowed_ips = Column(Text, nullable=True, comment="허용 IP 목록 (쉼표 구분, CIDR 지원)")
+
     # 마지막 로그인
     last_login_at = Column(DateTime, nullable=True, comment="마지막 로그인 시간")
     last_login_ip = Column(String(45), nullable=True, comment="마지막 로그인 IP")

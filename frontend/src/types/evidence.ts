@@ -23,9 +23,8 @@ export interface Evidence {
 
 export interface ControlItemMapping {
   id: number
-  number: string
+  code: string
   title: string
-  category: string
 }
 
 export interface EvidenceCreate {
@@ -33,7 +32,7 @@ export interface EvidenceCreate {
   description: string
   validFrom?: string
   validUntil?: string
-  controlItemIds: number[]
+  controlIds: number[]
   file: File
 }
 

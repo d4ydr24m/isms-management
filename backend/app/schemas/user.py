@@ -9,6 +9,15 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 from app.core.security import validate_password_policy
 
 
+class RoleInUser(BaseModel):
+    """사용자 응답 내 역할 정보"""
+    id: int
+    name: str
+    description: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class UserBase(BaseModel):
     """사용자 기본 스키마"""
     email: Optional[EmailStr] = None
@@ -39,6 +48,8 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = Field(None, max_length=20)
     department_id: Optional[int] = None
     is_active: Optional[bool] = None
+    ip_whitelist_enabled: Optional[bool] = None
+    allowed_ips: Optional[str] = None
 
 
 class UserResponse(BaseModel):
@@ -51,9 +62,12 @@ class UserResponse(BaseModel):
     department_name: Optional[str] = None
     is_active: bool
     is_mfa_enabled: bool
-    roles: List[str] = []
+    roles: List[RoleInUser] = []
+    ip_whitelist_enabled: bool = False
+    allowed_ips: Optional[str] = None
     created_at: datetime
     last_login_at: Optional[datetime] = None
+    last_login_ip: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

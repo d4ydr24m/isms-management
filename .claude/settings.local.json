@@ -19,7 +19,20 @@
       "Bash(wc -l /c/Users/Aiden/workspace/isms-management/frontend/src/pages/*/* /c/Users/Aiden/workspace/isms-management/backend/app/api/v1/*.py)",
       "Bash(npx vitest:*)",
       "Bash(grep -E \"^.*\\(FAIL|✗|×\\).*$\")",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(wc -l /c/Users/Aiden/workspace/isms-management/backend/tests/test_*.py)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/core/config.py''\\).read\\(\\)\\); ast.parse\\(open\\(''app/core/middleware.py''\\).read\\(\\)\\); ast.parse\\(open\\(''app/main.py''\\).read\\(\\)\\); print\\(''All files parse OK''\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\(''app/core/config.py'', encoding=''utf-8''\\).read\\(\\)\\); ast.parse\\(open\\(''app/core/middleware.py'', encoding=''utf-8''\\).read\\(\\)\\); ast.parse\\(open\\(''app/main.py'', encoding=''utf-8''\\).read\\(\\)\\); print\\(''All files parse OK''\\)\")",
+      "Bash(grep -E \"\\\\.\\(py|ts\\)$\")",
+      "Bash(grep -E \"\\\\.\\(ts|tsx|js\\)$\")",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(python -m pytest --version)",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(docker exec:*)",
+      "Bash(docker compose:*)",
+      "Bash(grep -v '//')",
+      "Bash(git add:*)",
+      "WebFetch(domain:itwiki.kr)"
     ]
   }
 }

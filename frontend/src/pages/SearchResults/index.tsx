@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Input, Tabs, List, Card, Typography, Empty, Spin, Tag, message } from 'antd'
-import { SearchOutlined, FileTextOutlined, FolderOutlined, UserOutlined } from '@ant-design/icons'
+import { SearchOutlined, FileTextOutlined, FolderOutlined, UserOutlined, LaptopOutlined } from '@ant-design/icons'
 import { searchService } from '@/services/search'
 import type { SearchResponse, SearchCategory } from '@/types'
 
@@ -73,7 +73,7 @@ const SearchResults = () => {
                 <div style={{ flex: 1 }}>
                   <div style={{ marginBottom: '8px' }}>
                     <Text strong style={{ marginRight: '8px' }}>
-                      {control.number}
+                      {control.code}
                     </Text>
                     <Text>{control.title}</Text>
                   </div>
@@ -107,7 +107,7 @@ const SearchResults = () => {
               data-testid={`evidence-card-${evidence.id}`}
               hoverable
               style={{ width: '100%' }}
-              onClick={() => navigate(`/evidences/${evidence.id}`)}
+              onClick={() => navigate(`/evidence/${evidence.id}`)}
             >
               <div style={{ display: 'flex', gap: '12px' }}>
                 <FileTextOutlined style={{ fontSize: '24px', color: '#52c41a' }} />
@@ -177,6 +177,44 @@ const SearchResults = () => {
     )
   }
 
+  const renderAssets = () => {
+    if (!searchResults || !searchResults.assets || searchResults.assets.length === 0) {
+      return <Empty description="검색 결과가 없습니다" />
+    }
+
+    return (
+      <List
+        dataSource={searchResults.assets}
+        renderItem={(asset: any) => (
+          <List.Item>
+            <Card
+              hoverable
+              style={{ width: '100%' }}
+              onClick={() => navigate(`/assets/${asset.id}`)}
+            >
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <LaptopOutlined style={{ fontSize: '24px', color: '#fa8c16' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    <Text strong>{asset.name}</Text>
+                    <Text type="secondary" style={{ marginLeft: '8px' }}>
+                      ({asset.assetCode})
+                    </Text>
+                  </div>
+                  <div>
+                    {asset.assetTypeName && <Tag color="blue">{asset.assetTypeName}</Tag>}
+                    {asset.departmentName && <Tag>{asset.departmentName}</Tag>}
+                    <Tag color={asset.status === 'operating' ? 'green' : 'default'}>{asset.status}</Tag>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </List.Item>
+        )}
+      />
+    )
+  }
+
   const renderAll = () => {
     if (!searchResults || searchResults.totalCount === 0) {
       return <Empty description="검색 결과가 없습니다" />
@@ -200,6 +238,12 @@ const SearchResults = () => {
           <div>
             <Title level={4}>사용자 ({searchResults.users.length})</Title>
             {renderUsers()}
+          </div>
+        )}
+        {searchResults.assets && searchResults.assets.length > 0 && (
+          <div>
+            <Title level={4}>자산 ({searchResults.assets.length})</Title>
+            {renderAssets()}
           </div>
         )}
       </div>
@@ -250,6 +294,11 @@ const SearchResults = () => {
       key: 'users',
       label: `사용자 (${searchResults?.users.length || 0})`,
       children: renderUsers(),
+    },
+    {
+      key: 'assets',
+      label: `자산 (${searchResults?.assets?.length || 0})`,
+      children: renderAssets(),
     },
   ]
 

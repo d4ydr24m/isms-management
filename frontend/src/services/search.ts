@@ -5,17 +5,14 @@ import type {
   SearchControlResult,
   SearchEvidenceResult,
   SearchUserResult,
-  ApiResponse,
 } from '@/types'
 
 export const searchService = {
-  // 통합 검색
+  // 통합 검색 — backend returns SearchResponse directly
   async search(params: SearchParams): Promise<SearchResponse> {
     try {
-      const response = await apiClient.get<ApiResponse<SearchResponse>>('/search', {
-        params,
-      })
-      return response.data.data!
+      const response = await apiClient.get<SearchResponse>('/search', { params })
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -24,10 +21,10 @@ export const searchService = {
   // 통제항목 검색
   async searchControls(query: string): Promise<SearchControlResult[]> {
     try {
-      const response = await apiClient.get<ApiResponse<SearchResponse>>('/search', {
+      const response = await apiClient.get<SearchResponse>('/search', {
         params: { query, category: 'controls' },
       })
-      return response.data.data!.controls
+      return response.data.controls
     } catch (error) {
       return handleApiError(error)
     }
@@ -36,10 +33,10 @@ export const searchService = {
   // 증적 검색
   async searchEvidences(query: string): Promise<SearchEvidenceResult[]> {
     try {
-      const response = await apiClient.get<ApiResponse<SearchResponse>>('/search', {
+      const response = await apiClient.get<SearchResponse>('/search', {
         params: { query, category: 'evidences' },
       })
-      return response.data.data!.evidences
+      return response.data.evidences
     } catch (error) {
       return handleApiError(error)
     }
@@ -48,10 +45,10 @@ export const searchService = {
   // 사용자 검색
   async searchUsers(query: string): Promise<SearchUserResult[]> {
     try {
-      const response = await apiClient.get<ApiResponse<SearchResponse>>('/search', {
+      const response = await apiClient.get<SearchResponse>('/search', {
         params: { query, category: 'users' },
       })
-      return response.data.data!.users
+      return response.data.users
     } catch (error) {
       return handleApiError(error)
     }

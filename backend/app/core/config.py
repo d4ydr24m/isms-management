@@ -71,7 +71,10 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 100
     ALLOWED_EXTENSIONS: list = [
         "pdf", "doc", "docx", "xls", "xlsx",
-        "ppt", "pptx", "txt", "jpg", "jpeg", "png"
+        "ppt", "pptx", "hwp", "hwpx",
+        "txt", "csv",
+        "jpg", "jpeg", "png", "gif",
+        "zip", "7z",
     ]
 
     # Rate Limiting

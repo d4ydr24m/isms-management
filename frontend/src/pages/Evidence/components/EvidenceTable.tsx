@@ -1,5 +1,5 @@
 import { Table, Space, Button, Tooltip, Tag } from 'antd'
-import { EyeOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons'
+import { EyeOutlined, DeleteOutlined, DownloadOutlined, InboxOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import type { EvidenceListItem, EvidenceStatus } from '@/types'
@@ -14,6 +14,7 @@ interface EvidenceTableProps {
   }
   onTableChange?: TableProps<EvidenceListItem>['onChange']
   onDelete?: (id: number) => void
+  onArchive?: (id: number) => void
   onDownload?: (id: number, fileName: string) => void
   rowSelection?: TableProps<EvidenceListItem>['rowSelection']
 }
@@ -34,6 +35,7 @@ const EvidenceTable = ({
   pagination,
   onTableChange,
   onDelete,
+  onArchive,
   onDownload,
   rowSelection,
 }: EvidenceTableProps) => {
@@ -58,7 +60,7 @@ const EvidenceTable = ({
       dataIndex: 'status',
       key: 'status',
       render: (status: EvidenceStatus) => {
-        const config = statusConfig[status]
+        const config = statusConfig[status] || { color: 'default', text: status || '-' }
         return <Tag color={config.color}>{config.text}</Tag>
       },
     },
@@ -84,25 +86,37 @@ const EvidenceTable = ({
     },
     {
       title: '통제항목',
-      dataIndex: 'controlItemCount',
-      key: 'controlItemCount',
-      width: 80,
+      key: 'controlIds',
+      width: 100,
       align: 'center',
+      render: (_: unknown, record: EvidenceListItem) => {
+        const items: Array<{ code: string; title: string }> = (record as any).controlItemsInfo || []
+        const count = items.length || ((record as any).controlIds || []).length
+        if (count === 0) return <Tag color="default">0개</Tag>
+        return (
+          <Tooltip
+            title={
+              <div>
+                {items.map((item) => (
+                  <div key={item.code}>{item.code} - {item.title}</div>
+                ))}
+              </div>
+            }
+          >
+            <Tag color="blue" style={{ cursor: 'pointer' }}>{count}개</Tag>
+          </Tooltip>
+        )
+      },
     },
     {
       title: '작업',
       key: 'actions',
-      width: 160,
+      width: 180,
       render: (_: unknown, record: EvidenceListItem) => (
         <Space size="small">
           <Tooltip title="보기">
             <Link to={`/evidence/${record.id}`}>
               <Button type="text" size="small" icon={<EyeOutlined />} />
-            </Link>
-          </Tooltip>
-          <Tooltip title="수정">
-            <Link to={`/evidence/${record.id}/edit`}>
-              <Button type="text" size="small" icon={<EditOutlined />} />
             </Link>
           </Tooltip>
           {onDownload && (
@@ -112,6 +126,16 @@ const EvidenceTable = ({
                 size="small"
                 icon={<DownloadOutlined />}
                 onClick={() => onDownload(record.id, record.fileName)}
+              />
+            </Tooltip>
+          )}
+          {onArchive && record.status !== 'archived' && (
+            <Tooltip title="보관">
+              <Button
+                type="text"
+                size="small"
+                icon={<InboxOutlined />}
+                onClick={() => onArchive(record.id)}
               />
             </Tooltip>
           )}

@@ -2,7 +2,9 @@
  * 자산 변경 이력 컴포넌트
  * 타임라인 형태로 변경 이력 표시
  */
+import { useState, useEffect } from 'react'
 import { Card, Timeline, Tag, Empty, Typography } from 'antd'
+import { apiClient } from '@/services/api'
 import {
   PlusCircleOutlined,
   EditOutlined,
@@ -21,32 +23,41 @@ interface AssetHistoryProps {
 }
 
 /** 변경 유형별 아이콘 */
-const changeTypeIcons: Record<AssetChangeType, React.ReactNode> = {
+const changeTypeIcons: Record<string, React.ReactNode> = {
+  create: <PlusCircleOutlined style={{ color: '#52c41a' }} />,
   created: <PlusCircleOutlined style={{ color: '#52c41a' }} />,
+  update: <EditOutlined style={{ color: '#1890ff' }} />,
   updated: <EditOutlined style={{ color: '#1890ff' }} />,
   status_changed: <SwapOutlined style={{ color: '#faad14' }} />,
   valuation_changed: <SafetyCertificateOutlined style={{ color: '#722ed1' }} />,
   assignment_changed: <UserSwitchOutlined style={{ color: '#13c2c2' }} />,
+  delete: <DeleteOutlined style={{ color: '#f5222d' }} />,
   disposed: <DeleteOutlined style={{ color: '#f5222d' }} />,
 }
 
 /** 변경 유형별 색상 */
-const changeTypeColors: Record<AssetChangeType, string> = {
+const changeTypeColors: Record<string, string> = {
+  create: 'green',
   created: 'green',
+  update: 'blue',
   updated: 'blue',
   status_changed: 'orange',
   valuation_changed: 'purple',
   assignment_changed: 'cyan',
+  delete: 'red',
   disposed: 'red',
 }
 
 /** 변경 유형별 레이블 */
-const changeTypeLabels: Record<AssetChangeType, string> = {
+const changeTypeLabels: Record<string, string> = {
+  create: '생성',
   created: '생성',
+  update: '수정',
   updated: '수정',
   status_changed: '상태 변경',
   valuation_changed: '평가 변경',
   assignment_changed: '담당자 변경',
+  delete: '삭제',
   disposed: '폐기',
 }
 
@@ -72,6 +83,46 @@ const fieldNameLabels: Record<string, string> = {
 }
 
 const AssetHistory = ({ history, loading = false }: AssetHistoryProps) => {
+  const [userMap, setUserMap] = useState<Record<string, string>>({})
+  const [deptMap, setDeptMap] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    // Load user and department names for resolving IDs in history
+    const loadLookups = async () => {
+      try {
+        const [usersRes, deptsRes] = await Promise.all([
+          apiClient.get<{ items: Array<{ id: number; name: string }> }>('/users', { params: { size: 100 } }),
+          apiClient.get<{ items: Array<{ id: number; name: string }> }>('/departments', { params: { isActive: true } }),
+        ])
+        const uMap: Record<string, string> = {}
+        for (const u of usersRes.data.items || []) {
+          uMap[String(u.id)] = u.name
+        }
+        setUserMap(uMap)
+        const dMap: Record<string, string> = {}
+        for (const d of deptsRes.data.items || []) {
+          dMap[String(d.id)] = d.name
+        }
+        setDeptMap(dMap)
+      } catch { /* ignore */ }
+    }
+    if (history.length > 0) {
+      loadLookups()
+    }
+  }, [history])
+
+  /** ID 값을 사람이 읽을 수 있는 이름으로 변환 */
+  const resolveValue = (fieldName: string | undefined, value: string | undefined): string => {
+    if (!value) return '(없음)'
+    if (fieldName === 'owner_id' || fieldName === 'ownerId') {
+      return userMap[value] || `사용자 #${value}`
+    }
+    if (fieldName === 'department_id' || fieldName === 'departmentId') {
+      return deptMap[value] || `부서 #${value}`
+    }
+    return value
+  }
+
   const formatDateTime = (dateStr: string): string => {
     const date = new Date(dateStr)
     return date.toLocaleString('ko-KR', {
@@ -87,39 +138,36 @@ const AssetHistory = ({ history, loading = false }: AssetHistoryProps) => {
     const fieldLabel = item.fieldName ? (fieldNameLabels[item.fieldName] || item.fieldName) : ''
 
     switch (item.changeType) {
+      case 'create':
       case 'created':
         return <Text>자산이 등록되었습니다.</Text>
+      case 'delete':
       case 'disposed':
-        return <Text>자산이 폐기 처리되었습니다.</Text>
+        return <Text>자산이 폐기/삭제 처리되었습니다.</Text>
+      case 'update':
       case 'updated':
       case 'status_changed':
       case 'valuation_changed':
+      case 'assignment_changed': {
+        const oldDisplay = resolveValue(item.fieldName, item.oldValue)
+        const newDisplay = resolveValue(item.fieldName, item.newValue)
+        if (!fieldLabel && !item.oldValue && !item.newValue) {
+          return <Text>{item.remarks || '자산 정보가 수정되었습니다.'}</Text>
+        }
         return (
           <div>
-            <Text strong>{fieldLabel}</Text>
-            <Text> 변경: </Text>
+            {fieldLabel && <Text strong>{fieldLabel}</Text>}
+            {fieldLabel && <Text> 변경: </Text>}
             {item.oldValue && (
               <>
-                <Text delete type="secondary">{item.oldValue}</Text>
+                <Text delete type="secondary">{oldDisplay}</Text>
                 <Text type="secondary"> → </Text>
               </>
             )}
-            <Text>{item.newValue || '(없음)'}</Text>
+            <Text>{newDisplay}</Text>
           </div>
         )
-      case 'assignment_changed':
-        return (
-          <div>
-            <Text>담당자 변경: </Text>
-            {item.oldValue && (
-              <>
-                <Text delete type="secondary">{item.oldValue}</Text>
-                <Text type="secondary"> → </Text>
-              </>
-            )}
-            <Text>{item.newValue || '(없음)'}</Text>
-          </div>
-        )
+      }
       default:
         return <Text>{item.remarks || '변경 내역'}</Text>
     }

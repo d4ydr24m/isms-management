@@ -24,7 +24,7 @@ import {
   CloseCircleOutlined,
 } from '@ant-design/icons'
 import { controlService } from '@/services/controls'
-import type { ControlItemDetail, EvidenceSummary, ControlItem } from '@/types'
+import type { ControlItemDetail, EvidenceSummary } from '@/types'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -39,6 +39,7 @@ const ControlDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [control, setControl] = useState<ControlItemDetail | null>(null)
+  const [evidences, setEvidences] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -61,9 +62,20 @@ const ControlDetailPage = () => {
     }
   }, [id])
 
+  const fetchEvidences = useCallback(async () => {
+    if (!id) return
+    try {
+      const data = await controlService.getControlEvidences(parseInt(id, 10))
+      setEvidences(data || [])
+    } catch {
+      // ignore
+    }
+  }, [id])
+
   useEffect(() => {
     fetchControl()
-  }, [fetchControl])
+    fetchEvidences()
+  }, [fetchControl, fetchEvidences])
 
   const handleBack = () => {
     navigate(-1)
@@ -125,7 +137,7 @@ const ControlDetailPage = () => {
               <Col>
                 <Space>
                   <Title level={3} style={{ margin: 0 }}>
-                    {control.number}
+                    {control.code}
                   </Title>
                   <Title level={3} style={{ margin: 0 }}>
                     {control.title}
@@ -134,12 +146,6 @@ const ControlDetailPage = () => {
                 </Space>
               </Col>
             </Row>
-
-            {control.category && (
-              <Text type="secondary">
-                <FileTextOutlined /> {control.category.name}
-              </Text>
-            )}
 
             <Divider />
 
@@ -174,15 +180,15 @@ const ControlDetailPage = () => {
                 </Button>
               }
             >
-              {control.evidences && control.evidences.length > 0 ? (
+              {evidences.length > 0 ? (
                 <List
-                  dataSource={control.evidences}
-                  renderItem={(evidence: EvidenceSummary) => (
+                  dataSource={evidences}
+                  renderItem={(evidence: any) => (
                     <List.Item
                       key={evidence.id}
                       actions={[
-                        <Tag color={statusColors[evidence.status]}>
-                          {evidence.status}
+                        <Tag color={statusColors[evidence.status] || 'default'}>
+                          {{ active: '유효', draft: '초안', expired: '만료', archived: '보관' }[evidence.status as string] || evidence.status}
                         </Tag>,
                         <Text type="secondary">v{evidence.version}</Text>,
                       ]}
@@ -223,45 +229,34 @@ const ControlDetailPage = () => {
           </Col>
 
           <Col xs={24} md={8}>
-            <Card title="관련 통제항목">
-              {control.relatedItems && control.relatedItems.length > 0 ? (
-                <List
-                  size="small"
-                  dataSource={control.relatedItems}
-                  renderItem={(item: ControlItem) => (
-                    <List.Item
-                      key={item.id}
-                      onClick={() => handleRelatedControlClick(item.id)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <Space style={{ width: '100%' }} direction="vertical">
-                        <Space>
-                          <Text strong>{item.number}</Text>
-                          {item.hasEvidence ? (
-                            <CheckCircleOutlined
-                              style={{ color: '#52c41a' }}
-                            />
-                          ) : (
-                            <CloseCircleOutlined
-                              style={{ color: '#ff4d4f' }}
-                            />
-                          )}
-                        </Space>
-                        <Text
-                          style={{ color: '#1890ff', cursor: 'pointer' }}
-                        >
-                          {item.title}
-                        </Text>
-                      </Space>
-                    </List.Item>
-                  )}
-                />
-              ) : (
-                <Empty
-                  description="관련 통제항목이 없습니다"
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              )}
+            <Card title="상세 정보">
+              <Descriptions column={1} size="small">
+                <Descriptions.Item label="필수 여부">
+                  {control.isRequired ? <Tag color="red">필수</Tag> : <Tag>선택</Tag>}
+                </Descriptions.Item>
+                <Descriptions.Item label="개인정보 관련">
+                  {control.isPersonalInfo ? <Tag color="blue">해당</Tag> : <Tag>비해당</Tag>}
+                </Descriptions.Item>
+                {control.objective && (
+                  <Descriptions.Item label="통제 목적">
+                    {control.objective}
+                  </Descriptions.Item>
+                )}
+                {control.requirements && (
+                  <Descriptions.Item label="요구사항">
+                    {control.requirements}
+                  </Descriptions.Item>
+                )}
+                {control.tags && (
+                  <Descriptions.Item label="태그">
+                    <Space wrap>
+                      {control.tags.split(',').map((tag) => (
+                        <Tag key={tag.trim()}>{tag.trim()}</Tag>
+                      ))}
+                    </Space>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
             </Card>
           </Col>
         </Row>

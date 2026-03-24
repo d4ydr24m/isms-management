@@ -31,7 +31,12 @@ celery_app.conf.update(
 
 # Celery Beat 스케줄 설정
 celery_app.conf.beat_schedule = {
-    # 증적 만료 알림 (매일 오전 9시)
+    # 증적 자동 만료 처리 (매일 자정 KST)
+    "expire-evidences": {
+        "task": "app.services.scheduler_service.expire_evidences",
+        "schedule": crontab(hour=0, minute=0),
+    },
+    # 증적 만료 예정 알림 (매일 오전 9시)
     "check-expiring-evidences": {
         "task": "app.services.scheduler_service.check_expiring_evidences",
         "schedule": crontab(hour=9, minute=0),

@@ -17,7 +17,7 @@ interface AssetFormProps {
   departments: Array<{ id: number; name: string }>
   users: Array<{ id: number; name: string; email: string }>
   loading?: boolean
-  onSubmit: (values: AssetCreate | AssetUpdate) => Promise<void>
+  onSubmit: (values: AssetCreate | AssetUpdate, ciaData?: { confidentiality: number; integrity: number; availability: number; evaluationReason?: string }) => Promise<void>
   onCancel: () => void
 }
 
@@ -90,12 +90,18 @@ const AssetForm = ({
   const handleFinish = async (values: any) => {
     setSubmitting(true)
     try {
+      // CIA 필드를 분리 (자산 API에 보내지 않음)
+      const { confidentiality, integrity, availability, evaluationReason, ...assetValues } = values
       const submitData: AssetCreate | AssetUpdate = {
-        ...values,
-        acquisitionDate: values.acquisitionDate?.format('YYYY-MM-DD'),
-        warrantyEndDate: values.warrantyEndDate?.format('YYYY-MM-DD'),
+        ...assetValues,
+        acquisitionDate: assetValues.acquisitionDate?.format('YYYY-MM-DD'),
+        warrantyEndDate: assetValues.warrantyEndDate?.format('YYYY-MM-DD'),
       }
-      await onSubmit(submitData)
+      // onSubmit에 CIA 데이터를 같이 전달
+      const ciaData = (confidentiality && integrity && availability)
+        ? { confidentiality, integrity, availability, evaluationReason }
+        : undefined
+      await onSubmit(submitData, ciaData)
     } finally {
       setSubmitting(false)
     }
@@ -162,13 +168,18 @@ const AssetForm = ({
       <Row gutter={16}>
         <Col xs={24} sm={12}>
           <Form.Item name="categoryId" label="분류">
-            <Select placeholder="분류 선택" allowClear showSearch optionFilterProp="children">
-              {flatCategories.filter(c => c.isActive).map(cat => (
-                <Option key={cat.id} value={cat.id}>
-                  {'  '.repeat(cat.level - 1)}{cat.name}
-                </Option>
-              ))}
-            </Select>
+            <Select
+              placeholder="분류 선택"
+              allowClear
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={flatCategories.filter(c => c.isActive).map(cat => ({
+                value: cat.id,
+                label: `${'─'.repeat(cat.level - 1)}${cat.level > 1 ? ' ' : ''}${cat.name}`,
+              }))}
+            />
           </Form.Item>
         </Col>
         <Col xs={24} sm={12}>
@@ -291,6 +302,45 @@ const AssetForm = ({
         <Col xs={24} sm={12} md={6}>
           <Form.Item name="warrantyEndDate" label="보증 만료일">
             <DatePicker style={{ width: '100%' }} placeholder="날짜 선택" />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      {/* 중요도 평가 (CIA) */}
+      <Divider orientation="left">중요도 평가</Divider>
+      <Row gutter={16}>
+        <Col xs={24} sm={8}>
+          <Form.Item name="confidentiality" label="기밀성 (C)" extra="정보의 비밀 유지 중요도">
+            <Select placeholder="선택">
+              <Option value={1}>하 (1) - 공개 정보</Option>
+              <Option value={2}>중 (2) - 내부 정보</Option>
+              <Option value={3}>상 (3) - 기밀 정보</Option>
+            </Select>
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Form.Item name="integrity" label="무결성 (I)" extra="정보의 정확성 및 완전성 중요도">
+            <Select placeholder="선택">
+              <Option value={1}>하 (1) - 변경 허용</Option>
+              <Option value={2}>중 (2) - 제한적 변경</Option>
+              <Option value={3}>상 (3) - 변경 금지</Option>
+            </Select>
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Form.Item name="availability" label="가용성 (A)" extra="정보 접근 가능성 중요도">
+            <Select placeholder="선택">
+              <Option value={1}>하 (1) - 일부 중단 허용</Option>
+              <Option value={2}>중 (2) - 최소 중단</Option>
+              <Option value={3}>상 (3) - 중단 불가</Option>
+            </Select>
+          </Form.Item>
+        </Col>
+      </Row>
+      <Row gutter={16}>
+        <Col xs={24}>
+          <Form.Item name="evaluationReason" label="평가 사유">
+            <TextArea rows={2} placeholder="평가 사유를 입력하세요" maxLength={500} />
           </Form.Item>
         </Col>
       </Row>

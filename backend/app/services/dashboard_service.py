@@ -85,7 +85,19 @@ class DashboardService:
     """
 
     def __init__(self, db: Session):
+        from app.api.v1.system_settings import get_certification_type
+        self._cert_type = get_certification_type(db)
         self.db = db
+
+    @property
+    def _is_isms_only(self) -> bool:
+        return self._cert_type == "ISMS"
+
+    def _control_item_filter(self, query):
+        """ISMS 모드일 경우 개인정보 항목 제외 필터 적용"""
+        if self._is_isms_only:
+            return query.filter(ControlItem.is_personal_info == False)
+        return query
 
     # ========== 6.1.1 인증 준비 진척률 계산 ==========
 
@@ -98,8 +110,10 @@ class DashboardService:
         Returns:
             Dict: 진척률 데이터
         """
-        # 전체 통제항목 수
-        total_controls = self.db.query(func.count(ControlItem.id)).scalar() or 0
+        # 전체 통제항목 수 (인증 유형에 따라 필터)
+        q = self.db.query(func.count(ControlItem.id))
+        q = self._control_item_filter(q)
+        total_controls = q.scalar() or 0
 
         if total_controls == 0:
             return {
@@ -109,13 +123,16 @@ class DashboardService:
                 "domain_progress": [],
             }
 
-        # 증적이 연결된 통제항목 수 (중복 제거)
-        controls_with_evidence = (
+        # 증적이 연결된 통제항목 수 (중복 제거, 인증 유형 필터)
+        evidence_q = (
             self.db.query(func.count(distinct(control_item_evidences.c.control_item_id)))
             .join(Evidence, Evidence.id == control_item_evidences.c.evidence_id)
+            .join(ControlItem, ControlItem.id == control_item_evidences.c.control_item_id)
             .filter(Evidence.status == "active")
-            .scalar() or 0
         )
+        if self._is_isms_only:
+            evidence_q = evidence_q.filter(ControlItem.is_personal_info == False)
+        controls_with_evidence = evidence_q.scalar() or 0
 
         # 전체 진척률 계산
         total_progress = round((controls_with_evidence / total_controls) * 100, 1)
@@ -150,12 +167,14 @@ class DashboardService:
         domain_progress = []
 
         for domain in domains:
-            # 해당 영역의 전체 통제항목 수
+            # 해당 영역의 전체 통제항목 수 (인증 유형 필터)
             total_controls = 0
             control_item_ids = []
 
             for category in domain.categories:
                 for item in category.control_items:
+                    if self._is_isms_only and item.is_personal_info:
+                        continue
                     total_controls += 1
                     control_item_ids.append(item.id)
 
@@ -330,16 +349,21 @@ class DashboardService:
             .scalar() or 0
         )
 
-        # 전체 통제항목 수
-        total_controls = self.db.query(func.count(ControlItem.id)).scalar() or 0
+        # 전체 통제항목 수 (인증 유형 필터)
+        total_q = self.db.query(func.count(ControlItem.id))
+        total_q = self._control_item_filter(total_q)
+        total_controls = total_q.scalar() or 0
 
-        # 증적이 연결된 통제항목 수
-        controls_with_evidence = (
+        # 증적이 연결된 통제항목 수 (인증 유형 필터)
+        evidence_q = (
             self.db.query(func.count(distinct(control_item_evidences.c.control_item_id)))
             .join(Evidence, Evidence.id == control_item_evidences.c.evidence_id)
+            .join(ControlItem, ControlItem.id == control_item_evidences.c.control_item_id)
             .filter(Evidence.status == "active")
-            .scalar() or 0
         )
+        if self._is_isms_only:
+            evidence_q = evidence_q.filter(ControlItem.is_personal_info == False)
+        controls_with_evidence = evidence_q.scalar() or 0
 
         # 미확보 증적 통제항목 수
         controls_without_evidence = total_controls - controls_with_evidence

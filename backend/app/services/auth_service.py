@@ -40,6 +40,7 @@ class AuthService:
         email: str,
         password: str,
         otp_code: Optional[str] = None,
+        client_ip: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         사용자 인증
@@ -48,6 +49,7 @@ class AuthService:
             email: 사용자 이메일
             password: 비밀번호
             otp_code: OTP 코드 (MFA 활성화 시)
+            client_ip: 클라이언트 IP 주소
 
         Returns:
             Dict with success, tokens or error message
@@ -89,7 +91,7 @@ class AuthService:
                     return {"success": False, "error": "OTP 코드가 올바르지 않습니다."}
 
         # 로그인 성공 처리
-        self._handle_successful_login(user)
+        self._handle_successful_login(user, client_ip)
 
         # 토큰 생성
         token_data = {"sub": user.email, "user_id": user.id}
@@ -121,16 +123,19 @@ class AuthService:
 
         self.db.commit()
 
-    def _handle_successful_login(self, user: User) -> None:
+    def _handle_successful_login(self, user: User, client_ip: Optional[str] = None) -> None:
         """
         로그인 성공 처리
 
         Args:
             user: 사용자
+            client_ip: 클라이언트 IP 주소
         """
         user.failed_login_attempts = 0
         user.locked_until = None
         user.last_login_at = datetime.utcnow()
+        if client_ip:
+            user.last_login_ip = client_ip
         self.db.commit()
 
     def change_password(

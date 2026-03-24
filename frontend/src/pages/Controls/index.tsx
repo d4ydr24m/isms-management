@@ -59,13 +59,13 @@ const ControlListPage = () => {
     try {
       const response = await controlService.getControls({
         page: pagination.current,
-        limit: pagination.pageSize,
+        pageSize: pagination.pageSize,
         ...filters,
       })
-      setControls(response.data || [])
+      setControls(response.items || [])
       setPagination((prev) => ({
         ...prev,
-        total: response.meta?.total || 0,
+        total: response.total || 0,
       }))
     } catch {
       // Error handling is done silently
@@ -139,8 +139,8 @@ const ControlListPage = () => {
   const columns: ColumnsType<ControlItem> = [
     {
       title: '번호',
-      dataIndex: 'number',
-      key: 'number',
+      dataIndex: 'code',
+      key: 'code',
       width: 100,
       sorter: true,
     },
@@ -166,9 +166,9 @@ const ControlListPage = () => {
       key: 'evidenceCount',
       width: 120,
       align: 'center',
-      render: (count, record) => (
+      render: (count: number) => (
         <Space>
-          {record.hasEvidence ? (
+          {count > 0 ? (
             <CheckCircleOutlined style={{ color: '#52c41a' }} />
           ) : (
             <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
@@ -214,7 +214,7 @@ const ControlListPage = () => {
                 <div>
                   <Text type="secondary">전체 진척률</Text>
                   <Progress
-                    percent={progress.progressPercentage}
+                    percent={progress.coverageRate}
                     status="active"
                   />
                 </div>

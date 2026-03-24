@@ -102,13 +102,6 @@ const FilePreview = ({
                 전체 화면
               </Button>
             )}
-            <Button
-              type="primary"
-              icon={<DownloadOutlined />}
-              onClick={onDownload}
-            >
-              다운로드
-            </Button>
           </Space>
         }
       >

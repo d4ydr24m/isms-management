@@ -8,9 +8,11 @@ interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
+  pendingMfaCredentials: { email: string; password: string } | null
 
   // Actions
   login: (credentials: LoginRequest) => Promise<LoginResponse>
+  loginWithMfa: (otpCode: string) => Promise<LoginResponse>
   logout: () => Promise<void>
   fetchCurrentUser: () => Promise<void>
   clearError: () => void
@@ -24,6 +26,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      pendingMfaCredentials: null,
 
       login: async (credentials) => {
         set({ isLoading: true, error: null })
@@ -45,17 +48,63 @@ export const useAuthStore = create<AuthState>()(
               },
               isAuthenticated: true,
               isLoading: false,
+              pendingMfaCredentials: null,
             })
           } else {
-            set({ isLoading: false })
+            set({
+              isLoading: false,
+              pendingMfaCredentials: { email: credentials.email, password: credentials.password },
+            })
           }
 
           return response
         } catch (error: any) {
           set({
-            error: error.message || 'Login failed',
+            error: error.message || '로그인에 실패했습니다',
             isLoading: false,
             isAuthenticated: false,
+          })
+          throw error
+        }
+      },
+
+      loginWithMfa: async (otpCode: string) => {
+        const state = useAuthStore.getState()
+        const creds = state.pendingMfaCredentials
+        if (!creds) {
+          throw new Error('로그인 정보가 없습니다. 다시 로그인해주세요.')
+        }
+
+        set({ isLoading: true, error: null })
+        try {
+          const response = await authService.login({
+            email: creds.email,
+            password: creds.password,
+            otpCode,
+          })
+
+          set({
+            user: {
+              id: response.user.id,
+              email: response.user.email,
+              name: response.user.name,
+              departmentId: null,
+              department: null,
+              roles: response.user.roles,
+              permissions: [],
+              isActive: true,
+              isMfaEnabled: true,
+            },
+            isAuthenticated: true,
+            isLoading: false,
+            pendingMfaCredentials: null,
+          })
+
+          return response
+        } catch (error: any) {
+          set({
+            error: error.message || 'MFA 인증에 실패했습니다',
+            isLoading: false,
           })
           throw error
         }

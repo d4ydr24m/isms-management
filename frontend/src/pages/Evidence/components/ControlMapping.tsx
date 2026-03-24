@@ -60,14 +60,14 @@ const ControlMapping = ({
 
   const filteredControls = availableControls.filter(
     (control) =>
-      control.number.toLowerCase().includes(searchText.toLowerCase()) ||
+      control.code.toLowerCase().includes(searchText.toLowerCase()) ||
       control.title.toLowerCase().includes(searchText.toLowerCase())
   )
 
   const columns: ColumnsType<ControlItem> = [
     {
       title: '번호',
-      dataIndex: 'number',
+      dataIndex: 'code',
       key: 'number',
       width: 100,
     },
@@ -124,7 +124,7 @@ const ControlMapping = ({
                 style={{ padding: '4px 8px' }}
               >
                 <Text strong style={{ marginRight: 8 }}>
-                  {control.number}
+                  {control.code}
                 </Text>
                 <Text>{control.title}</Text>
               </Tag>

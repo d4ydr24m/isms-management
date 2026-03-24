@@ -1,19 +1,23 @@
 // 알림 관련 타입
 export type NotificationType =
   | 'evidence_expiring'
-  | 'scheduled_task_due'
-  | 'corrective_action_due'
-  | 'non_conformity_assigned'
+  | 'task_due'
+  | 'nc_assigned'
   | 'audit_scheduled'
+  | 'corrective_action_due'
+  | 'audit_dday'
   | 'system'
+  | 'asset_assigned'
+  | 'asset_assignment_changed'
+  | 'asset_handover'
 
 export interface Notification {
   id: number
   userId: number
-  type: NotificationType
+  notificationType: NotificationType
   title: string
   message: string
-  link: string | null
+  linkUrl: string | null
   isRead: boolean
   createdAt: string
 }
@@ -21,7 +25,7 @@ export interface Notification {
 export interface NotificationSetting {
   id: number
   userId: number
-  type: NotificationType
+  notificationType: NotificationType
   emailEnabled: boolean
   appEnabled: boolean
   frequency: 'realtime' | 'daily' | 'weekly'

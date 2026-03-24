@@ -25,22 +25,32 @@ const NotificationSettings: React.FC = () => {
   }
 
   const getNotificationTypeLabel = (type: NotificationType): string => {
-    const labelMap: Record<NotificationType, string> = {
+    const labelMap: Record<string, string> = {
       evidence_expiring: '증적 만료 예정',
-      scheduled_task_due: '정기 활동 예정',
-      corrective_action_due: '시정조치 기한',
-      non_conformity_assigned: '부적합 할당',
+      task_due: '정기 활동 예정',
+      nc_assigned: '부적합 할당',
       audit_scheduled: '감사 예정',
+      corrective_action_due: '시정조치 기한',
+      audit_dday: '감사 당일',
       system: '시스템',
+      asset_assigned: '자산 담당자 지정',
+      asset_assignment_changed: '자산 담당자 변경',
+      asset_handover: '자산 인수인계',
     }
     return labelMap[type] || type
   }
 
-  const handleEmailToggle = async (type: NotificationType, enabled: boolean) => {
+  const updateSetting = async (type: NotificationType, updates: Partial<{ emailEnabled: boolean; appEnabled: boolean; frequency: string }>) => {
+    // Find current setting to send all required fields
+    const current = settings.find((s) => s.notificationType === type)
+    if (!current) return
+
     try {
       await notificationService.updateSetting({
         type,
-        emailEnabled: enabled,
+        emailEnabled: updates.emailEnabled ?? current.emailEnabled,
+        appEnabled: updates.appEnabled ?? current.appEnabled,
+        frequency: (updates.frequency ?? current.frequency) as any,
       })
       message.success('알림 설정이 업데이트되었습니다')
       await loadSettings()
@@ -49,37 +59,23 @@ const NotificationSettings: React.FC = () => {
     }
   }
 
-  const handleAppToggle = async (type: NotificationType, enabled: boolean) => {
-    try {
-      await notificationService.updateSetting({
-        type,
-        appEnabled: enabled,
-      })
-      message.success('알림 설정이 업데이트되었습니다')
-      await loadSettings()
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : '업데이트 실패')
-    }
+  const handleEmailToggle = (type: NotificationType, enabled: boolean) => {
+    updateSetting(type, { emailEnabled: enabled })
   }
 
-  const handleFrequencyChange = async (type: NotificationType, frequency: 'realtime' | 'daily' | 'weekly') => {
-    try {
-      await notificationService.updateSetting({
-        type,
-        frequency,
-      })
-      message.success('알림 설정이 업데이트되었습니다')
-      await loadSettings()
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : '업데이트 실패')
-    }
+  const handleAppToggle = (type: NotificationType, enabled: boolean) => {
+    updateSetting(type, { appEnabled: enabled })
+  }
+
+  const handleFrequencyChange = (type: NotificationType, frequency: 'realtime' | 'daily' | 'weekly') => {
+    updateSetting(type, { frequency })
   }
 
   const columns: ColumnsType<NotificationSetting> = [
     {
       title: '알림 타입',
-      dataIndex: 'type',
-      key: 'type',
+      dataIndex: 'notificationType',
+      key: 'notificationType',
       render: (type: NotificationType) => getNotificationTypeLabel(type),
     },
     {
@@ -89,7 +85,7 @@ const NotificationSettings: React.FC = () => {
       render: (enabled: boolean, record) => (
         <Switch
           checked={enabled}
-          onChange={(checked) => handleEmailToggle(record.type, checked)}
+          onChange={(checked) => handleEmailToggle(record.notificationType, checked)}
         />
       ),
     },
@@ -100,7 +96,7 @@ const NotificationSettings: React.FC = () => {
       render: (enabled: boolean, record) => (
         <Switch
           checked={enabled}
-          onChange={(checked) => handleAppToggle(record.type, checked)}
+          onChange={(checked) => handleAppToggle(record.notificationType, checked)}
         />
       ),
     },
@@ -111,7 +107,7 @@ const NotificationSettings: React.FC = () => {
       render: (frequency: 'realtime' | 'daily' | 'weekly', record) => (
         <Select
           value={frequency}
-          onChange={(value) => handleFrequencyChange(record.type, value)}
+          onChange={(value) => handleFrequencyChange(record.notificationType, value)}
           style={{ width: 120 }}
         >
           <Select.Option value="realtime">실시간</Select.Option>
@@ -135,7 +131,7 @@ const NotificationSettings: React.FC = () => {
       <Table
         columns={columns}
         dataSource={settings}
-        rowKey="id"
+        rowKey="notificationType"
         pagination={false}
       />
     </Card>

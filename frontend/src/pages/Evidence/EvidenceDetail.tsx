@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   Card,
   Button,
@@ -11,17 +11,24 @@ import {
   Col,
   Spin,
   Typography,
+  Modal,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  Upload,
 } from 'antd'
 import {
   ArrowLeftOutlined,
   EditOutlined,
   DownloadOutlined,
   UploadOutlined,
+  InboxOutlined,
 } from '@ant-design/icons'
+import dayjs from 'dayjs'
 import { FilePreview, ControlMapping, VersionHistory } from './components'
 import { evidenceService } from '@/services/evidences'
 import { controlService } from '@/services/controls'
-import dayjs from 'dayjs'
 import type { Evidence, EvidenceVersion, ControlItem } from '@/types'
 
 const { Title } = Typography
@@ -51,6 +58,11 @@ const EvidenceDetail = () => {
   const [loading, setLoading] = useState(true)
   const [versionsLoading, setVersionsLoading] = useState(false)
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [editModalVisible, setEditModalVisible] = useState(false)
+  const [uploadModalVisible, setUploadModalVisible] = useState(false)
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [editForm] = Form.useForm()
+  const [uploadForm] = Form.useForm()
 
   const fetchEvidence = useCallback(async () => {
     if (!id) return
@@ -98,8 +110,8 @@ const EvidenceDetail = () => {
 
   const fetchAvailableControls = useCallback(async () => {
     try {
-      const response = await controlService.getControls({ limit: 100 })
-      setAvailableControls(response.data || [])
+      const response = await controlService.getControls({ pageSize: 200 })
+      setAvailableControls(response.items || [])
     } catch {
       message.error('통제항목을 불러오는데 실패했습니다')
     }
@@ -124,8 +136,10 @@ const EvidenceDetail = () => {
   }
 
   const handleVersionDownload = async (versionId: number, fileName: string) => {
+    if (!evidence) return
     try {
-      await evidenceService.downloadEvidence(versionId, fileName)
+      const { downloadFile } = await import('@/services/api')
+      await downloadFile(`/evidences/${evidence.id}/versions/${versionId}/download`, fileName)
       message.success('다운로드가 시작되었습니다')
     } catch {
       message.error('파일 다운로드에 실패했습니다')
@@ -141,6 +155,55 @@ const EvidenceDetail = () => {
       fetchEvidence()
     } catch {
       message.error('통제항목 매핑 수정에 실패했습니다')
+    }
+  }
+
+  const handleEdit = () => {
+    if (!evidence) return
+    editForm.setFieldsValue({
+      title: evidence.title,
+      description: (evidence as any).description,
+      status: evidence.status,
+      validFrom: (evidence as any).validFrom ? dayjs((evidence as any).validFrom) : undefined,
+      validUntil: (evidence as any).validUntil ? dayjs((evidence as any).validUntil) : undefined,
+    })
+    setEditModalVisible(true)
+  }
+
+  const handleEditSubmit = async () => {
+    if (!evidence) return
+    try {
+      const values = await editForm.validateFields()
+      await evidenceService.updateEvidence(evidence.id, {
+        title: values.title,
+        description: values.description,
+        status: values.status,
+        validFrom: values.validFrom?.format('YYYY-MM-DD'),
+        validUntil: values.validUntil?.format('YYYY-MM-DD'),
+      })
+      message.success('증적이 수정되었습니다')
+      setEditModalVisible(false)
+      fetchEvidence()
+    } catch (error: any) {
+      if (error?.errorFields) return
+      message.error('증적 수정에 실패했습니다')
+    }
+  }
+
+  const handleVersionUpload = async () => {
+    if (!evidence || !uploadFile) return
+    try {
+      const values = await uploadForm.validateFields()
+      await evidenceService.uploadVersion(evidence.id, uploadFile, values.changeDescription || '')
+      message.success('새 버전이 업로드되었습니다')
+      setUploadModalVisible(false)
+      setUploadFile(null)
+      uploadForm.resetFields()
+      fetchEvidence()
+      fetchVersions()
+    } catch (error: any) {
+      if (error?.errorFields) return
+      message.error('버전 업로드에 실패했습니다')
     }
   }
 
@@ -183,12 +246,8 @@ const EvidenceDetail = () => {
             </Col>
             <Col>
               <Space>
-                <Link to={`/evidence/${evidence.id}/edit`}>
-                  <Button icon={<EditOutlined />}>수정</Button>
-                </Link>
-                <Link to={`/evidence/${evidence.id}/upload`}>
-                  <Button icon={<UploadOutlined />}>새 버전 업로드</Button>
-                </Link>
+                <Button icon={<EditOutlined />} onClick={handleEdit}>수정</Button>
+                <Button icon={<UploadOutlined />} onClick={() => setUploadModalVisible(true)}>새 버전 업로드</Button>
                 <Button
                   type="primary"
                   icon={<DownloadOutlined />}
@@ -246,7 +305,16 @@ const EvidenceDetail = () => {
           <Col xs={24} lg={10}>
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
               <ControlMapping
-                mappedControls={evidence.controlItems}
+                mappedControls={
+                  ((evidence as any).controlIds || []).map((cid: number, idx: number) => {
+                    const ctrl = availableControls.find(c => c.id === cid)
+                    return {
+                      id: cid,
+                      code: ctrl?.code || ((evidence as any).controlCodes || [])[idx] || '',
+                      title: ctrl?.title || '',
+                    }
+                  })
+                }
                 availableControls={availableControls}
                 onChange={handleControlMappingChange}
               />
@@ -260,6 +328,86 @@ const EvidenceDetail = () => {
           </Col>
         </Row>
       </Space>
+
+      {/* 수정 모달 */}
+      <Modal
+        title="증적 수정"
+        open={editModalVisible}
+        onOk={handleEditSubmit}
+        onCancel={() => setEditModalVisible(false)}
+        okText="저장"
+        cancelText="취소"
+      >
+        <Form form={editForm} layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item
+            name="title"
+            label="제목"
+            rules={[{ required: true, message: '제목을 입력하세요' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item name="description" label="설명">
+            <Input.TextArea rows={3} />
+          </Form.Item>
+          <Form.Item name="status" label="상태">
+            <Select>
+              <Select.Option value="active">유효</Select.Option>
+              <Select.Option value="draft">초안</Select.Option>
+              <Select.Option value="expired">만료</Select.Option>
+              <Select.Option value="archived">보관</Select.Option>
+            </Select>
+          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="validFrom" label="유효 시작일">
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="validUntil" label="유효 기한">
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
+
+      {/* 새 버전 업로드 모달 */}
+      <Modal
+        title="새 버전 업로드"
+        open={uploadModalVisible}
+        onOk={handleVersionUpload}
+        onCancel={() => {
+          setUploadModalVisible(false)
+          setUploadFile(null)
+          uploadForm.resetFields()
+        }}
+        okText="업로드"
+        cancelText="취소"
+        okButtonProps={{ disabled: !uploadFile }}
+      >
+        <Form form={uploadForm} layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item label="파일" required>
+            <Upload.Dragger
+              beforeUpload={(file) => {
+                setUploadFile(file)
+                return false
+              }}
+              onRemove={() => setUploadFile(null)}
+              maxCount={1}
+              fileList={uploadFile ? [{ uid: '-1', name: uploadFile.name, status: 'done' }] : []}
+            >
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">클릭하거나 파일을 드래그하여 업로드하세요</p>
+            </Upload.Dragger>
+          </Form.Item>
+          <Form.Item name="changeDescription" label="변경 내역">
+            <Input.TextArea rows={3} placeholder="이 버전에서 변경된 내용을 입력하세요" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Form, Input, Button, Alert } from 'antd'
 import { SafetyOutlined } from '@ant-design/icons'
-import { authService } from '@/services'
 import { useAuthStore } from '@/stores/authStore'
 
 const MFAVerifyPage = () => {
@@ -12,7 +11,14 @@ const MFAVerifyPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [code, setCode] = useState('')
 
-  const { setUser } = useAuthStore()
+  const { loginWithMfa, pendingMfaCredentials } = useAuthStore()
+
+  useEffect(() => {
+    // Redirect to login if no pending MFA credentials
+    if (!pendingMfaCredentials) {
+      navigate('/login')
+    }
+  }, [pendingMfaCredentials, navigate])
 
   useEffect(() => {
     // Auto-submit when 6 digits are entered
@@ -28,22 +34,8 @@ const MFAVerifyPage = () => {
     setError(null)
 
     try {
-      const response = await authService.verifyMfa({ token: verificationCode })
-
-      if (response.user) {
-        setUser({
-          id: response.user.id,
-          email: response.user.email,
-          name: response.user.name,
-          departmentId: null,
-          department: null,
-          roles: response.user.roles,
-          permissions: [],
-          isActive: true,
-          isMfaEnabled: true,
-        })
-        navigate('/dashboard')
-      }
+      await loginWithMfa(verificationCode)
+      navigate('/dashboard')
     } catch (err: any) {
       setError(err.message || '인증에 실패했습니다')
       setCode('')

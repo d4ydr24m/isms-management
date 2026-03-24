@@ -82,11 +82,11 @@ const ChecklistPage = () => {
       const [auditData, checklistData, evidenceData] = await Promise.all([
         auditService.getAudit(Number(auditId)),
         auditService.getChecklist(Number(auditId)),
-        evidenceService.getEvidences({ limit: 100 }),
+        evidenceService.getEvidences({ size: 100 }),
       ])
       setAudit(auditData)
       setChecklist(checklistData)
-      setEvidences(evidenceData.data || [])
+      setEvidences(evidenceData.items || [])
 
       // Initialize edited items
       const initialEdits = new Map<number, ChecklistItemEdit>()

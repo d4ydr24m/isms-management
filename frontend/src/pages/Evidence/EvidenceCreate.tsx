@@ -32,8 +32,8 @@ const EvidenceCreate = () => {
   const fetchControls = useCallback(async () => {
     setControlsLoading(true)
     try {
-      const response = await controlService.getControls({ limit: 100 })
-      setControls(response.data || [])
+      const response = await controlService.getControls({ pageSize: 200 })
+      setControls(response.items || [])
     } catch {
       message.error('통제항목을 불러오는데 실패했습니다')
     } finally {
@@ -67,7 +67,7 @@ const EvidenceCreate = () => {
         description: values.description || '',
         validFrom: values.validFrom ? values.validFrom.format('YYYY-MM-DD') : undefined,
         validUntil: values.validUntil ? values.validUntil.format('YYYY-MM-DD') : undefined,
-        controlItemIds: values.controlItemIds || [],
+        controlIds: values.controlIds || [],
         file: fileList[0],
       }
 
@@ -189,7 +189,7 @@ const EvidenceCreate = () => {
           </Space>
 
           <Form.Item
-            name="controlItemIds"
+            name="controlIds"
             label="통제항목"
           >
             <Select
@@ -200,7 +200,7 @@ const EvidenceCreate = () => {
               allowClear
               options={controls.map((control) => ({
                 value: control.id,
-                label: `${control.number} - ${control.title}`,
+                label: `${control.code} - ${control.title}`,
               }))}
               style={{ width: '100%' }}
             />

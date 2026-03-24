@@ -73,6 +73,7 @@ class EvidenceSimpleResponse(BaseModel):
     uploader_name: Optional[str] = None
     control_ids: List[int] = Field(default_factory=list)
     control_codes: List[str] = Field(default_factory=list)
+    control_items_info: List[dict] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 

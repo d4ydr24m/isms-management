@@ -28,13 +28,13 @@ const EvidenceListPage = () => {
     try {
       const response = await evidenceService.getEvidences({
         page: pagination.current,
-        limit: pagination.pageSize,
+        size: pagination.pageSize,
         ...filters,
       })
-      setEvidences(response.data || [])
+      setEvidences(response.items || [])
       setPagination((prev) => ({
         ...prev,
-        total: response.meta?.total || 0,
+        total: response.total || 0,
       }))
     } catch {
       message.error('증적 목록을 불러오는데 실패했습니다')
@@ -83,6 +83,25 @@ const EvidenceListPage = () => {
           fetchEvidences()
         } catch {
           message.error('증적 삭제에 실패했습니다')
+        }
+      },
+    })
+  }
+
+  const handleArchive = (id: number) => {
+    Modal.confirm({
+      title: '증적 보관',
+      icon: <ExclamationCircleOutlined />,
+      content: '이 증적을 보관 처리하시겠습니까? 보관된 증적은 증적 확보 현황에서 제외됩니다.',
+      okText: '보관',
+      cancelText: '취소',
+      onOk: async () => {
+        try {
+          await evidenceService.updateEvidence(id, { status: 'archived' })
+          message.success('증적이 보관 처리되었습니다')
+          fetchEvidences()
+        } catch {
+          message.error('증적 보관에 실패했습니다')
         }
       },
     })
@@ -142,6 +161,7 @@ const EvidenceListPage = () => {
             pagination={pagination}
             onTableChange={handleTableChange}
             onDelete={handleDelete}
+            onArchive={handleArchive}
             onDownload={handleDownload}
           />
         </Space>

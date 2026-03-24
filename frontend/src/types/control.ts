@@ -1,10 +1,29 @@
 // 통제항목 관련 타입
+
+export interface ControlItemSimple {
+  id: number
+  code: string
+  title: string
+  isRequired: boolean
+}
+
+export interface ControlCategoryInDomain {
+  id: number
+  domainId: number
+  code: string
+  name: string
+  description: string | null
+  sortOrder: number
+  controlItems: ControlItemSimple[]
+}
+
 export interface ControlDomain {
   id: number
-  name: string
   code: string
-  description: string
-  order: number
+  name: string
+  description: string | null
+  sortOrder: number
+  categories: ControlCategoryInDomain[]
 }
 
 export interface ControlCategory {
@@ -12,33 +31,34 @@ export interface ControlCategory {
   domainId: number
   name: string
   code: string
-  description: string
-  order: number
+  description: string | null
+  sortOrder: number
 }
 
 export interface ControlItem {
   id: number
   categoryId: number
-  category?: ControlCategory
-  number: string
+  code: string
   title: string
   description: string
+  objective: string | null
+  requirements: string | null
   isRequired: boolean
+  isPersonalInfo: boolean
+  sortOrder: number
+  tags: string | null
   evidenceCount: number
-  hasEvidence: boolean
-  createdAt: string
 }
 
 export interface ControlItemDetail extends ControlItem {
-  evidences: EvidenceSummary[]
-  relatedItems: ControlItem[]
+  evidences?: EvidenceSummary[]
 }
 
 export interface EvidenceSummary {
   id: number
   title: string
   status: EvidenceStatus
-  version: number
+  version: string
   validUntil: string | null
   uploaderName: string
   createdAt: string
@@ -50,17 +70,14 @@ export type EvidenceStatus = 'draft' | 'active' | 'expired' | 'archived'
 export interface ControlProgress {
   totalControls: number
   controlsWithEvidence: number
-  progressPercentage: number
-  requiredControls: number
-  requiredCompleted: number
-  requiredProgressPercentage: number
+  coverageRate: number
   byDomain: DomainProgress[]
 }
 
 export interface DomainProgress {
   domainId: number
   domainName: string
-  totalControls: number
-  controlsWithEvidence: number
-  progressPercentage: number
+  total: number
+  withEvidence: number
+  coverageRate: number
 }

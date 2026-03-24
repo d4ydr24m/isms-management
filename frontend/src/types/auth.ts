@@ -2,6 +2,7 @@
 export interface LoginRequest {
   email: string
   password: string
+  otpCode?: string
 }
 
 export interface LoginResponse {
@@ -19,12 +20,18 @@ export interface LoginResponse {
 
 export interface MfaSetupResponse {
   secret: string
-  qrCode: string
-  backupCodes: string[]
+  uri: string
+  qrCodeBase64: string
 }
 
 export interface MfaVerifyRequest {
-  token: string
+  otpCode: string
+  secret: string
+}
+
+export interface MfaEnableResponse {
+  message: string
+  backupCodes: string[]
 }
 
 export interface TokenRefreshRequest {

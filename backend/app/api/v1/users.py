@@ -23,6 +23,26 @@ from app.schemas.user import (
 router = APIRouter()
 
 
+def _build_user_response(user: User) -> UserResponse:
+    """User 모델에서 UserResponse를 생성하는 헬퍼"""
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        name=user.name,
+        phone=user.phone,
+        department_id=user.department_id,
+        department_name=user.department.name if user.department else None,
+        is_active=user.is_active,
+        is_mfa_enabled=user.is_mfa_enabled,
+        roles=[{"id": role.id, "name": role.name, "description": role.description} for role in user.roles],
+        ip_whitelist_enabled=user.ip_whitelist_enabled,
+        allowed_ips=user.allowed_ips,
+        created_at=user.created_at,
+        last_login_at=user.last_login_at,
+        last_login_ip=user.last_login_ip,
+    )
+
+
 @router.get("", response_model=UserList)
 def get_users(
     page: int = Query(1, ge=1, description="페이지 번호"),
@@ -68,22 +88,7 @@ def get_users(
     # 총 페이지 수
     pages = (total + size - 1) // size
 
-    items = [
-        UserResponse(
-            id=user.id,
-            email=user.email,
-            name=user.name,
-            phone=user.phone,
-            department_id=user.department_id,
-            department_name=user.department.name if user.department else None,
-            is_active=user.is_active,
-            is_mfa_enabled=user.is_mfa_enabled,
-            roles=[role.name for role in user.roles],
-            created_at=user.created_at,
-            last_login_at=user.last_login_at,
-        )
-        for user in users
-    ]
+    items = [_build_user_response(user) for user in users]
 
     return UserList(items=items, total=total, page=page, size=size, pages=pages)
 
@@ -135,19 +140,7 @@ def create_user(
     db.commit()
     db.refresh(user)
 
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        name=user.name,
-        phone=user.phone,
-        department_id=user.department_id,
-        department_name=user.department.name if user.department else None,
-        is_active=user.is_active,
-        is_mfa_enabled=user.is_mfa_enabled,
-        roles=[],
-        created_at=user.created_at,
-        last_login_at=user.last_login_at,
-    )
+    return _build_user_response(user)
 
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -166,19 +159,7 @@ def get_user(
             detail="사용자를 찾을 수 없습니다.",
         )
 
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        name=user.name,
-        phone=user.phone,
-        department_id=user.department_id,
-        department_name=user.department.name if user.department else None,
-        is_active=user.is_active,
-        is_mfa_enabled=user.is_mfa_enabled,
-        roles=[role.name for role in user.roles],
-        created_at=user.created_at,
-        last_login_at=user.last_login_at,
-    )
+    return _build_user_response(user)
 
 
 @router.put("/{user_id}", response_model=UserResponse)
@@ -215,19 +196,7 @@ def update_user(
     db.commit()
     db.refresh(user)
 
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        name=user.name,
-        phone=user.phone,
-        department_id=user.department_id,
-        department_name=user.department.name if user.department else None,
-        is_active=user.is_active,
-        is_mfa_enabled=user.is_mfa_enabled,
-        roles=[role.name for role in user.roles],
-        created_at=user.created_at,
-        last_login_at=user.last_login_at,
-    )
+    return _build_user_response(user)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -288,16 +257,4 @@ def assign_roles(
     db.commit()
     db.refresh(user)
 
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        name=user.name,
-        phone=user.phone,
-        department_id=user.department_id,
-        department_name=user.department.name if user.department else None,
-        is_active=user.is_active,
-        is_mfa_enabled=user.is_mfa_enabled,
-        roles=[role.name for role in user.roles],
-        created_at=user.created_at,
-        last_login_at=user.last_login_at,
-    )
+    return _build_user_response(user)

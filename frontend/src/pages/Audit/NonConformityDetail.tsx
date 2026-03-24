@@ -98,10 +98,10 @@ const NonConformityDetail = () => {
     try {
       const [ncData, usersData] = await Promise.all([
         auditService.getNonConformity(Number(id)),
-        userService.getUsers({ limit: 100 }),
+        userService.getUsers({ size: 100 }),
       ])
       setNonConformity(ncData)
-      setUsers(usersData.data || [])
+      setUsers(usersData.items || [])
 
       // Fetch corrective actions (mocked for now)
       // In real implementation, this would be a separate API call

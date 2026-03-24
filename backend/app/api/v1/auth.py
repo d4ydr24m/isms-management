@@ -18,6 +18,7 @@ from app.schemas.auth import (
     OTPSetup,
     OTPVerify,
     RefreshTokenRequest,
+    MFADisableRequest,
     MFAEnableResponse,
     MFABackupCodesResponse,
     MFARegenerateBackupCodesRequest,
@@ -62,6 +63,7 @@ def _clear_token_cookies(response: JSONResponse) -> None:
 @router.post("/login", response_model=TokenResponse)
 def login(
     login_data: LoginRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
@@ -73,11 +75,17 @@ def login(
 
     토큰을 JSON 응답 본문과 HttpOnly 쿠키 모두에 반환합니다.
     """
+    # 클라이언트 IP 추출
+    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+    if not client_ip:
+        client_ip = request.headers.get("X-Real-IP") or (request.client.host if request.client else None)
+
     auth_service = AuthService(db)
     result = auth_service.authenticate(
         email=login_data.email,
         password=login_data.password,
         otp_code=login_data.otp_code,
+        client_ip=client_ip,
     )
 
     if not result["success"]:
@@ -324,6 +332,34 @@ def regenerate_backup_codes(
     )
 
 
+@router.post("/mfa/disable")
+def disable_mfa(
+    request_data: MFADisableRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    MFA 비활성화
+
+    - **password**: 현재 비밀번호
+    - **otp_code**: 현재 OTP 코드
+    """
+    auth_service = AuthService(db)
+    result = auth_service.disable_mfa(
+        user=current_user,
+        password=request_data.password,
+        otp_code=request_data.otp_code,
+    )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["error"],
+        )
+
+    return {"message": "2단계 인증이 비활성화되었습니다."}
+
+
 @router.get("/me")
 def get_current_user_info(
     current_user: User = Depends(get_current_active_user),
@@ -342,6 +378,11 @@ def get_current_user_info(
             "isActive": current_user.is_active,
             "isMfaEnabled": current_user.is_mfa_enabled,
             "roles": [role.name for role in current_user.roles],
-            "permissions": [],
+            "permissions": list({
+                perm.strip()
+                for role in current_user.roles
+                for perm in (role.permissions.split(",") if role.permissions else [])
+            }),
+            "lastPasswordChange": current_user.password_changed_at.isoformat() if current_user.password_changed_at else None,
         }
     }
