@@ -162,11 +162,11 @@ const RiskAssessmentPage = () => {
   const fetchSelectOptions = useCallback(async () => {
     try {
       const [assetsData, threatsData, vulnerabilitiesData] = await Promise.all([
-        assetService.getAssets({ status: 'operating' as const }),
+        assetService.getAssets({ pageSize: 500 }),
         getThreats(),
         getVulnerabilities(),
       ])
-      setAssets(assetsData.items || [])
+      setAssets((assetsData.items || []).filter((a: any) => a.status !== '폐기'))
       setThreats(threatsData.items || [])
       setVulnerabilities(vulnerabilitiesData.items || [])
     } catch {

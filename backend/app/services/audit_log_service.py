@@ -303,6 +303,7 @@ def log_user_activity(
     user_agent: Optional[str] = None,
     request_method: Optional[str] = None,
     request_path: Optional[str] = None,
+    status_code: Optional[int] = None,
 ) -> AuditLog:
     """
     사용자 활동 로깅 헬퍼 함수
@@ -321,4 +322,5 @@ def log_user_activity(
         user_agent=user_agent,
         request_method=request_method,
         request_path=request_path,
+        status_code=status_code,
     )

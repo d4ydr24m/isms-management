@@ -27,6 +27,8 @@ const actionLabels: Record<string, string> = {
   create: '생성',
   update: '수정',
   delete: '삭제',
+  view: '조회',
+  download: '다운로드',
   login: '로그인',
   logout: '로그아웃',
 }
@@ -35,6 +37,8 @@ const actionColors: Record<string, string> = {
   create: 'green',
   update: 'blue',
   delete: 'red',
+  view: 'default',
+  download: 'purple',
   login: 'cyan',
   logout: 'default',
 }
@@ -43,6 +47,8 @@ const actionFilterOptions = [
   { value: 'create', label: '생성' },
   { value: 'update', label: '수정' },
   { value: 'delete', label: '삭제' },
+  { value: 'view', label: '조회' },
+  { value: 'download', label: '다운로드' },
   { value: 'login', label: '로그인' },
   { value: 'logout', label: '로그아웃' },
 ]
@@ -52,6 +58,7 @@ const resourceLabels: Record<string, string> = {
   users: '사용자',
   roles: '역할',
   departments: '부서',
+  evidence: '증적',
   evidences: '증적',
   controls: '통제항목',
   assets: '자산',
@@ -60,6 +67,14 @@ const resourceLabels: Record<string, string> = {
   'system-settings': '시스템 설정',
   nonconformities: '부적합',
   'audit-logs': '감사 로그',
+  risks: '위험',
+  soa: 'SOA',
+  bulk: '일괄 등록',
+  personnel: '담당자',
+  'auditor-accounts': '외부 심사원',
+  'risk-control-linkage': '위험-통제 연계',
+  dashboard: '대시보드',
+  search: '검색',
 }
 
 const methodColors: Record<string, string> = {

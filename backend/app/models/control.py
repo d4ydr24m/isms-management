@@ -75,6 +75,11 @@ class ControlItem(Base):
         Boolean, default=False, nullable=False, comment="개인정보보호 통제항목 여부"
     )
 
+    # 상세 정보 (ISMS-P 인증기준 안내서)
+    key_checks = Column(Text, nullable=True, comment="주요 확인사항")
+    related_laws = Column(Text, nullable=True, comment="관련 법규")
+    evidence_examples = Column(Text, nullable=True, comment="증거자료 예시")
+
     # 메타데이터
     sort_order = Column(Integer, default=0, nullable=False, comment="정렬 순서")
     tags = Column(String(255), nullable=True, comment="태그 (쉼표로 구분)")

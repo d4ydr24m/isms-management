@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   Card,
   Row,
@@ -38,6 +38,8 @@ const statusColors: Record<string, string> = {
 const ControlDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  const fromState = location.state as { page?: number; pageSize?: number } | null
   const [control, setControl] = useState<ControlItemDetail | null>(null)
   const [evidences, setEvidences] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -78,7 +80,11 @@ const ControlDetailPage = () => {
   }, [fetchControl, fetchEvidences])
 
   const handleBack = () => {
-    navigate(-1)
+    const params = new URLSearchParams()
+    if (fromState?.page) params.set('page', String(fromState.page))
+    if (fromState?.pageSize) params.set('pageSize', String(fromState.pageSize))
+    const query = params.toString()
+    navigate(`/controls${query ? `?${query}` : ''}`)
   }
 
   const handleEvidenceClick = (evidenceId: number) => {
@@ -90,7 +96,8 @@ const ControlDetailPage = () => {
   }
 
   const handleLinkEvidence = () => {
-    navigate(`/evidence/create?controlId=${id}`)
+    const returnPath = encodeURIComponent(`/controls/${id}`)
+    navigate(`/evidence/create?controlId=${id}&returnTo=${returnPath}`)
   }
 
   if (loading) {
@@ -260,6 +267,50 @@ const ControlDetailPage = () => {
             </Card>
           </Col>
         </Row>
+
+        {/* 주요 확인사항 */}
+        {control.keyChecks && typeof control.keyChecks === 'string' && (
+          <Card title="주요 확인사항" style={{ marginTop: 16 }}>
+            <div>
+              {String(control.keyChecks).split('\n').filter((l) => l.trim().length > 1).map((line, i) => {
+                const cleaned = line.trim().replace(/^[□■●○▶◆\s]+/, '')
+                if (!cleaned) return null
+                return (
+                  <Paragraph key={i} style={{ marginBottom: 8 }}>
+                    <CheckCircleOutlined style={{ color: '#1890ff', marginRight: 8 }} />
+                    {cleaned}
+                  </Paragraph>
+                )
+              })}
+            </div>
+          </Card>
+        )}
+
+        {/* 관련 법규 */}
+        {control.relatedLaws && typeof control.relatedLaws === 'string' && String(control.relatedLaws).trim() && (
+          <Card title="관련 법규" style={{ marginTop: 16 }}>
+            <div>
+              {String(control.relatedLaws).split('\n').filter((l) => l.trim().length > 1).map((law, i) => {
+                const cleaned = law.trim().replace(/^[□■●○▶◆\s]+/, '')
+                if (!cleaned) return null
+                return <Tag key={i} color="blue" style={{ marginBottom: 8, whiteSpace: 'normal' }}>{cleaned}</Tag>
+              })}
+            </div>
+          </Card>
+        )}
+
+        {/* 증거자료 예시 */}
+        {control.evidenceExamples && typeof control.evidenceExamples === 'string' && (
+          <Card title="증거자료 예시" style={{ marginTop: 16 }}>
+            <div>
+              {String(control.evidenceExamples).split('\n').filter((l) => l.trim().length > 1 && !l.trim().startsWith('사례')).map((example, i) => (
+                <Paragraph key={i} style={{ marginBottom: 4 }}>
+                  <FileTextOutlined style={{ color: '#52c41a', marginRight: 8 }} />{example.trim()}
+                </Paragraph>
+              ))}
+            </div>
+          </Card>
+        )}
       </Space>
     </div>
   )

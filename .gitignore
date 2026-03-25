@@ -85,3 +85,6 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+
+.claude/*
+*.pdf
