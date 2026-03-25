@@ -18,7 +18,7 @@ function UserCreate() {
   const loadRoles = async () => {
     try {
       const rolesData = await userService.getRoles()
-      setRoles(rolesData)
+      setRoles(rolesData.filter((r: any) => r.name !== '외부심사원'))
     } catch (error) {
       message.error('역할 목록을 불러오는데 실패했습니다')
     }

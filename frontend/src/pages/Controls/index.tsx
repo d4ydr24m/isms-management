@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Card,
   Row,
@@ -37,14 +37,15 @@ interface FilterState {
 
 const ControlListPage = () => {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [controls, setControls] = useState<ControlItem[]>([])
   const [domains, setDomains] = useState<ControlDomain[]>([])
   const [progress, setProgress] = useState<ControlProgress | null>(null)
   const [loading, setLoading] = useState(false)
   const [domainsLoading, setDomainsLoading] = useState(false)
   const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
+    current: Number(searchParams.get('page')) || 1,
+    pageSize: Number(searchParams.get('pageSize')) || 10,
     total: 0,
   })
   const [filters, setFilters] = useState<FilterState>({
@@ -107,11 +108,14 @@ const ControlListPage = () => {
   const handleTableChange: TableProps<ControlItem>['onChange'] = (
     paginationConfig
   ) => {
+    const newPage = paginationConfig.current || 1
+    const newPageSize = paginationConfig.pageSize || 10
     setPagination((prev) => ({
       ...prev,
-      current: paginationConfig.current || 1,
-      pageSize: paginationConfig.pageSize || 10,
+      current: newPage,
+      pageSize: newPageSize,
     }))
+    setSearchParams({ page: String(newPage), pageSize: String(newPageSize) }, { replace: true })
   }
 
   const handleSearch = (value: string) => {
@@ -133,7 +137,9 @@ const ControlListPage = () => {
   }
 
   const handleRowClick = (record: ControlItem) => {
-    navigate(`/controls/${record.id}`)
+    navigate(`/controls/${record.id}`, {
+      state: { page: pagination.current, pageSize: pagination.pageSize }
+    })
   }
 
   const columns: ColumnsType<ControlItem> = [

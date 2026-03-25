@@ -277,6 +277,26 @@ class FileService:
             expires=timedelta(minutes=expires_minutes),
         )
 
+    def get_file(self, file_path: str) -> bytes:
+        """
+        파일 데이터 조회
+
+        Args:
+            file_path: MinIO 파일 경로
+
+        Returns:
+            bytes: 파일 바이너리 데이터
+        """
+        response = self.client.get_object(
+            bucket_name=self.bucket_name,
+            object_name=file_path,
+        )
+        try:
+            return response.read()
+        finally:
+            response.close()
+            response.release_conn()
+
     def file_exists(self, file_path: str) -> bool:
         """
         파일 존재 여부 확인

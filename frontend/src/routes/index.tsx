@@ -9,6 +9,7 @@ import UserList from '@/pages/Users'
 import UserDetail from '@/pages/Users/UserDetail'
 import UserCreate from '@/pages/Users/UserCreate'
 import AuditorAccounts from '@/pages/Users/AuditorAccounts'
+import AuditorAccountsPage from '@/pages/Audit/AuditorAccounts'
 // Evidence Management
 import EvidenceListPage from '@/pages/Evidence'
 import EvidenceDetail from '@/pages/Evidence/EvidenceDetail'
@@ -29,6 +30,8 @@ import AssetCreate from '@/pages/Assets/AssetCreate'
 import AssetImport from '@/pages/Assets/AssetImport'
 // Department Management
 import DepartmentsPage from '@/pages/Departments'
+// Personnel Management
+import PersonnelPage from '@/pages/Personnel'
 // Audit Logs
 import AuditLogsPage from '@/pages/AuditLogs'
 // Controls Management
@@ -128,6 +131,16 @@ const AppRouter = () => {
         element={
           <PrivateRoute>
             <DepartmentsPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Personnel Management route */}
+      <Route
+        path="/personnel"
+        element={
+          <PrivateRoute>
+            <PersonnelPage />
           </PrivateRoute>
         }
       />
@@ -238,6 +251,16 @@ const AppRouter = () => {
         element={
           <PrivateRoute>
             <NonConformityDetail />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Auditor Accounts route */}
+      <Route
+        path="/auditor-accounts"
+        element={
+          <PrivateRoute>
+            <AuditorAccountsPage />
           </PrivateRoute>
         }
       />

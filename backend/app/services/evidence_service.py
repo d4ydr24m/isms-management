@@ -238,6 +238,13 @@ class EvidenceService:
         if status is not None:
             evidence.status = status
 
+        # 유효기간에 따라 상태 자동 변경
+        if evidence.valid_until:
+            if evidence.valid_until >= date.today() and evidence.status == "expired":
+                evidence.status = "active"
+            elif evidence.valid_until < date.today() and evidence.status == "active":
+                evidence.status = "expired"
+
         self.db.commit()
         self.db.refresh(evidence)
 

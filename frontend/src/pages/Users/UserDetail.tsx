@@ -154,6 +154,7 @@ function UserDetail() {
 
   const availableRoles = roles.filter(
     (role) => !user.roles.some((userRole) => userRole.id === role.id)
+      && role.name !== '외부심사원'
   )
 
   return (

@@ -930,7 +930,8 @@ class RiskService:
 
     def get_soa_records(self) -> Tuple[List[SOARecord], int]:
         """SOA 레코드 목록 조회"""
-        items = self.db.query(SOARecord).all()
+        from sqlalchemy.orm import joinedload
+        items = self.db.query(SOARecord).options(joinedload(SOARecord.control_item)).all()
         return items, len(items)
 
     def get_soa_record_by_control(self, control_item_id: int) -> Optional[SOARecord]:

@@ -32,7 +32,8 @@
       "Bash(docker compose:*)",
       "Bash(grep -v '//')",
       "Bash(git add:*)",
-      "WebFetch(domain:itwiki.kr)"
+      "WebFetch(domain:itwiki.kr)",
+      "Bash(git commit:*)"
     ]
   }
 }

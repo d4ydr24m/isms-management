@@ -7,7 +7,7 @@ from datetime import date
 from typing import List, Optional
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import io
@@ -510,11 +510,12 @@ def download_evidence_version(
 @router.get("/{evidence_id}/preview")
 def get_preview_url(
     evidence_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """
-    미리보기 URL 조회 (presigned URL)
+    파일 미리보기 (백엔드를 통한 프록시 스트리밍)
     """
     service = EvidenceService(db)
     evidence = service.get_evidence_by_id(evidence_id)
@@ -527,12 +528,17 @@ def get_preview_url(
 
     try:
         file_service = FileService()
-        url = file_service.get_presigned_url(evidence.file_path, expires_minutes=15)
+        file_data = file_service.get_file(evidence.file_path)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"미리보기 URL 생성 실패: {str(e)}",
+            detail=f"파일 조회 실패: {str(e)}",
         )
+
+    # 클라이언트 IP 추출
+    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or \
+                request.headers.get("X-Real-IP", "") or \
+                (request.client.host if request.client else "")
 
     # 감사 로그 기록 (조회/미리보기)
     log_user_activity(
@@ -545,17 +551,29 @@ def get_preview_url(
             "evidence_title": evidence.title,
             "file_name": evidence.file_name,
         },
+        ip_address=client_ip,
+        user_agent=request.headers.get("User-Agent", "")[:500],
         request_method="GET",
         request_path=f"/api/v1/evidences/{evidence_id}/preview",
+        status_code=200,
     )
 
-    return {
-        "url": url,
-        "expires_in_minutes": 15,
-        "evidence_id": evidence_id,
-        "file_name": evidence.file_name,
-        "mime_type": evidence.mime_type,
-    }
+    from fastapi.responses import StreamingResponse
+    from io import BytesIO
+    from urllib.parse import quote
+
+    content_type = evidence.mime_type or "application/octet-stream"
+    encoded_filename = quote(evidence.file_name)
+    return StreamingResponse(
+        BytesIO(file_data),
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f"inline; filename*=UTF-8''{encoded_filename}",
+            "Content-Length": str(len(file_data)),
+            "X-Frame-Options": "SAMEORIGIN",
+            "Content-Security-Policy": "frame-ancestors 'self'",
+        },
+    )
 
 
 @router.post("/{evidence_id}/controls", response_model=EvidenceResponse)

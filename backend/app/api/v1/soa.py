@@ -11,7 +11,9 @@ from sqlalchemy.orm import Session
 from io import BytesIO
 
 from app.core.deps import get_db, require_permission
+from app.models.control import ControlItem
 from app.models.user import User
+from app.api.v1.system_settings import get_certification_type
 from app.schemas.risk import (
     SOARecordResponse,
     SOARecordUpdate,
@@ -70,15 +72,22 @@ def soa_record_to_response(record) -> SOARecordResponse:
 
 @router.get("", response_model=SOARecordList)
 def get_soa_list(
+    db: Session = Depends(get_db),
     service: RiskService = Depends(get_risk_service),
     current_user: User = Depends(require_permission("risk:read")),
 ) -> SOARecordList:
     """
     SOA 목록 조회
 
-    모든 통제항목의 적용 여부 및 구현 상태를 조회합니다.
+    인증 유형(ISMS/ISMS-P)에 따라 통제항목의 적용 여부 및 구현 상태를 조회합니다.
     """
+    cert_type = get_certification_type(db)
     items, total = service.get_soa_records()
+
+    # ISMS 모드에서는 개인정보 관련 통제항목 제외
+    if cert_type == "ISMS":
+        items = [item for item in items if not (item.control_item and item.control_item.is_personal_info)]
+        total = len(items)
 
     applicable_count = sum(1 for item in items if item.is_applicable)
     not_applicable_count = total - applicable_count

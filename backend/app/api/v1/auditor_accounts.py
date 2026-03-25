@@ -14,7 +14,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_db, get_current_active_user, require_permission, get_current_superuser
+from app.core.deps import get_db, get_current_active_user, require_permission
 from app.core.security import get_password_hash
 from app.models.user import User, Role, AuditorAccount
 from app.models.audit import AuditPlan
@@ -42,7 +42,7 @@ def list_auditor_accounts(
     audit_plan_id: Optional[int] = None,
     is_active: Optional[bool] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     심사원 계정 목록 조회
@@ -79,7 +79,7 @@ def list_auditor_accounts(
 def create_auditor_account(
     account_data: AuditorAccountCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     심사원 임시 계정 생성
@@ -166,7 +166,7 @@ def create_auditor_account(
 def get_auditor_account(
     account_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     심사원 계정 상세 조회
@@ -186,7 +186,7 @@ def update_auditor_account(
     account_id: int,
     update_data: AuditorAccountUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     심사원 계정 수정
@@ -232,7 +232,7 @@ def update_auditor_account(
 def delete_auditor_account(
     account_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_superuser),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     심사원 계정 만료/삭제

@@ -6,6 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.v1 import api_router
+from app.api.v1.auditor_accounts import router as auditor_accounts_router
+from app.api.v1.bulk_upload import router as bulk_router
+from app.api.v1.personnel import router as personnel_router
 from app.core.config import settings
 from app.core.middleware import AuditLogMiddleware, IPWhitelistMiddleware, RateLimitMiddleware
 from app.websocket.handlers import websocket_endpoint
@@ -125,6 +128,9 @@ app = FastAPI(
 
 # API 라우터 등록
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(auditor_accounts_router, prefix="/api/v1", tags=["심사원 계정"])
+app.include_router(bulk_router, prefix="/api/v1/bulk", tags=["bulk"])
+app.include_router(personnel_router, prefix="/api/v1/personnel", tags=["personnel"])
 
 # WebSocket 엔드포인트 등록 (7.3)
 app.websocket("/ws/notifications")(websocket_endpoint)
@@ -154,7 +160,11 @@ app.add_middleware(AuditLogMiddleware)
 async def add_security_headers(request: Request, call_next) -> Response:
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
+    # 증적 미리보기 등 iframe 허용이 필요한 경로는 SAMEORIGIN 적용
+    if "/preview" in request.url.path:
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    else:
+        response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"

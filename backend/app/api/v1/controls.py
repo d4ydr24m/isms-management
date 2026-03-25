@@ -2,7 +2,19 @@
 통제항목 API
 ISMS-P 80개 통제항목 관리
 """
+import re
 from typing import List, Optional
+
+
+def _clean_text(val: Optional[str]) -> Optional[str]:
+    """Remove surrogate characters and special symbols from text"""
+    if not val:
+        return val
+    # Remove surrogate characters
+    val = val.encode('utf-8', errors='ignore').decode('utf-8', errors='ignore')
+    # Remove box/bullet unicode chars
+    val = re.sub(r'[\u25a0-\u25ff\u2600-\u26ff\u2700-\u27bf\uf000-\uffff]', '', val)
+    return val.strip() or None
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_, func
@@ -98,15 +110,26 @@ def get_control_progress(
     증적 확보율 통계 조회
 
     전체 및 영역별 증적 확보율을 반환합니다.
+    인증 유형(ISMS/ISMS-P)에 따라 통제항목을 필터링합니다.
     """
+    cert_type = get_certification_type(db)
+
+    # 인증 유형에 따른 기본 필터
+    base_query = db.query(ControlItem)
+    if cert_type == "ISMS":
+        base_query = base_query.filter(ControlItem.is_personal_info == False)
+
     # 전체 통제항목 수
-    total_controls = db.query(func.count(ControlItem.id)).scalar() or 0
+    total_controls = base_query.count()
 
     # 증적이 있는 통제항목 수
-    controls_with_evidence = (
+    evidence_query = (
         db.query(func.count(func.distinct(control_item_evidences.c.control_item_id)))
-        .scalar() or 0
+        .join(ControlItem, ControlItem.id == control_item_evidences.c.control_item_id)
     )
+    if cert_type == "ISMS":
+        evidence_query = evidence_query.filter(ControlItem.is_personal_info == False)
+    controls_with_evidence = evidence_query.scalar() or 0
 
     # 전체 커버리지
     coverage_rate = (
@@ -118,22 +141,30 @@ def get_control_progress(
     domains = db.query(ControlDomain).order_by(ControlDomain.sort_order).all()
 
     for domain in domains:
+        # ISMS 모드에서 개인정보 영역(C) 제외
+        if cert_type == "ISMS" and domain.code == "C":
+            continue
+
         # 해당 영역의 통제항목 수
-        domain_controls = (
+        domain_q = (
             db.query(func.count(ControlItem.id))
             .join(ControlCategory)
             .filter(ControlCategory.domain_id == domain.id)
-            .scalar() or 0
         )
+        if cert_type == "ISMS":
+            domain_q = domain_q.filter(ControlItem.is_personal_info == False)
+        domain_controls = domain_q.scalar() or 0
 
         # 해당 영역에서 증적이 있는 통제항목 수
-        domain_with_evidence = (
+        domain_ev_q = (
             db.query(func.count(func.distinct(control_item_evidences.c.control_item_id)))
             .join(ControlItem, ControlItem.id == control_item_evidences.c.control_item_id)
             .join(ControlCategory)
             .filter(ControlCategory.domain_id == domain.id)
-            .scalar() or 0
         )
+        if cert_type == "ISMS":
+            domain_ev_q = domain_ev_q.filter(ControlItem.is_personal_info == False)
+        domain_with_evidence = domain_ev_q.scalar() or 0
 
         domain_coverage = (
             (domain_with_evidence / domain_controls * 100) if domain_controls > 0 else 0
@@ -236,6 +267,9 @@ def get_controls(
                 requirements=item.requirements,
                 is_required=item.is_required,
                 is_personal_info=item.is_personal_info,
+                key_checks=_clean_text(item.key_checks),
+                related_laws=_clean_text(item.related_laws),
+                evidence_examples=_clean_text(item.evidence_examples),
                 sort_order=item.sort_order,
                 tags=item.tags,
                 evidence_count=evidence_count,
@@ -287,6 +321,9 @@ def get_control(
         requirements=item.requirements,
         is_required=item.is_required,
         is_personal_info=item.is_personal_info,
+        key_checks=_clean_text(item.key_checks),
+        related_laws=_clean_text(item.related_laws),
+        evidence_examples=_clean_text(item.evidence_examples),
         sort_order=item.sort_order,
         tags=item.tags,
         evidence_count=evidence_count,

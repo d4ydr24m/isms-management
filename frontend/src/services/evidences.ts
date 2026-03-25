@@ -100,14 +100,9 @@ export const evidenceService = {
     }
   },
 
-  // 미리보기 URL 조회 — backend returns { url: "..." } directly
+  // 미리보기 URL — 백엔드가 파일을 직접 스트리밍
   async getPreviewUrl(id: number): Promise<string> {
-    try {
-      const response = await apiClient.get<{ url: string }>(`/evidences/${id}/preview`)
-      return response.data.url
-    } catch (error) {
-      return handleApiError(error)
-    }
+    return `/api/v1/evidences/${id}/preview`
   },
 
   // 통제항목 매핑

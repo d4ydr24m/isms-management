@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Card,
   Form,
@@ -22,12 +22,17 @@ const { Dragger } = Upload
 
 const EvidenceCreate = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [fileList, setFileList] = useState<File[]>([])
   const [controls, setControls] = useState<ControlItem[]>([])
   const [controlsLoading, setControlsLoading] = useState(false)
+
+  // URL에서 controlId 파라미터 읽기 (통제항목 상세에서 "증적 연결" 클릭 시)
+  const preselectedControlId = searchParams.get('controlId')
+  const returnTo = searchParams.get('returnTo')
 
   const fetchControls = useCallback(async () => {
     setControlsLoading(true)
@@ -44,6 +49,17 @@ const EvidenceCreate = () => {
   useEffect(() => {
     fetchControls()
   }, [fetchControls])
+
+  // 통제항목이 로드된 후 preselectedControlId가 있으면 자동 선택
+  useEffect(() => {
+    if (preselectedControlId && controls.length > 0) {
+      const controlId = Number(preselectedControlId)
+      const exists = controls.find(c => c.id === controlId)
+      if (exists) {
+        form.setFieldsValue({ controlIds: [controlId] })
+      }
+    }
+  }, [preselectedControlId, controls, form])
 
   const handleFileChange = (files: File[]) => {
     setFileList(files)
@@ -76,7 +92,7 @@ const EvidenceCreate = () => {
       })
 
       message.success('증적이 등록되었습니다')
-      navigate('/evidence')
+      navigate(returnTo || '/evidence')
     } catch {
       message.error('증적 등록에 실패했습니다')
     } finally {
@@ -86,7 +102,11 @@ const EvidenceCreate = () => {
   }
 
   const handleCancel = () => {
-    navigate('/evidence')
+    if (returnTo) {
+      navigate(returnTo)
+    } else {
+      navigate('/evidence')
+    }
   }
 
   const validateValidUntil = (_: any, value: any) => {

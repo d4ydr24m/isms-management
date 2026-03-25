@@ -104,7 +104,7 @@ class IPWhitelistMiddleware(BaseHTTPMiddleware):
     def _check_user_ip(self, client_ip: str, request: Request) -> Optional[Response]:
         """사용자별 IP 제한 확인. 차단 시 Response 반환, 허용 시 None."""
         try:
-            import jwt
+            from jose import jwt as jose_jwt
             from app.core.config import settings as app_settings
             from app.core.deps import SessionLocal
             from app.models.user import User
@@ -120,8 +120,8 @@ class IPWhitelistMiddleware(BaseHTTPMiddleware):
 
             # 토큰 디코딩 (검증은 auth에서 수행)
             try:
-                payload = jwt.decode(token, app_settings.SECRET_KEY, algorithms=["HS256"])
-                user_id = payload.get("sub")
+                payload = jose_jwt.decode(token, app_settings.SECRET_KEY, algorithms=[app_settings.ALGORITHM])
+                user_id = payload.get("user_id")
                 if not user_id:
                     return None
             except Exception:
@@ -228,7 +228,7 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
     def _extract_user_info(self, request: Request) -> dict:
         """JWT 토큰에서 사용자 정보 추출"""
         try:
-            import jwt
+            from jose import jwt as jose_jwt
             from app.core.config import settings as app_settings
 
             token = request.cookies.get("access_token")
@@ -239,7 +239,7 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
             if not token:
                 return {}
 
-            payload = jwt.decode(token, app_settings.SECRET_KEY, algorithms=["HS256"])
+            payload = jose_jwt.decode(token, app_settings.SECRET_KEY, algorithms=[app_settings.ALGORITHM])
             return {
                 "user_id": payload.get("user_id"),
                 "user_email": payload.get("sub"),

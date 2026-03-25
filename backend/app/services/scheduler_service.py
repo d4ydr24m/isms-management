@@ -70,9 +70,25 @@ def expire_evidences():
                 )
                 db.add(notification)
 
+        # 만료 상태이지만 유효기간이 연장된 증적을 active로 복원
+        restored_evidences = (
+            db.query(Evidence)
+            .filter(
+                Evidence.status == "expired",
+                Evidence.valid_until != None,
+                Evidence.valid_until >= today,
+            )
+            .all()
+        )
+
+        restored_count = 0
+        for evidence in restored_evidences:
+            evidence.status = "active"
+            restored_count += 1
+
         db.commit()
-        logger.info(f"증적 자동 만료 처리 완료: {count}건")
-        return {"expired_count": count}
+        logger.info(f"증적 자동 만료 처리 완료: 만료 {count}건, 복원 {restored_count}건")
+        return {"expired_count": count, "restored_count": restored_count}
 
     except Exception as e:
         db.rollback()

@@ -1,6 +1,6 @@
 import { Input } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 interface SearchInputProps {
   placeholder?: string
@@ -30,18 +30,22 @@ const SearchInput = ({
     }
   }, [controlledValue])
 
+  // Store latest onSearch in ref to avoid triggering effect on every render
+  const onSearchRef = useRef(onSearch)
+  onSearchRef.current = onSearch
+
   // Debounced search
   useEffect(() => {
     if (controlledValue !== undefined) return // Skip debounce for controlled component
 
     const handler = setTimeout(() => {
-      onSearch(internalValue)
+      onSearchRef.current(internalValue)
     }, debounceMs)
 
     return () => {
       clearTimeout(handler)
     }
-  }, [internalValue, debounceMs, onSearch, controlledValue])
+  }, [internalValue, debounceMs, controlledValue])
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

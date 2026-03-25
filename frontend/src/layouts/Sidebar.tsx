@@ -4,7 +4,6 @@ import {
   FileTextOutlined,
   SafetyCertificateOutlined,
   AuditOutlined,
-  UserOutlined,
   TeamOutlined,
   SettingOutlined,
   DatabaseOutlined,
@@ -53,19 +52,14 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
         label: '대시보드',
       },
       {
-        key: '/evidence',
-        icon: <FileTextOutlined />,
-        label: '증적 관리',
-      },
-      {
         key: '/controls',
         icon: <SafetyCertificateOutlined />,
         label: '통제항목',
       },
       {
-        key: '/audits',
-        icon: <AuditOutlined />,
-        label: '감사 관리',
+        key: '/evidence',
+        icon: <FileTextOutlined />,
+        label: '증적 관리',
       },
       {
         key: '/assets',
@@ -86,19 +80,28 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
           { key: '/risk/vulnerabilities', label: '취약점 DB' },
         ],
       },
+      {
+        key: 'audit-group',
+        icon: <AuditOutlined />,
+        label: '감사 관리',
+        children: [
+          { key: '/audits', label: '감사 계획' },
+          { key: '/auditor-accounts', label: '외부 심사원' },
+        ],
+      },
     ]
 
-    // 사용자 관리 / 부서 관리: user:read 권한 필요
+    // 조직 관리: user:read 권한 필요
     if (hasPermission('user:read')) {
       items.push({
-        key: '/users',
-        icon: <UserOutlined />,
-        label: '사용자 관리',
-      })
-      items.push({
-        key: '/departments',
+        key: 'org-group',
         icon: <TeamOutlined />,
-        label: '부서 관리',
+        label: '조직 관리',
+        children: [
+          { key: '/users', label: '사용자 관리' },
+          { key: '/departments', label: '부서 관리' },
+          { key: '/personnel', label: '담당자 관리' },
+        ],
       })
     }
 
@@ -133,10 +136,13 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
     return [pathname]
   }, [location.pathname])
 
-  // 위험 관리 하위 경로인 경우 서브메뉴 자동 열기
+  // 하위 경로인 경우 서브메뉴 자동 열기
   const defaultOpenKeys = useMemo(() => {
-    if (location.pathname.startsWith('/risk')) return ['risk-group']
-    return []
+    const keys: string[] = []
+    if (location.pathname.startsWith('/risk')) keys.push('risk-group')
+    if (location.pathname.startsWith('/audits') || location.pathname.startsWith('/auditor-accounts')) keys.push('audit-group')
+    if (location.pathname.startsWith('/users') || location.pathname.startsWith('/departments') || location.pathname.startsWith('/personnel')) keys.push('org-group')
+    return keys
   }, [location.pathname])
 
   const handleMenuClick = ({ key }: { key: string }) => {

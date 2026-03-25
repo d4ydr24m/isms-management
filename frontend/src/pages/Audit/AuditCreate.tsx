@@ -56,16 +56,22 @@ const AuditCreate = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [usersData, auditorsData, controlsData] = await Promise.all([
-        userService.getUsers({ size: 100 }),
-        auditorAccountService.getAuditorAccounts({ size: 100 }),
-        controlService.getControls({ pageSize: 200 }),
-      ])
+      const usersData = await userService.getUsers({ size: 100 })
       setUsers(usersData.items || [])
+    } catch {
+      console.error('사용자 목록 로드 실패')
+    }
+    try {
+      const auditorsData = await auditorAccountService.getAuditorAccounts({ size: 100 })
       setExternalAuditors(auditorsData.items || [])
+    } catch {
+      console.error('심사원 목록 로드 실패')
+    }
+    try {
+      const controlsData = await controlService.getControls({ pageSize: 200 })
       setControls(controlsData.items || [])
     } catch {
-      message.error('데이터를 불러오는데 실패했습니다')
+      console.error('통제항목 목록 로드 실패')
     }
   }, [])
 

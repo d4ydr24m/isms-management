@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Card,
+  Checkbox,
   Tree,
   Modal,
   Form,
@@ -16,6 +17,9 @@ import {
   Empty,
   Spin,
   Tooltip,
+  Upload,
+  Table,
+  Alert,
 } from 'antd'
 import {
   PlusOutlined,
@@ -25,11 +29,15 @@ import {
   ApartmentOutlined,
   FolderOutlined,
   FolderOpenOutlined,
+  UploadOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons'
 import type { DataNode, TreeProps } from 'antd/es/tree'
+import type { UploadFile } from 'antd/es/upload/interface'
 import { apiClient } from '@/services/api'
 
 const { Text } = Typography
+const { Dragger } = Upload
 
 interface Department {
   id: number
@@ -53,6 +61,14 @@ interface DepartmentFormValues {
   parentId?: number | null
 }
 
+interface BulkUploadResult {
+  successCount: number
+  createdCount: number
+  updatedCount: number
+  failureCount: number
+  errors: Array<{ row: number; field: string; message: string }>
+}
+
 function DepartmentsPage() {
   const [treeData, setTreeData] = useState<DepartmentTreeNode[]>([])
   const [flatDepartments, setFlatDepartments] = useState<Department[]>([])
@@ -63,6 +79,12 @@ function DepartmentsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([])
   const [form] = Form.useForm<DepartmentFormValues>()
+  const [bulkModalOpen, setBulkModalOpen] = useState(false)
+  const [bulkFileList, setBulkFileList] = useState<UploadFile[]>([])
+  const [bulkUploading, setBulkUploading] = useState(false)
+  const [bulkResult, setBulkResult] = useState<BulkUploadResult | null>(null)
+  const [templateDownloading, setTemplateDownloading] = useState(false)
+  const [updateExisting, setUpdateExisting] = useState(false)
 
   const loadDepartments = useCallback(async () => {
     setLoading(true)
@@ -169,6 +191,80 @@ function DepartmentsPage() {
     setAddParentId(null)
   }
 
+  const handleTemplateDownload = async (includeData = false) => {
+    setTemplateDownloading(true)
+    try {
+      const response = await apiClient.get(`/bulk/departments/template?include_data=${includeData}`, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      const filename = includeData ? '부서_목록.xlsx' : '부서_일괄등록_템플릿.xlsx'
+      link.setAttribute('download', filename)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      message.success('다운로드가 완료되었습니다')
+    } catch (error) {
+      message.error('다운로드에 실패했습니다')
+    } finally {
+      setTemplateDownloading(false)
+    }
+  }
+
+  const handleBulkUpload = async () => {
+    if (bulkFileList.length === 0) {
+      message.warning('업로드할 파일을 선택해주세요')
+      return
+    }
+
+    const file = bulkFileList[0] as any
+    const formData = new FormData()
+    formData.append('file', file.originFileObj || file)
+
+    setBulkUploading(true)
+    setBulkResult(null)
+    try {
+      const response = await apiClient.post(`/bulk/departments/upload?update_existing=${updateExisting}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const data = response.data
+      setBulkResult({
+        successCount: data.success,
+        createdCount: data.created || 0,
+        updatedCount: data.updated || 0,
+        failureCount: data.failed,
+        errors: (data.errors || []).map((e: any) => ({ row: e.row, field: e.name || '', message: e.error })),
+      })
+      if (data.failed === 0) {
+        const parts = []
+        if (data.created > 0) parts.push(`신규 ${data.created}건`)
+        if (data.updated > 0) parts.push(`업데이트 ${data.updated}건`)
+        message.success(`${parts.join(', ')} 처리되었습니다`)
+      } else {
+        message.warning(`성공: ${data.success}건, 실패: ${data.failed}건`)
+      }
+      loadDepartments()
+    } catch (error) {
+      message.error('일괄 등록에 실패했습니다')
+    } finally {
+      setBulkUploading(false)
+    }
+  }
+
+  const handleBulkModalClose = () => {
+    setBulkModalOpen(false)
+    setBulkFileList([])
+    setBulkResult(null)
+    setUpdateExisting(false)
+  }
+
+  const bulkErrorColumns = [
+    { title: '행 번호', dataIndex: 'row', key: 'row', width: 80 },
+    { title: '필드', dataIndex: 'field', key: 'field', width: 120 },
+    { title: '오류 내용', dataIndex: 'message', key: 'message' },
+  ]
+
   const parentOptions = flatDepartments
     .filter((d) => d.isActive && (!editingDepartment || d.id !== editingDepartment.id))
     .map((d) => ({ label: d.name, value: d.id }))
@@ -256,9 +352,14 @@ function DepartmentsPage() {
           </Space>
         }
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => handleAdd()}>
-            부서 추가
-          </Button>
+          <Space>
+            <Button icon={<UploadOutlined />} onClick={() => setBulkModalOpen(true)}>
+              일괄 등록
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => handleAdd()}>
+              부서 추가
+            </Button>
+          </Space>
         }
       >
         {loading ? (
@@ -324,6 +425,98 @@ function DepartmentsPage() {
             />
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="부서 일괄 등록"
+        open={bulkModalOpen}
+        onCancel={handleBulkModalClose}
+        footer={null}
+        width={640}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <Alert
+            message="엑셀 파일을 이용하여 부서를 일괄 등록할 수 있습니다. 먼저 템플릿을 다운로드하여 양식에 맞게 작성해주세요."
+            type="info"
+            showIcon
+          />
+
+          <Space>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={() => handleTemplateDownload(false)}
+              loading={templateDownloading}
+            >
+              빈 템플릿 다운로드
+            </Button>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={() => handleTemplateDownload(true)}
+              loading={templateDownloading}
+            >
+              기존 데이터 포함 다운로드
+            </Button>
+          </Space>
+
+          <Checkbox
+            checked={updateExisting}
+            onChange={(e) => setUpdateExisting(e.target.checked)}
+          >
+            기존 데이터 업데이트 (부서코드가 동일한 부서가 있으면 정보를 업데이트합니다)
+          </Checkbox>
+
+          <Dragger
+            accept=".xlsx"
+            maxCount={1}
+            fileList={bulkFileList}
+            beforeUpload={() => false}
+            onChange={({ fileList }) => setBulkFileList(fileList)}
+          >
+            <p className="ant-upload-drag-icon">
+              <UploadOutlined style={{ fontSize: 32, color: '#1890ff' }} />
+            </p>
+            <p className="ant-upload-text">클릭하거나 파일을 이 영역에 드래그하세요</p>
+            <p className="ant-upload-hint">.xlsx 파일만 업로드 가능합니다</p>
+          </Dragger>
+
+          <Button
+            type="primary"
+            icon={<UploadOutlined />}
+            onClick={handleBulkUpload}
+            loading={bulkUploading}
+            disabled={bulkFileList.length === 0}
+            block
+          >
+            업로드
+          </Button>
+
+          {bulkResult && (
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
+              <Alert
+                message="업로드 결과"
+                description={
+                  <Space>
+                    {bulkResult.createdCount > 0 && <Text>신규: <Text strong style={{ color: '#52c41a' }}>{bulkResult.createdCount}건</Text></Text>}
+                    {bulkResult.updatedCount > 0 && <Text>업데이트: <Text strong style={{ color: '#1890ff' }}>{bulkResult.updatedCount}건</Text></Text>}
+                    <Text>실패: <Text strong style={{ color: bulkResult.failureCount > 0 ? '#ff4d4f' : undefined }}>{bulkResult.failureCount}건</Text></Text>
+                  </Space>
+                }
+                type={bulkResult.failureCount > 0 ? 'warning' : 'success'}
+                showIcon
+              />
+              {bulkResult.errors && bulkResult.errors.length > 0 && (
+                <Table
+                  columns={bulkErrorColumns}
+                  dataSource={bulkResult.errors}
+                  rowKey={(record) => `${record.row}-${record.field}`}
+                  size="small"
+                  pagination={{ pageSize: 5 }}
+                  scroll={{ y: 200 }}
+                />
+              )}
+            </Space>
+          )}
+        </Space>
       </Modal>
     </div>
   )

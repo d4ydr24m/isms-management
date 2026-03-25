@@ -59,6 +59,9 @@ class ControlItemBase(BaseModel):
     requirements: Optional[str] = Field(None, description="요구사항")
     is_required: bool = Field(True, description="필수 통제항목 여부")
     is_personal_info: bool = Field(False, description="개인정보보호 통제항목 여부")
+    key_checks: Optional[str] = Field(None, description="주요 확인사항")
+    related_laws: Optional[str] = Field(None, description="관련 법규")
+    evidence_examples: Optional[str] = Field(None, description="증거자료 예시")
     sort_order: int = Field(0, description="정렬 순서")
     tags: Optional[str] = Field(None, max_length=255, description="태그 (쉼표로 구분)")
 

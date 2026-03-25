@@ -24,6 +24,7 @@ from app.models.audit import (
 from app.models.notification import Notification, NotificationSetting
 from app.models.audit_log import AuditLog
 from app.models.system_setting import SystemSetting
+from app.models.personnel import Personnel
 from app.models.asset import (
     AssetType,
     AssetCategory,
@@ -75,6 +76,8 @@ __all__ = [
     "NotificationSetting",
     "AuditLog",
     "SystemSetting",
+    # Personnel
+    "Personnel",
     # Phase 2 - Asset models
     "AssetType",
     "AssetCategory",

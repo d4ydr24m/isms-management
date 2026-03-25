@@ -157,6 +157,9 @@ class Asset(Base):
     owner_id = Column(
         Integer, ForeignKey("users.id"), nullable=True, comment="자산 소유자 ID"
     )
+    personnel_owner_id = Column(
+        Integer, ForeignKey("personnel.id"), nullable=True, comment="담당자 소유자 ID"
+    )
 
     # 상세 정보
     ip_address = Column(String(50), nullable=True, comment="IP 주소")
@@ -188,6 +191,7 @@ class Asset(Base):
     category = relationship("AssetCategory", back_populates="assets")
     department = relationship("Department", backref="assets")
     owner = relationship("User", foreign_keys=[owner_id], backref="owned_assets")
+    personnel_owner = relationship("Personnel", foreign_keys=[personnel_owner_id])
     valuations = relationship(
         "AssetValuation", back_populates="asset", cascade="all, delete-orphan"
     )

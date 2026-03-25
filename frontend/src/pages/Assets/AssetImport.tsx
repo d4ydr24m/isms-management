@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   Card,
+  Checkbox,
   Steps,
   Button,
   Upload,
@@ -28,6 +29,7 @@ import {
 } from '@ant-design/icons'
 import type { UploadFile, UploadProps } from 'antd'
 import { assetService } from '@/services/assets'
+import { apiClient } from '@/services/api'
 import type { AssetImportResult } from '@/types'
 
 const { Dragger } = Upload
@@ -42,14 +44,33 @@ const AssetImportPage = () => {
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [importResult, setImportResult] = useState<AssetImportResult | null>(null)
+  const [updateExisting, setUpdateExisting] = useState(false)
 
-  // 템플릿 다운로드
+  // 빈 템플릿 다운로드
   const handleDownloadTemplate = async () => {
     try {
       await assetService.downloadTemplate()
       message.success('템플릿 다운로드가 시작되었습니다')
     } catch {
       message.error('템플릿 다운로드에 실패했습니다')
+    }
+  }
+
+  // 기존 데이터 포함 다운로드
+  const handleDownloadWithData = async () => {
+    try {
+      const response = await apiClient.get('/assets/export', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', '자산_목록.xlsx')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      message.success('다운로드가 완료되었습니다')
+    } catch {
+      message.error('다운로드에 실패했습니다')
     }
   }
 
@@ -194,13 +215,31 @@ const AssetImportPage = () => {
             />
 
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <Button
-                icon={<DownloadOutlined />}
-                onClick={handleDownloadTemplate}
-                size="large"
+              <Space>
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={handleDownloadTemplate}
+                  size="large"
+                >
+                  빈 템플릿 다운로드
+                </Button>
+                <Button
+                  icon={<DownloadOutlined />}
+                  onClick={handleDownloadWithData}
+                  size="large"
+                >
+                  기존 데이터 포함 다운로드
+                </Button>
+              </Space>
+            </div>
+
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <Checkbox
+                checked={updateExisting}
+                onChange={(e) => setUpdateExisting(e.target.checked)}
               >
-                임포트 템플릿 다운로드
-              </Button>
+                기존 데이터 업데이트 (자산코드가 동일한 자산이 있으면 정보를 업데이트합니다)
+              </Checkbox>
             </div>
 
             <Dragger {...uploadProps} style={{ padding: '40px 0' }}>
