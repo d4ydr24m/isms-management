@@ -34,9 +34,13 @@ const SearchInput = ({
   const onSearchRef = useRef(onSearch)
   onSearchRef.current = onSearch
 
+  // Track if user has interacted (skip initial debounce)
+  const hasInteracted = useRef(false)
+
   // Debounced search
   useEffect(() => {
     if (controlledValue !== undefined) return // Skip debounce for controlled component
+    if (!hasInteracted.current) return // Skip initial mount
 
     const handler = setTimeout(() => {
       onSearchRef.current(internalValue)
@@ -49,6 +53,7 @@ const SearchInput = ({
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      hasInteracted.current = true
       const newValue = e.target.value
       setInternalValue(newValue)
 
