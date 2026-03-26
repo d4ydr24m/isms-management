@@ -49,7 +49,7 @@ class ThreatBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=200, description="위협명")
     description: Optional[str] = Field(None, description="위협 설명")
     category_id: Optional[int] = Field(None, description="위협 분류 ID")
-    threat_level: int = Field(default=2, ge=1, le=3, description="위협 등급 (1: 하, 2: 중, 3: 상)")
+    threat_level: int = Field(default=2, ge=1, le=5, description="위협 등급 (1: 매우 낮음, 2: 낮음, 3: 보통, 4: 높음, 5: 매우 높음)")
 
 
 class ThreatCreate(ThreatBase):
@@ -62,7 +62,7 @@ class ThreatUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
     category_id: Optional[int] = None
-    threat_level: Optional[int] = Field(None, ge=1, le=3)
+    threat_level: Optional[int] = Field(None, ge=1, le=5)
     is_active: Optional[bool] = None
 
 
@@ -122,7 +122,7 @@ class VulnerabilityBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=200, description="취약점명")
     description: Optional[str] = Field(None, description="취약점 설명")
     category_id: Optional[int] = Field(None, description="취약점 분류 ID")
-    vulnerability_level: int = Field(default=2, ge=1, le=3, description="취약점 등급 (1: 하, 2: 중, 3: 상)")
+    vulnerability_level: int = Field(default=3, ge=1, le=5, description="취약점 등급 (1: 매우 낮음, 2: 낮음, 3: 보통, 4: 높음, 5: 매우 높음)")
 
 
 class VulnerabilityCreate(VulnerabilityBase):
@@ -135,7 +135,7 @@ class VulnerabilityUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
     category_id: Optional[int] = None
-    vulnerability_level: Optional[int] = Field(None, ge=1, le=3)
+    vulnerability_level: Optional[int] = Field(None, ge=1, le=5)
     is_active: Optional[bool] = None
 
 
@@ -277,7 +277,7 @@ class RiskAssessmentBase(BaseModel):
     threat_id: int = Field(..., description="위협 ID")
     vulnerability_id: int = Field(..., description="취약점 ID")
     asset_value: int = Field(..., ge=1, le=3, description="자산 가치 (1: 하, 2: 중, 3: 상)")
-    threat_level: int = Field(..., ge=1, le=3, description="위협 등급 (1: 하, 2: 중, 3: 상)")
+    threat_level: int = Field(..., ge=1, le=5, description="위협 등급 (1: 매우 낮음, 2: 낮음, 3: 보통, 4: 높음, 5: 매우 높음)")
     vulnerability_level: int = Field(..., ge=1, le=3, description="취약점 등급 (1: 하, 2: 중, 3: 상)")
     remarks: Optional[str] = Field(None, description="평가 의견")
 
@@ -289,9 +289,9 @@ class RiskAssessmentCreate(RiskAssessmentBase):
 
 class RiskAssessmentUpdate(BaseModel):
     """위험 평가 수정 스키마"""
-    asset_value: Optional[int] = Field(None, ge=1, le=3)
-    threat_level: Optional[int] = Field(None, ge=1, le=3)
-    vulnerability_level: Optional[int] = Field(None, ge=1, le=3)
+    asset_value: Optional[int] = Field(None, ge=1, le=5)
+    threat_level: Optional[int] = Field(None, ge=1, le=5)
+    vulnerability_level: Optional[int] = Field(None, ge=1, le=5)
     remarks: Optional[str] = None
 
 

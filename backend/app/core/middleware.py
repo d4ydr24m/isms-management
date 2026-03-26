@@ -261,6 +261,53 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         parts = path.replace("/api/v1/", "").split("/")
         return parts[0] if parts else "unknown"
 
+    def _capture_delete_target(self, path: str) -> dict | None:
+        """DELETE 요청 전 삭제 대상 리소스 정보를 캡처"""
+        try:
+            import re
+            from app.core.deps import SessionLocal
+
+            # 경로에서 리소스 타입과 ID 추출 (예: /api/v1/departments/27)
+            match = re.match(r"/api/v1/(\w[\w-]*)/(\d+)(?:/.*)?$", path)
+            if not match:
+                return None
+
+            resource_type = match.group(1)
+            resource_id = int(match.group(2))
+
+            db = SessionLocal()
+            try:
+                info = {"id": resource_id}
+
+                # 리소스 타입별 정보 조회
+                model_map = {
+                    "departments": ("app.models.department", "Department", ["name", "code"]),
+                    "users": ("app.models.user", "User", ["name", "email"]),
+                    "assets": ("app.models.asset", "Asset", ["name", "asset_code"]),
+                    "evidences": ("app.services.evidence_service", None, None),
+                    "personnel": ("app.models.personnel", "Personnel", ["name", "email"]),
+                    "roles": ("app.models.user", "Role", ["name"]),
+                }
+
+                if resource_type in model_map:
+                    module_path, class_name, fields = model_map[resource_type]
+                    if class_name and fields:
+                        import importlib
+                        mod = importlib.import_module(module_path)
+                        model_class = getattr(mod, class_name)
+                        obj = db.query(model_class).filter(model_class.id == resource_id).first()
+                        if obj:
+                            for f in fields:
+                                val = getattr(obj, f, None)
+                                if val is not None:
+                                    info[f] = str(val)
+
+                return info if len(info) > 1 else {"id": resource_id, "resource": resource_type}
+            finally:
+                db.close()
+        except Exception:
+            return None
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # 제외 경로 확인
         path = request.url.path
@@ -272,6 +319,21 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
 
         # 클라이언트 IP
         client_ip = self._get_client_ip(request)
+
+        # 요청 바디 캡처 (감사 로그용)
+        request_body = None
+        delete_info = None
+        if request.method in self.AUDIT_METHODS and path.startswith("/api/"):
+            try:
+                body_bytes = await request.body()
+                if body_bytes and len(body_bytes) < 10000:  # 10KB 제한
+                    request_body = body_bytes.decode("utf-8", errors="ignore")
+            except Exception:
+                pass
+
+            # DELETE 요청: 삭제 전 리소스 정보 캡처
+            if request.method == "DELETE":
+                delete_info = self._capture_delete_target(path)
 
         # 요청 처리
         response = await call_next(request)
@@ -298,6 +360,16 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
 
                 user_info = self._extract_user_info(request)
                 user_name = None
+                user_email = user_info.get("user_email", "")
+
+                # 로그인 요청의 경우 요청 바디에서 이메일 추출
+                if not user_info.get("user_id") and request_body and "login" in path:
+                    try:
+                        login_data = json.loads(request_body)
+                        user_email = login_data.get("email", "")
+                    except Exception:
+                        pass
+
                 if user_info.get("user_id"):
                     try:
                         db_temp = SessionLocal()
@@ -305,9 +377,39 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
                         u = db_temp.query(User).filter(User.id == user_info["user_id"]).first()
                         if u:
                             user_name = u.name
+                            user_email = u.email
                         db_temp.close()
                     except Exception:
                         pass
+                elif user_email:
+                    # JWT 없는 경우 이메일로 사용자 조회 (로그인 시)
+                    try:
+                        db_temp = SessionLocal()
+                        from app.models.user import User
+                        u = db_temp.query(User).filter(User.email == user_email).first()
+                        if u:
+                            user_name = u.name
+                        db_temp.close()
+                    except Exception:
+                        pass
+
+                # 요청 바디에서 민감 정보 제거 (비밀번호 등)
+                sanitized_body = None
+                if request_body:
+                    try:
+                        body_dict = json.loads(request_body)
+                        # 민감 필드 마스킹
+                        sensitive_keys = {"password", "hashed_password", "mfa_secret", "otp_code", "current_password", "new_password"}
+                        for key in sensitive_keys:
+                            if key in body_dict:
+                                body_dict[key] = "***"
+                        sanitized_body = json.dumps(body_dict, ensure_ascii=False, default=str)[:2000]
+                    except Exception:
+                        sanitized_body = None
+
+                # DELETE 요청은 삭제 대상 정보를 old_value에 저장
+                if delete_info:
+                    sanitized_body = sanitized_body or json.dumps(delete_info, ensure_ascii=False, default=str)[:2000]
 
                 db = SessionLocal()
                 try:
@@ -319,10 +421,11 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
 
                     audit_log = AuditLog(
                         user_id=user_info.get("user_id"),
-                        user_email=user_info.get("user_email", ""),
+                        user_email=user_email,
                         user_name=user_name or "",
                         action=action,
                         resource_type=resource_type,
+                        new_value=sanitized_body,
                         ip_address=client_ip,
                         user_agent=request.headers.get("User-Agent", "")[:500],
                         request_method=request.method,

@@ -132,11 +132,13 @@ class AssetCreate(AssetBase):
 class AssetUpdate(BaseModel):
     """자산 수정 스키마"""
     name: Optional[str] = Field(None, min_length=1, max_length=200)
+    asset_type_id: Optional[int] = None
     description: Optional[str] = None
     category_id: Optional[int] = None
     location: Optional[str] = Field(None, max_length=200)
     department_id: Optional[int] = None
     owner_id: Optional[int] = None
+    personnel_owner_id: Optional[int] = None
     ip_address: Optional[str] = Field(None, max_length=50)
     mac_address: Optional[str] = Field(None, max_length=50)
     hostname: Optional[str] = Field(None, max_length=100)
@@ -353,7 +355,8 @@ class AssetAssignmentResponse(BaseModel):
     """자산 담당자 할당 응답 스키마"""
     id: int
     asset_id: int
-    user_id: int
+    user_id: Optional[int] = None
+    personnel_id: Optional[int] = None
     user_name: Optional[str] = None
     user_email: Optional[str] = None
     role: str

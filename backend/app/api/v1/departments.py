@@ -266,8 +266,8 @@ def delete_department(
             detail="소속 사용자가 존재합니다. 먼저 사용자를 다른 부서로 이동하세요.",
         )
 
-    # 소프트 삭제
-    dept.is_active = False
+    # 완전 삭제
+    db.delete(dept)
     db.commit()
 
 

@@ -386,7 +386,10 @@ class AssetAssignment(Base):
         Integer, ForeignKey("assets.id"), nullable=False, index=True, comment="자산 ID"
     )
     user_id = Column(
-        Integer, ForeignKey("users.id"), nullable=False, index=True, comment="담당자 ID"
+        Integer, ForeignKey("users.id"), nullable=True, index=True, comment="시스템 사용자 ID"
+    )
+    personnel_id = Column(
+        Integer, ForeignKey("personnel.id"), nullable=True, index=True, comment="담당자 ID"
     )
 
     # 역할 정보 - Enum 사용
@@ -410,6 +413,7 @@ class AssetAssignment(Base):
     # 관계
     asset = relationship("Asset", back_populates="assignments")
     user = relationship("User", foreign_keys=[user_id], backref="asset_assignments")
+    personnel = relationship("Personnel", foreign_keys=[personnel_id])
     assigner = relationship("User", foreign_keys=[assigned_by])
 
     @validates('role')

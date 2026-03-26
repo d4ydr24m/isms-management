@@ -103,23 +103,32 @@ def get_vulnerability_categories(
 @router.get("", response_model=VulnerabilityList)
 def get_vulnerabilities(
     category_id: Optional[int] = Query(None, description="취약점 분류 ID"),
+    vulnerability_level: Optional[int] = Query(None, description="취약점 등급 (1-5)"),
     is_active: Optional[bool] = Query(True, description="활성 상태 필터"),
+    is_custom: Optional[bool] = Query(None, description="커스텀 여부"),
     search: Optional[str] = Query(None, description="검색어"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(100, ge=1, le=500),
     service: RiskService = Depends(get_risk_service),
     current_user: User = Depends(require_permission("risk:read")),
 ) -> VulnerabilityList:
     """
     취약점 목록 조회
-
-    - **category_id**: 취약점 분류 ID (선택)
-    - **is_active**: 활성 상태 필터 (기본: True)
-    - **search**: 검색어 (이름, 코드, 설명)
     """
     items, total = service.get_vulnerabilities(
         category_id=category_id,
         is_active=is_active,
         search=search,
     )
+    # 추가 필터 적용
+    if vulnerability_level is not None:
+        items = [i for i in items if i.vulnerability_level == vulnerability_level]
+    if is_custom is not None:
+        items = [i for i in items if i.is_custom == is_custom]
+    total = len(items)
+    # 페이지네이션
+    start = (page - 1) * limit
+    items = items[start:start + limit]
     return VulnerabilityList(
         items=[vulnerability_to_response(item) for item in items],
         total=total,

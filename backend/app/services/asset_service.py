@@ -688,10 +688,26 @@ class AssetService:
         if not asset:
             raise ValueError("자산을 찾을 수 없습니다.")
 
-        # 사용자 확인
+        # 사용자 또는 담당자 확인
+        from app.models.personnel import Personnel
         user = self.db.query(User).filter(User.id == user_id).first()
+        personnel_id = None
+        assignee_name = None
         if not user:
-            raise ValueError("사용자를 찾을 수 없습니다.")
+            # 담당자(Personnel) 테이블에서 확인
+            personnel = self.db.query(Personnel).filter(Personnel.id == user_id).first()
+            if not personnel:
+                raise ValueError("담당자를 찾을 수 없습니다.")
+            personnel_id = personnel.id
+            assignee_name = personnel.name
+            # 연결된 시스템 계정이 있으면 해당 user_id도 설정
+            if personnel.user_id:
+                user_id = personnel.user_id
+                user = self.db.query(User).filter(User.id == user_id).first()
+            else:
+                user_id = None  # 시스템 계정 없는 담당자
+        else:
+            assignee_name = user.name
 
         # 역할 검증
         valid_roles = [r.value for r in AssetAssignmentRole]
@@ -701,6 +717,7 @@ class AssetService:
         assignment = AssetAssignment(
             asset_id=asset_id,
             user_id=user_id,
+            personnel_id=personnel_id,
             role=role,
             assigned_by=assigned_by,
             assigned_at=utc_now(),
@@ -714,7 +731,7 @@ class AssetService:
             asset_id=asset_id,
             change_type=AssetChangeType.ASSIGNMENT.value,
             changed_by=assigned_by,
-            new_value=f"담당자 할당: {user.name} ({role})",
+            new_value=f"담당자 할당: {assignee_name} ({role})",
         )
 
         self.db.commit()
@@ -734,8 +751,14 @@ class AssetService:
 
     def get_assignments(self, asset_id: int) -> List[AssetAssignment]:
         """자산 담당자 목록 조회"""
+        from sqlalchemy.orm import joinedload
         return (
             self.db.query(AssetAssignment)
+            .options(
+                joinedload(AssetAssignment.user),
+                joinedload(AssetAssignment.personnel),
+                joinedload(AssetAssignment.assigner),
+            )
             .filter(
                 AssetAssignment.asset_id == asset_id,
                 AssetAssignment.is_active == True,
@@ -1067,7 +1090,7 @@ class AssetService:
         """자산 임포트 템플릿 생성"""
         try:
             from openpyxl import Workbook
-            from openpyxl.styles import Font, PatternFill, Alignment
+            from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
             from openpyxl.worksheet.datavalidation import DataValidation
         except ImportError:
             raise ImportError("openpyxl 패키지가 필요합니다.")
@@ -1078,13 +1101,22 @@ class AssetService:
 
         # 헤더 스타일
         header_font = Font(bold=True, color="FFFFFF")
+        required_font = Font(bold=True, color="000000")
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
-        required_fill = PatternFill(start_color="FFC000", end_color="FFC000", fill_type="solid")
+        required_fill = PatternFill(start_color="FF6B6B", end_color="FF6B6B", fill_type="solid")
+        required_font_white = Font(bold=True, color="FFFFFF")
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin'),
+        )
 
         # 헤더 (필수 항목 표시)
         headers = [
-            ("자산명*", True),
-            ("자산유형코드*", True),
+            ("자산코드", False),
+            ("자산명 (필수)", True),
+            ("자산유형코드 (필수)", True),
             ("분류코드", False),
             ("위치", False),
             ("부서코드", False),
@@ -1093,13 +1125,16 @@ class AssetService:
             ("시리얼번호", False),
             ("제조사", False),
             ("모델", False),
+            ("상태", False),
+            ("중요도", False),
         ]
 
         for col, (header, required) in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
-            cell.font = header_font
+            cell.font = required_font_white if required else header_font
             cell.fill = required_fill if required else header_fill
             cell.alignment = Alignment(horizontal="center")
+            cell.border = border
 
         # 자산 유형 코드 목록 (데이터 검증용)
         asset_types, _ = self.get_asset_types(is_active=True)
@@ -1109,16 +1144,49 @@ class AssetService:
             dv.error = "유효한 자산 유형 코드를 선택하세요."
             dv.errorTitle = "입력 오류"
             ws.add_data_validation(dv)
-            dv.add("B2:B1000")
+            dv.add("C2:C1000")
 
-        # 예시 데이터
-        ws.cell(row=2, column=1, value="웹서버-01")
-        ws.cell(row=2, column=2, value="SRV")
-        ws.cell(row=2, column=6, value="192.168.1.100")
-        ws.cell(row=2, column=7, value="web-server-01")
+        # 안내 행 (row 2) - 회색 배경
+        guide_fill = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
+        guide_font = Font(color="888888", italic=True, size=9)
+        guides = [
+            "비워두면 자동생성",
+            "필수",
+            "필수 (예: SRV, PC)",
+            "분류 코드",
+            "물리적 위치",
+            "부서 코드",
+            "예: 192.168.1.1",
+            "예: web-srv-01",
+            "",
+            "",
+            "",
+            "도입/운영/폐기",
+            "1~5",
+        ]
+        for col, guide in enumerate(guides, 1):
+            cell = ws.cell(row=2, column=col, value=guide)
+            cell.font = guide_font
+            cell.fill = guide_fill
+
+        # 예시 데이터 (row 3)
+        ws.cell(row=3, column=1, value="")
+        ws.cell(row=3, column=2, value="웹서버-01")
+        ws.cell(row=3, column=3, value="SRV")
+        ws.cell(row=3, column=5, value="서버실")
+        ws.cell(row=3, column=7, value="192.168.1.100")
+        ws.cell(row=3, column=8, value="web-server-01")
+
+        # 데이터 검증 범위 수정 (row 3부터)
+        if asset_types:
+            dv2 = DataValidation(type="list", formula1=f'"{type_codes}"', allow_blank=False)
+            dv2.error = "유효한 자산 유형 코드를 선택하세요."
+            dv2.errorTitle = "입력 오류"
+            ws.add_data_validation(dv2)
+            dv2.add("C3:C1000")
 
         # 열 너비 조정
-        column_widths = [15, 15, 12, 15, 12, 15, 15, 15, 12, 12]
+        column_widths = [22, 18, 20, 12, 15, 12, 18, 18, 15, 12, 12, 12, 10]
         for col, width in enumerate(column_widths, 1):
             ws.column_dimensions[chr(64 + col)].width = width
 
@@ -1148,13 +1216,18 @@ class AssetService:
             "errors": [],
         }
 
-        for row_num in range(2, ws.max_row + 1):
+        for row_num in range(3, ws.max_row + 1):
+            # 빈 행 무시
+            asset_code = ws.cell(row=row_num, column=1).value
+            name = ws.cell(row=row_num, column=2).value
+            type_code = ws.cell(row=row_num, column=3).value
+
+            if not name and not type_code and not asset_code:
+                continue
+
             results["total"] += 1
 
             try:
-                name = ws.cell(row=row_num, column=1).value
-                type_code = ws.cell(row=row_num, column=2).value
-
                 if not name or not type_code:
                     results["failed"] += 1
                     results["errors"].append({
@@ -1164,7 +1237,7 @@ class AssetService:
                     continue
 
                 # 자산 유형 조회
-                asset_type = self.get_asset_type_by_code(type_code)
+                asset_type = self.get_asset_type_by_code(str(type_code).strip())
                 if not asset_type:
                     results["failed"] += 1
                     results["errors"].append({
@@ -1174,25 +1247,51 @@ class AssetService:
                     continue
 
                 # 부서 조회
-                dept_code = ws.cell(row=row_num, column=5).value
+                dept_code = ws.cell(row=row_num, column=6).value
                 department_id = None
                 if dept_code:
-                    dept = self.db.query(Department).filter(Department.code == dept_code).first()
+                    dept = self.db.query(Department).filter(Department.code == str(dept_code).strip()).first()
                     if dept:
                         department_id = dept.id
 
-                # 자산 생성
+                # 자산코드가 있으면 기존 자산 업데이트 시도
+                if asset_code:
+                    existing = self.db.query(Asset).filter(Asset.asset_code == str(asset_code).strip()).first()
+                    if existing:
+                        existing.name = str(name)
+                        existing.asset_type_id = asset_type.id
+                        if ws.cell(row=row_num, column=4).value:
+                            existing.category_id = None  # TODO: resolve category
+                        if ws.cell(row=row_num, column=5).value:
+                            existing.location = str(ws.cell(row=row_num, column=5).value)
+                        if department_id:
+                            existing.department_id = department_id
+                        if ws.cell(row=row_num, column=7).value:
+                            existing.ip_address = str(ws.cell(row=row_num, column=7).value)
+                        if ws.cell(row=row_num, column=8).value:
+                            existing.hostname = str(ws.cell(row=row_num, column=8).value)
+                        if ws.cell(row=row_num, column=9).value:
+                            existing.serial_number = str(ws.cell(row=row_num, column=9).value)
+                        if ws.cell(row=row_num, column=10).value:
+                            existing.manufacturer = str(ws.cell(row=row_num, column=10).value)
+                        if ws.cell(row=row_num, column=11).value:
+                            existing.model = str(ws.cell(row=row_num, column=11).value)
+                        self.db.commit()
+                        results["success"] += 1
+                        continue
+
+                # 자산 생성 (자산코드 자동 생성)
                 self.create_asset(
                     name=str(name),
                     asset_type_id=asset_type.id,
                     user_id=user_id,
-                    location=ws.cell(row=row_num, column=4).value,
+                    location=ws.cell(row=row_num, column=5).value,
                     department_id=department_id,
-                    ip_address=ws.cell(row=row_num, column=6).value,
-                    hostname=ws.cell(row=row_num, column=7).value,
-                    serial_number=ws.cell(row=row_num, column=8).value,
-                    manufacturer=ws.cell(row=row_num, column=9).value,
-                    model=ws.cell(row=row_num, column=10).value,
+                    ip_address=ws.cell(row=row_num, column=7).value,
+                    hostname=ws.cell(row=row_num, column=8).value,
+                    serial_number=ws.cell(row=row_num, column=9).value,
+                    manufacturer=ws.cell(row=row_num, column=10).value,
+                    model=ws.cell(row=row_num, column=11).value,
                 )
                 results["success"] += 1
 

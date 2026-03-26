@@ -33,7 +33,11 @@
       "Bash(grep -v '//')",
       "Bash(git add:*)",
       "WebFetch(domain:itwiki.kr)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(python -c \":*)",
+      "Bash(curl -sv -c /tmp/cookies3.txt \"http://localhost:3000/api/v1/auth/login\" -H 'Content-Type: application/json' -d '{\"\"\"\"email\"\"\"\":\"\"\"\"admin@example.com\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"Admin123!@#\"\"\"\"}')",
+      "Bash(curl -s -b /tmp/cookies3.txt \"http://localhost:8000/api/v1/personnel/search?q=\")",
+      "Bash(ls -la \"c:/Users/Aiden/workspace/isms-management/docs/ISMS-P 인증기준 안내서\\(2023.11.23\\).pdf\")"
     ]
   }
 }

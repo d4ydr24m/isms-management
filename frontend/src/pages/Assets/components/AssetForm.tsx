@@ -92,11 +92,17 @@ const AssetForm = ({
     try {
       // CIA 필드를 분리 (자산 API에 보내지 않음)
       const { confidentiality, integrity, availability, evaluationReason, ...assetValues } = values
-      const submitData: AssetCreate | AssetUpdate = {
+      const submitData: Record<string, any> = {
         ...assetValues,
-        acquisitionDate: assetValues.acquisitionDate?.format('YYYY-MM-DD'),
-        warrantyEndDate: assetValues.warrantyEndDate?.format('YYYY-MM-DD'),
+        acquisitionDate: assetValues.acquisitionDate?.format?.('YYYY-MM-DD') || assetValues.acquisitionDate || undefined,
+        warrantyEndDate: assetValues.warrantyEndDate?.format?.('YYYY-MM-DD') || assetValues.warrantyEndDate || undefined,
       }
+      // null/undefined 값 제거
+      Object.keys(submitData).forEach(key => {
+        if (submitData[key] === undefined || submitData[key] === null || submitData[key] === '') {
+          delete submitData[key]
+        }
+      })
       // onSubmit에 CIA 데이터를 같이 전달
       const ciaData = (confidentiality && integrity && availability)
         ? { confidentiality, integrity, availability, evaluationReason }
@@ -128,7 +134,7 @@ const AssetForm = ({
       layout="vertical"
       onFinish={handleFinish}
       initialValues={{
-        status: 'introduced',
+        status: '도입',
       }}
     >
       {/* 기본 정보 */}
@@ -212,11 +218,11 @@ const AssetForm = ({
           </Form.Item>
         </Col>
         <Col xs={24} sm={12}>
-          <Form.Item name="ownerId" label="자산 소유자">
+          <Form.Item name="personnelOwnerId" label="자산 소유자">
             <Select placeholder="담당자 선택" allowClear showSearch optionFilterProp="children">
               {users.map(user => (
                 <Option key={user.id} value={user.id}>
-                  {user.name} ({user.email})
+                  {user.name}{user.email ? ` (${user.email})` : ''}
                 </Option>
               ))}
             </Select>
@@ -353,10 +359,10 @@ const AssetForm = ({
             <Col xs={24} sm={12}>
               <Form.Item name="status" label="상태">
                 <Select placeholder="상태 선택">
-                  <Option value="introduced">도입</Option>
-                  <Option value="operating">운영</Option>
-                  <Option value="changed">변경</Option>
-                  <Option value="disposed">폐기</Option>
+                  <Option value="도입">도입</Option>
+                  <Option value="운영">운영</Option>
+                  <Option value="변경">변경</Option>
+                  <Option value="폐기">폐기</Option>
                 </Select>
               </Form.Item>
             </Col>

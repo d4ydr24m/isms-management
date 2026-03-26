@@ -219,6 +219,32 @@ def seed():
         added += 1
 
     db.commit()
+
+    # === 주요 확인사항, 관련 법규, 증거자료 예시 로드 ===
+    details_file = os.path.join(os.path.dirname(__file__), "seed_control_details.json")
+    if os.path.exists(details_file):
+        import json
+        with open(details_file, encoding="utf-8") as f:
+            details = json.load(f)
+        details_updated = 0
+        for code, data in details.items():
+            item = db.query(ControlItem).filter(ControlItem.code == code).first()
+            if item:
+                changed = False
+                if data.get("key_checks") and not item.key_checks:
+                    item.key_checks = data["key_checks"]
+                    changed = True
+                if data.get("related_laws") and not item.related_laws:
+                    item.related_laws = data["related_laws"]
+                    changed = True
+                if data.get("evidence_examples") and not item.evidence_examples:
+                    item.evidence_examples = data["evidence_examples"]
+                    changed = True
+                if changed:
+                    details_updated += 1
+        db.commit()
+        print(f"Control details updated: {details_updated}")
+
     total = db.query(ControlItem).count()
     domains_count = db.query(ControlDomain).count()
     cats_count = db.query(ControlCategory).count()

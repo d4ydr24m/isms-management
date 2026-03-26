@@ -58,8 +58,8 @@ yarn.lock
 *.sqlite
 *.sqlite3
 
-# MinIO/Storage
-data/minio/
+# Persistent data (PostgreSQL, MinIO, Redis)
+data/
 
 # Logs
 logs/

@@ -106,23 +106,32 @@ def create_threat_category(
 @router.get("", response_model=ThreatList)
 def get_threats(
     category_id: Optional[int] = Query(None, description="위협 분류 ID"),
+    threat_level: Optional[int] = Query(None, description="위협 등급 (1-5)"),
     is_active: Optional[bool] = Query(True, description="활성 상태 필터"),
+    is_custom: Optional[bool] = Query(None, description="커스텀 여부"),
     search: Optional[str] = Query(None, description="검색어"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(100, ge=1, le=500),
     service: RiskService = Depends(get_risk_service),
     current_user: User = Depends(require_permission("risk:read")),
 ) -> ThreatList:
     """
     위협 목록 조회
-
-    - **category_id**: 위협 분류 ID (선택)
-    - **is_active**: 활성 상태 필터 (기본: True)
-    - **search**: 검색어 (이름, 코드, 설명)
     """
     items, total = service.get_threats(
         category_id=category_id,
         is_active=is_active,
         search=search,
     )
+    # 추가 필터 적용
+    if threat_level is not None:
+        items = [i for i in items if i.threat_level == threat_level]
+    if is_custom is not None:
+        items = [i for i in items if i.is_custom == is_custom]
+    total = len(items)
+    # 페이지네이션
+    start = (page - 1) * limit
+    items = items[start:start + limit]
     return ThreatList(
         items=[threat_to_response(item) for item in items],
         total=total,

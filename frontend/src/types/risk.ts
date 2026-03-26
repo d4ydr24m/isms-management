@@ -576,15 +576,19 @@ export interface ResidualRiskTrendResponse {
 // =============================================================================
 
 export const THREAT_LEVELS = [
-  { value: 1, label: '하', color: '#52c41a' },
-  { value: 2, label: '중', color: '#faad14' },
-  { value: 3, label: '상', color: '#ff4d4f' },
+  { value: 1, label: '매우 낮음', color: '#b7eb8f' },
+  { value: 2, label: '낮음', color: '#52c41a' },
+  { value: 3, label: '보통', color: '#faad14' },
+  { value: 4, label: '높음', color: '#ff7a45' },
+  { value: 5, label: '매우 높음', color: '#ff4d4f' },
 ] as const
 
 export const VULNERABILITY_LEVELS = [
-  { value: 1, label: '하', color: '#52c41a' },
-  { value: 2, label: '중', color: '#faad14' },
-  { value: 3, label: '상', color: '#ff4d4f' },
+  { value: 1, label: '매우 낮음', color: '#b7eb8f' },
+  { value: 2, label: '낮음', color: '#52c41a' },
+  { value: 3, label: '보통', color: '#faad14' },
+  { value: 4, label: '높음', color: '#ff7a45' },
+  { value: 5, label: '매우 높음', color: '#ff4d4f' },
 ] as const
 
 export const RISK_LEVELS = [

@@ -49,7 +49,7 @@ const { Text } = Typography
 
 interface ThreatFilterParams {
   search?: string
-  threatLevel?: 1 | 2 | 3
+  threatLevel?: 1 | 2 | 3 | 4 | 5
   isCustom?: boolean
 }
 
@@ -225,7 +225,7 @@ const ThreatDBPage = () => {
   }
 
   // 위협 레벨 표시 함수
-  const getThreatLevelTag = (level: 1 | 2 | 3) => {
+  const getThreatLevelTag = (level: number) => {
     const config = THREAT_LEVEL_OPTIONS.find((l) => l.value === level)
     if (!config) return null
 
@@ -464,7 +464,7 @@ const ThreatDBPage = () => {
         onCancel={handleModalCancel}
         okText="확인"
         cancelText="취소"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -492,7 +492,7 @@ const ThreatDBPage = () => {
             label={
               <Space>
                 <span>위협 레벨</span>
-                <Tooltip title="1(하): 발생 가능성 낮음, 2(중): 보통, 3(상): 높음">
+                <Tooltip title="1: 매우 낮음, 2: 낮음, 3: 보통, 4: 높음, 5: 매우 높음">
                   <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
                 </Tooltip>
               </Space>

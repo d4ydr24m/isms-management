@@ -87,7 +87,7 @@ INSERT INTO vulnerability_categories (code, name, description, sort_order, is_ac
 ('VC-CLD', '클라우드 취약점', '클라우드 환경 특유의 보안 취약점', 6, true, NOW(), NOW());
 
 -- 관리적 취약점
-INSERT INTO vulnerabilities (code, name, description, category_id, severity, is_custom, is_active, created_at, updated_at) VALUES
+INSERT INTO vulnerabilities (code, name, description, category_id, vulnerability_level, is_custom, is_active, created_at, updated_at) VALUES
 ('V-MGT-001', '보안 정책 부재/미흡', '정보보호 정책이 수립되지 않았거나 최신 상태로 유지되지 않음', (SELECT id FROM vulnerability_categories WHERE code='VC-MGT'), 4, false, true, NOW(), NOW()),
 ('V-MGT-002', '보안 조직 미구성', '정보보호 전담 조직이 구성되지 않거나 역할이 불명확함', (SELECT id FROM vulnerability_categories WHERE code='VC-MGT'), 3, false, true, NOW(), NOW()),
 ('V-MGT-003', '보안 교육 미실시', '임직원 대상 정보보호 인식제고 교육이 실시되지 않음', (SELECT id FROM vulnerability_categories WHERE code='VC-MGT'), 3, false, true, NOW(), NOW()),
@@ -98,7 +98,7 @@ INSERT INTO vulnerabilities (code, name, description, category_id, severity, is_
 ('V-MGT-008', '내부감사 미실시', '정보보호 관리체계에 대한 내부 점검이 실시되지 않음', (SELECT id FROM vulnerability_categories WHERE code='VC-MGT'), 3, false, true, NOW(), NOW());
 
 -- 기술적 취약점
-INSERT INTO vulnerabilities (code, name, description, category_id, severity, is_custom, is_active, created_at, updated_at) VALUES
+INSERT INTO vulnerabilities (code, name, description, category_id, vulnerability_level, is_custom, is_active, created_at, updated_at) VALUES
 ('V-TEC-001', '계정/비밀번호 취약점', '기본 계정 사용, 약한 비밀번호 정책, 공유 계정 사용', (SELECT id FROM vulnerability_categories WHERE code='VC-TEC'), 5, false, true, NOW(), NOW()),
 ('V-TEC-002', '불필요한 서비스 활성화', '사용하지 않는 포트 및 서비스가 활성화되어 있음', (SELECT id FROM vulnerability_categories WHERE code='VC-TEC'), 3, false, true, NOW(), NOW()),
 ('V-TEC-003', '암호화 미적용', '중요정보 전송 및 저장 시 암호화가 적용되지 않음', (SELECT id FROM vulnerability_categories WHERE code='VC-TEC'), 5, false, true, NOW(), NOW()),
@@ -113,7 +113,7 @@ INSERT INTO vulnerabilities (code, name, description, category_id, severity, is_
 ('V-TEC-012', '로그 수집/보관 미흡', '보안 로그가 충분히 수집되지 않거나 보관 기간이 부족함', (SELECT id FROM vulnerability_categories WHERE code='VC-TEC'), 3, false, true, NOW(), NOW());
 
 -- 물리적 취약점
-INSERT INTO vulnerabilities (code, name, description, category_id, severity, is_custom, is_active, created_at, updated_at) VALUES
+INSERT INTO vulnerabilities (code, name, description, category_id, vulnerability_level, is_custom, is_active, created_at, updated_at) VALUES
 ('V-PHY-001', '출입 통제 미흡', '보호구역에 대한 출입 통제가 제대로 이루어지지 않음', (SELECT id FROM vulnerability_categories WHERE code='VC-PHY'), 4, false, true, NOW(), NOW()),
 ('V-PHY-002', 'CCTV 사각지대', '보안 카메라의 사각지대가 존재하거나 녹화가 정상 작동하지 않음', (SELECT id FROM vulnerability_categories WHERE code='VC-PHY'), 3, false, true, NOW(), NOW()),
 ('V-PHY-003', '보호설비 부족', 'UPS, 항온항습기, 소화설비 등 보호설비가 부족함', (SELECT id FROM vulnerability_categories WHERE code='VC-PHY'), 3, false, true, NOW(), NOW()),
@@ -121,7 +121,7 @@ INSERT INTO vulnerabilities (code, name, description, category_id, severity, is_
 ('V-PHY-005', '클린데스크 미준수', '업무 종료 후 중요 문서가 방치되어 있음', (SELECT id FROM vulnerability_categories WHERE code='VC-PHY'), 2, false, true, NOW(), NOW());
 
 -- 운영 취약점
-INSERT INTO vulnerabilities (code, name, description, category_id, severity, is_custom, is_active, created_at, updated_at) VALUES
+INSERT INTO vulnerabilities (code, name, description, category_id, vulnerability_level, is_custom, is_active, created_at, updated_at) VALUES
 ('V-OPS-001', '백업 체계 미흡', '정기적인 백업이 수행되지 않거나 복구 테스트가 미실시', (SELECT id FROM vulnerability_categories WHERE code='VC-OPS'), 4, false, true, NOW(), NOW()),
 ('V-OPS-002', '변경관리 절차 부재', '시스템 변경 시 검토, 승인, 테스트 절차가 부재함', (SELECT id FROM vulnerability_categories WHERE code='VC-OPS'), 3, false, true, NOW(), NOW()),
 ('V-OPS-003', '시험/운영환경 미분리', '개발/테스트 환경과 운영 환경이 분리되지 않음', (SELECT id FROM vulnerability_categories WHERE code='VC-OPS'), 4, false, true, NOW(), NOW()),
@@ -131,7 +131,7 @@ INSERT INTO vulnerabilities (code, name, description, category_id, severity, is_
 ('V-OPS-007', '시간 동기화 미설정', '시스템 간 시간 동기화(NTP)가 설정되지 않음', (SELECT id FROM vulnerability_categories WHERE code='VC-OPS'), 2, false, true, NOW(), NOW());
 
 -- 웹 애플리케이션 취약점 (OWASP Top 10 2025)
-INSERT INTO vulnerabilities (code, name, description, category_id, severity, is_custom, is_active, created_at, updated_at) VALUES
+INSERT INTO vulnerabilities (code, name, description, category_id, vulnerability_level, is_custom, is_active, created_at, updated_at) VALUES
 ('V-WEB-001', '접근 제어 위반 (Broken Access Control)', '사용자가 권한 밖의 기능이나 데이터에 접근 가능 (OWASP A01:2025)', (SELECT id FROM vulnerability_categories WHERE code='VC-WEB'), 5, false, true, NOW(), NOW()),
 ('V-WEB-002', '보안 설정 오류 (Security Misconfiguration)', '기본 설정 사용, 불필요한 기능 활성화, 에러 메시지 노출 (OWASP A02:2025)', (SELECT id FROM vulnerability_categories WHERE code='VC-WEB'), 4, false, true, NOW(), NOW()),
 ('V-WEB-003', '소프트웨어 공급망 취약점', '서드파티 라이브러리, 오픈소스 구성요소의 취약점 (OWASP A03:2025)', (SELECT id FROM vulnerability_categories WHERE code='VC-WEB'), 5, false, true, NOW(), NOW()),
@@ -144,7 +144,7 @@ INSERT INTO vulnerabilities (code, name, description, category_id, severity, is_
 ('V-WEB-010', '예외 처리 미흡', '비정상 입력, 오류 복구 실패, 일관되지 않은 예외 처리 (OWASP A10:2025)', (SELECT id FROM vulnerability_categories WHERE code='VC-WEB'), 3, false, true, NOW(), NOW());
 
 -- 클라우드 취약점
-INSERT INTO vulnerabilities (code, name, description, category_id, severity, is_custom, is_active, created_at, updated_at) VALUES
+INSERT INTO vulnerabilities (code, name, description, category_id, vulnerability_level, is_custom, is_active, created_at, updated_at) VALUES
 ('V-CLD-001', 'IAM 설정 오류', '클라우드 IAM 정책의 과도한 권한 부여 또는 설정 오류', (SELECT id FROM vulnerability_categories WHERE code='VC-CLD'), 5, false, true, NOW(), NOW()),
 ('V-CLD-002', '스토리지 공개 설정', 'S3, Blob Storage 등 클라우드 스토리지의 공개 접근 설정', (SELECT id FROM vulnerability_categories WHERE code='VC-CLD'), 5, false, true, NOW(), NOW()),
 ('V-CLD-003', '보안 그룹 설정 미흡', '인바운드/아웃바운드 규칙의 과도한 허용 (0.0.0.0/0 등)', (SELECT id FROM vulnerability_categories WHERE code='VC-CLD'), 4, false, true, NOW(), NOW()),

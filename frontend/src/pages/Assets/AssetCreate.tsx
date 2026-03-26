@@ -44,10 +44,10 @@ const AssetCreatePage = () => {
       setDepartments(deptRes.data.items || [])
     } catch { /* ignore */ }
     try {
-      const usersRes = await apiClient.get<{ items: Array<{ id: number; name: string; email: string }>; total: number }>('/users', { params: { size: 100 } })
-      setUsers(usersRes.data.items || [])
+      const usersRes = await apiClient.get<Array<{ id: number; name: string; email: string }>>('/personnel/search', { params: { q: '' } })
+      setUsers(Array.isArray(usersRes.data) ? usersRes.data : [])
     } catch (e) {
-      console.warn('사용자 목록 로드 실패:', e)
+      console.warn('담당자 목록 로드 실패:', e)
     }
     // 수정 모드: 기존 자산 및 CIA 평가 로드
     if (id) {

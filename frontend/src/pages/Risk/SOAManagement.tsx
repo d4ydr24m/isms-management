@@ -530,7 +530,7 @@ const SOAManagement = () => {
         okText="저장"
         cancelText="취소"
         width={640}
-        destroyOnClose
+        destroyOnHidden
       >
         {editingRecord && (
           <>
@@ -654,7 +654,7 @@ const SOAManagement = () => {
         okText="내보내기"
         cancelText="취소"
         width={480}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={exportForm} layout="vertical" initialValues={{ format: 'excel', templateType: 'isms_p' }}>
           <Form.Item

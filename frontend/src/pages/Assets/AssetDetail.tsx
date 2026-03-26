@@ -141,12 +141,15 @@ const AssetDetailPage = () => {
     await fetchHistory()
   }
 
-  // 사용자 목록 로드
+  // 담당자 목록 로드 (담당자 관리에서)
   const loadUsers = useCallback(async () => {
     try {
-      const res = await apiClient.get<{ items: Array<{ id: number; name: string; email: string }> }>('/users', { params: { size: 100 } })
-      setAvailableUsers(res.data.items || [])
-    } catch { /* ignore */ }
+      const res = await apiClient.get('/personnel/search', { params: { q: '' } })
+      const items = Array.isArray(res.data) ? res.data : (res.data as any)?.items || []
+      setAvailableUsers(items)
+    } catch (err) {
+      console.error('담당자 목록 로드 실패:', err)
+    }
   }, [])
 
   // 담당자 추가 핸들러
@@ -403,16 +406,16 @@ const AssetDetailPage = () => {
             <Form form={assignForm} layout="vertical" onFinish={handleAddAssignment}>
               <Form.Item
                 name="userId"
-                label="사용자"
-                rules={[{ required: true, message: '사용자를 선택해주세요' }]}
+                label="담당자"
+                rules={[{ required: true, message: '담당자를 선택해주세요' }]}
               >
                 <Select
-                  placeholder="사용자 선택"
+                  placeholder="담당자 선택"
                   showSearch
                   optionFilterProp="label"
                   options={availableUsers.map((u) => ({
                     value: u.id,
-                    label: `${u.name} (${u.email})`,
+                    label: `${u.name}${u.email ? ` (${u.email})` : ''}`,
                   }))}
                 />
               </Form.Item>

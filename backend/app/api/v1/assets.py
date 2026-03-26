@@ -726,6 +726,9 @@ def get_assignments(
         if a.user:
             response.user_name = a.user.name
             response.user_email = a.user.email
+        elif a.personnel:
+            response.user_name = a.personnel.name
+            response.user_email = a.personnel.email or ""
         if a.assigner:
             response.assigner_name = a.assigner.name
         responses.append(response)
@@ -757,6 +760,9 @@ def create_assignment(
         if assignment.user:
             response.user_name = assignment.user.name
             response.user_email = assignment.user.email
+        elif assignment.personnel:
+            response.user_name = assignment.personnel.name
+            response.user_email = assignment.personnel.email or ""
         response.assigner_name = current_user.name
         return response
     except ValueError as e:

@@ -102,7 +102,6 @@ function PersonnelPage() {
   const [updateExisting, setUpdateExisting] = useState(false)
 
   const fetchPersonnel = async (p: number, ps: number, s: string, df?: number, sf?: boolean) => {
-    console.log('[fetchPersonnel] called with page:', p, 'pageSize:', ps, 'caller:', new Error().stack?.split('\n')[2]?.trim())
     setLoading(true)
     try {
       const params: Record<string, any> = { page: p, pageSize: ps }
@@ -143,9 +142,7 @@ function PersonnelPage() {
 
   // Initial load only
   useEffect(() => {
-    console.log('[useEffect mount] PersonnelPage mounted')
     fetchPersonnel(1, 10, '', undefined, undefined)
-    return () => console.log('[useEffect cleanup] PersonnelPage unmounting')
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = (value: string) => {
@@ -397,7 +394,7 @@ function PersonnelPage() {
             value={departmentFilter}
             aria-label="부서"
           >
-            {departments.map((dept) => (
+            {departments.filter(dept => dept.id != null).map((dept) => (
               <Select.Option key={dept.id} value={dept.id}>
                 {dept.name}
               </Select.Option>
@@ -495,7 +492,7 @@ function PersonnelPage() {
               showSearch
               optionFilterProp="children"
             >
-              {departments.map((dept) => (
+              {departments.filter(dept => dept.id != null).map((dept) => (
                 <Select.Option key={dept.id} value={dept.id}>
                   {dept.name}
                 </Select.Option>
@@ -509,7 +506,7 @@ function PersonnelPage() {
               showSearch
               optionFilterProp="children"
             >
-              {users.map((user) => (
+              {users.filter(user => user.id != null).map((user) => (
                 <Select.Option key={user.id} value={user.id}>
                   {user.name} ({user.email})
                 </Select.Option>

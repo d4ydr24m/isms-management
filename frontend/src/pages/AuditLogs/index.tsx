@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Card, Table, Tag, Space, Input, Select, DatePicker, Typography, Tooltip } from 'antd'
+import { Button, Card, Modal, Table, Tag, Space, Input, Select, DatePicker, Typography, Tooltip } from 'antd'
 import { FileSearchOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { apiClient } from '@/services/api'
@@ -16,6 +16,8 @@ interface AuditLog {
   action: string
   resourceType: string
   resourceId: number | null
+  oldValue: string | null
+  newValue: string | null
   ipAddress: string
   requestMethod: string
   requestPath: string
@@ -193,6 +195,35 @@ function AuditLogsPage() {
       key: 'ipAddress',
       width: 130,
       render: (ip: string) => <Text code style={{ fontSize: 12 }}>{ip}</Text>,
+    },
+    {
+      title: '상세',
+      key: 'detail',
+      width: 60,
+      align: 'center',
+      render: (_, record) => record.newValue ? (
+        <Tooltip title="상세 보기">
+          <Button type="link" size="small" onClick={() => {
+            try {
+              const data = JSON.parse(record.newValue)
+              Modal.info({
+                title: `${actionLabels[record.action] || record.action} 상세`,
+                width: 600,
+                content: (
+                  <pre style={{ maxHeight: 400, overflow: 'auto', fontSize: 12, background: '#f5f5f5', padding: 12, borderRadius: 4 }}>
+                    {JSON.stringify(data, null, 2)}
+                  </pre>
+                ),
+              })
+            } catch {
+              Modal.info({
+                title: '상세',
+                content: <Text>{record.newValue}</Text>,
+              })
+            }
+          }}>보기</Button>
+        </Tooltip>
+      ) : '-',
     },
   ]
 

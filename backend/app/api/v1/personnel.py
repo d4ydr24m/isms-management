@@ -144,6 +144,7 @@ def _validate_references(
 @router.get("/search", response_model=List[PersonnelSearchItem])
 def search_personnel(
     q: str = Query("", description="이름 또는 이메일 검색어"),
+    limit: int = Query(200, ge=1, le=500, description="최대 결과 수"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -161,7 +162,7 @@ def search_personnel(
             )
         )
 
-    results = query.order_by(Personnel.name).limit(20).all()
+    results = query.order_by(Personnel.name).limit(limit).all()
 
     return [
         PersonnelSearchItem(
