@@ -20,8 +20,13 @@ interface AssetTableProps {
   onDelete: (id: number) => void
 }
 
-/** 자산 상태 태그 색상 매핑 */
-const statusColorMap: Record<AssetStatus, string> = {
+/** 자산 상태 태그 색상 매핑 (DB에 한국어로 저장됨) */
+const statusColorMap: Record<string, string> = {
+  '도입': 'blue',
+  '운영': 'green',
+  '변경': 'orange',
+  '폐기': 'default',
+  // 영문 호환
   introduced: 'blue',
   operating: 'green',
   changed: 'orange',
@@ -29,7 +34,11 @@ const statusColorMap: Record<AssetStatus, string> = {
 }
 
 /** 자산 상태 레이블 매핑 */
-const statusLabelMap: Record<AssetStatus, string> = {
+const statusLabelMap: Record<string, string> = {
+  '도입': '도입',
+  '운영': '운영',
+  '변경': '변경',
+  '폐기': '폐기',
   introduced: '도입',
   operating: '운영',
   changed: '변경',
@@ -96,9 +105,9 @@ const AssetTable = ({
       dataIndex: 'status',
       key: 'status',
       width: 80,
-      render: (status: AssetStatus) => (
-        <Tag color={statusColorMap[status]}>{statusLabelMap[status]}</Tag>
-      ),
+      render: (status: string) => status ? (
+        <Tag color={statusColorMap[status] || 'default'}>{statusLabelMap[status] || status}</Tag>
+      ) : '—',
     },
     {
       title: '중요도',

@@ -56,7 +56,7 @@ const NonConformityStatus: React.FC<NonConformityStatusProps> = ({ data }) => {
   return (
     <Card
       title="부적합 현황"
-      bordered={false}
+      variant="borderless"
       extra={<Link to="/nonconformities">상세보기</Link>}
     >
       <Row gutter={[16, 16]}>

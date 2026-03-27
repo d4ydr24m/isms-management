@@ -84,8 +84,9 @@ function UserDetail() {
       message.success('사용자 정보가 수정되었습니다')
       setEditModalVisible(false)
       loadUserDetail()
-    } catch (error) {
-      message.error('사용자 정보 수정에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '사용자 정보 수정에 실패했습니다')
     }
   }
 
@@ -99,8 +100,9 @@ function UserDetail() {
       setAddRoleModalVisible(false)
       roleForm.resetFields()
       loadUserDetail()
-    } catch (error) {
-      message.error('역할 추가에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '역할 추가에 실패했습니다')
     }
   }
 
@@ -114,8 +116,9 @@ function UserDetail() {
           await userService.assignRoles(parseInt(id), newRoleIds)
           message.success('역할이 제거되었습니다')
           loadUserDetail()
-        } catch (error) {
-          message.error('역할 제거에 실패했습니다')
+        } catch (err: any) {
+          const detail = err?.response?.data?.detail || err?.message
+          message.error(detail || '역할 제거에 실패했습니다')
         }
       },
     })
@@ -133,8 +136,9 @@ function UserDetail() {
           })
           message.success(`사용자가 ${action}되었습니다`)
           loadUserDetail()
-        } catch (error) {
-          message.error(`사용자 ${action}에 실패했습니다`)
+        } catch (err: any) {
+          const detail = err?.response?.data?.detail || err?.message
+          message.error(detail || `사용자 ${action}에 실패했습니다`)
         }
       },
     })
@@ -257,8 +261,9 @@ function UserDetail() {
                     await userService.updateUser(parseInt(id!), { ipWhitelistEnabled: checked })
                     message.success(checked ? 'IP 제한이 활성화되었습니다' : 'IP 제한이 비활성화되었습니다')
                     loadUserDetail()
-                  } catch {
-                    message.error('설정 변경에 실패했습니다')
+                  } catch (err: any) {
+                    const detail = err?.response?.data?.detail || err?.message
+                    message.error(detail || '설정 변경에 실패했습니다')
                   }
                 }}
               />
@@ -288,8 +293,9 @@ function UserDetail() {
                 await userService.updateUser(parseInt(id!), { allowedIps: user.allowedIps || '' })
                 message.success('IP 목록이 저장되었습니다')
                 loadUserDetail()
-              } catch {
-                message.error('IP 목록 저장에 실패했습니다')
+              } catch (err: any) {
+                const detail = err?.response?.data?.detail || err?.message
+                message.error(detail || 'IP 목록 저장에 실패했습니다')
               }
             }}
           >

@@ -75,8 +75,9 @@ function UserList() {
           await userService.deleteUser(userId)
           message.success('사용자가 비활성화되었습니다')
           loadUsers()
-        } catch (error) {
-          message.error('사용자 비활성화에 실패했습니다')
+        } catch (err: any) {
+          const detail = err?.response?.data?.detail || err?.message
+          message.error(detail || '사용자 비활성화에 실패했습니다')
         }
       },
     })
@@ -96,8 +97,9 @@ function UserList() {
       link.remove()
       window.URL.revokeObjectURL(url)
       message.success('다운로드가 완료되었습니다')
-    } catch (error) {
-      message.error('다운로드에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '다운로드에 실패했습니다')
     } finally {
       setTemplateDownloading(false)
     }
@@ -136,8 +138,9 @@ function UserList() {
         message.warning(`성공: ${data.success}건, 실패: ${data.failed}건`)
       }
       loadUsers()
-    } catch (error) {
-      message.error('일괄 등록에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '일괄 등록에 실패했습니다')
     } finally {
       setBulkUploading(false)
     }

@@ -113,8 +113,9 @@ const AssetListPage = () => {
           await assetService.deleteAsset(id)
           message.success('자산이 삭제되었습니다')
           fetchAssets()
-        } catch {
-          message.error('자산 삭제에 실패했습니다')
+        } catch (err: any) {
+          const detail = err?.response?.data?.detail || err?.message
+          message.error(detail || '자산 삭제에 실패했습니다')
         }
       },
     })
@@ -125,8 +126,9 @@ const AssetListPage = () => {
     try {
       await assetService.exportAssets(filters)
       message.success('자산 목록을 내보냈습니다')
-    } catch {
-      message.error('자산 내보내기에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '자산 내보내기에 실패했습니다')
     }
   }
 

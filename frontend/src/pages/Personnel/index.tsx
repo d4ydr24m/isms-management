@@ -104,10 +104,10 @@ function PersonnelPage() {
   const fetchPersonnel = async (p: number, ps: number, s: string, df?: number, sf?: boolean) => {
     setLoading(true)
     try {
-      const params: Record<string, any> = { page: p, pageSize: ps }
-      if (s) params.search = s
-      if (df !== undefined) params.departmentId = df
-      if (sf !== undefined) params.isActive = sf
+      const params: Record<string, any> = { page: p, page_size: ps }
+      if (s) params.name = s
+      if (df !== undefined) params.department_id = df
+      if (sf !== undefined) params.is_active = sf
 
       const response = await apiClient.get<{ items: any[]; total: number }>('/personnel', { params })
       setPersonnel(response.data.items || [])
@@ -183,8 +183,9 @@ function PersonnelPage() {
           await apiClient.delete(`/personnel/${id}`)
           message.success('담당자가 삭제되었습니다')
           fetchPersonnel(page, pageSize, search, departmentFilter, statusFilter)
-        } catch {
-          message.error('담당자 삭제에 실패했습니다')
+        } catch (err: any) {
+          const detail = err?.response?.data?.detail || err?.message
+          message.error(detail || '담당자 삭제에 실패했습니다')
         }
       },
     })
@@ -207,9 +208,10 @@ function PersonnelPage() {
       form.resetFields()
       setEditingPersonnel(null)
       fetchPersonnel(page, pageSize, search, departmentFilter, statusFilter)
-    } catch (error: any) {
-      if (error?.errorFields) return
-      message.error(editingPersonnel ? '담당자 수정에 실패했습니다' : '담당자 추가에 실패했습니다')
+    } catch (err: any) {
+      if (err?.errorFields) return
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || (editingPersonnel ? '담당자 수정에 실패했습니다' : '담당자 추가에 실패했습니다'))
     } finally {
       setSubmitting(false)
     }
@@ -236,8 +238,9 @@ function PersonnelPage() {
       link.remove()
       window.URL.revokeObjectURL(url)
       message.success('다운로드가 완료되었습니다')
-    } catch {
-      message.error('다운로드에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '다운로드에 실패했습니다')
     } finally {
       setTemplateDownloading(false)
     }
@@ -276,8 +279,9 @@ function PersonnelPage() {
         message.warning(`성공: ${data.success}건, 실패: ${data.failed}건`)
       }
       fetchPersonnel(page, pageSize, search, departmentFilter, statusFilter)
-    } catch {
-      message.error('일괄 등록에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '일괄 등록에 실패했습니다')
     } finally {
       setBulkUploading(false)
     }

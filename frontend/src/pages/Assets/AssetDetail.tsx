@@ -160,8 +160,9 @@ const AssetDetailPage = () => {
       setAssignModalVisible(false)
       assignForm.resetFields()
       await fetchAssignments()
-    } catch {
-      message.error('담당자 추가에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '담당자 추가에 실패했습니다')
     }
   }
 
@@ -171,8 +172,9 @@ const AssetDetailPage = () => {
       await assetService.updateAssetAssignment(assetId, assignmentId, { isActive: false })
       message.success('담당자가 제거되었습니다')
       await fetchAssignments()
-    } catch {
-      message.error('담당자 제거에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '담당자 제거에 실패했습니다')
     }
   }
 
@@ -190,8 +192,9 @@ const AssetDetailPage = () => {
           await assetService.deleteAsset(assetId)
           message.success('자산이 삭제되었습니다')
           navigate('/assets')
-        } catch {
-          message.error('자산 삭제에 실패했습니다')
+        } catch (err: any) {
+          const detail = err?.response?.data?.detail || err?.message
+          message.error(detail || '자산 삭제에 실패했습니다')
         }
       },
     })
@@ -249,64 +252,42 @@ const AssetDetailPage = () => {
                 <Descriptions.Item label="소유자">
                   {asset.ownerName || '-'}
                 </Descriptions.Item>
-                {asset.ipAddress && (
-                  <Descriptions.Item label="IP 주소">
-                    <code>{asset.ipAddress}</code>
-                  </Descriptions.Item>
-                )}
-                {asset.hostname && (
-                  <Descriptions.Item label="호스트명">
-                    {asset.hostname}
-                  </Descriptions.Item>
-                )}
-                {asset.macAddress && (
-                  <Descriptions.Item label="MAC 주소">
-                    <code>{asset.macAddress}</code>
-                  </Descriptions.Item>
-                )}
-                {asset.osVersion && (
-                  <Descriptions.Item label="OS 버전">
-                    {asset.osVersion}
-                  </Descriptions.Item>
-                )}
-                {asset.manufacturer && (
-                  <Descriptions.Item label="제조사">
-                    {asset.manufacturer}
-                  </Descriptions.Item>
-                )}
-                {asset.model && (
-                  <Descriptions.Item label="모델명">
-                    {asset.model}
-                  </Descriptions.Item>
-                )}
-                {asset.serialNumber && (
-                  <Descriptions.Item label="시리얼 번호">
-                    <code>{asset.serialNumber}</code>
-                  </Descriptions.Item>
-                )}
-                {asset.acquisitionDate && (
-                  <Descriptions.Item label="취득일">
-                    {asset.acquisitionDate}
-                  </Descriptions.Item>
-                )}
-                {asset.acquisitionCost && (
-                  <Descriptions.Item label="취득 비용">
-                    {asset.acquisitionCost.toLocaleString()}원
-                  </Descriptions.Item>
-                )}
-                {asset.warrantyEndDate && (
-                  <Descriptions.Item label="보증 만료일">
-                    {asset.warrantyEndDate}
-                  </Descriptions.Item>
-                )}
-                <Descriptions.Item label="등록일">
-                  {asset.createdAt?.substring(0, 10)}
+                <Descriptions.Item label="IP 주소">
+                  {asset.ipAddress ? <code>{asset.ipAddress}</code> : '-'}
                 </Descriptions.Item>
-                {asset.updatedAt && (
-                  <Descriptions.Item label="수정일">
-                    {asset.updatedAt.substring(0, 10)}
-                  </Descriptions.Item>
-                )}
+                <Descriptions.Item label="호스트명">
+                  {asset.hostname || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="MAC 주소">
+                  {asset.macAddress ? <code>{asset.macAddress}</code> : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="OS 버전">
+                  {asset.osVersion || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="제조사">
+                  {asset.manufacturer || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="모델명">
+                  {asset.model || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="시리얼 번호">
+                  {asset.serialNumber ? <code>{asset.serialNumber}</code> : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="취득일">
+                  {asset.acquisitionDate || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="취득 비용">
+                  {asset.acquisitionCost ? `${asset.acquisitionCost.toLocaleString()}원` : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="보증 만료일">
+                  {asset.warrantyEndDate || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="등록일">
+                  {asset.createdAt?.substring(0, 10) || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="수정일">
+                  {asset.updatedAt?.substring(0, 10) || '-'}
+                </Descriptions.Item>
               </Descriptions>
 
               {asset.description && (

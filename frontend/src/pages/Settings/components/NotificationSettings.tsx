@@ -127,7 +127,7 @@ const NotificationSettings: React.FC = () => {
   }
 
   return (
-    <Card title="알림 설정" bordered={false}>
+    <Card title="알림 설정" variant="borderless">
       <Table
         columns={columns}
         dataSource={settings}

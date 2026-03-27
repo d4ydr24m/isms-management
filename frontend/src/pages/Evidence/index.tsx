@@ -81,8 +81,9 @@ const EvidenceListPage = () => {
           await evidenceService.deleteEvidence(id)
           message.success('증적이 삭제되었습니다')
           fetchEvidences()
-        } catch {
-          message.error('증적 삭제에 실패했습니다')
+        } catch (err: any) {
+          const detail = err?.response?.data?.detail || err?.message
+          message.error(detail || '증적 삭제에 실패했습니다')
         }
       },
     })
@@ -100,8 +101,9 @@ const EvidenceListPage = () => {
           await evidenceService.updateEvidence(id, { status: 'archived' })
           message.success('증적이 보관 처리되었습니다')
           fetchEvidences()
-        } catch {
-          message.error('증적 보관에 실패했습니다')
+        } catch (err: any) {
+          const detail = err?.response?.data?.detail || err?.message
+          message.error(detail || '증적 보관에 실패했습니다')
         }
       },
     })
@@ -111,8 +113,9 @@ const EvidenceListPage = () => {
     try {
       await evidenceService.downloadEvidence(id, fileName)
       message.success('다운로드가 시작되었습니다')
-    } catch {
-      message.error('파일 다운로드에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '파일 다운로드에 실패했습니다')
     }
   }
 

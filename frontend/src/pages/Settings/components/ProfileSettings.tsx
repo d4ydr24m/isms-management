@@ -57,7 +57,7 @@ const ProfileSettings: React.FC = () => {
   }
 
   return (
-    <Card title="프로필 정보" bordered={false}>
+    <Card title="프로필 정보" variant="borderless">
       <Form
         form={form}
         layout="vertical"

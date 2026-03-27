@@ -30,7 +30,9 @@ const changeTypeIcons: Record<string, React.ReactNode> = {
   updated: <EditOutlined style={{ color: '#1890ff' }} />,
   status_changed: <SwapOutlined style={{ color: '#faad14' }} />,
   valuation_changed: <SafetyCertificateOutlined style={{ color: '#722ed1' }} />,
+  valuation: <SafetyCertificateOutlined style={{ color: '#722ed1' }} />,
   assignment_changed: <UserSwitchOutlined style={{ color: '#13c2c2' }} />,
+  assignment: <UserSwitchOutlined style={{ color: '#13c2c2' }} />,
   delete: <DeleteOutlined style={{ color: '#f5222d' }} />,
   disposed: <DeleteOutlined style={{ color: '#f5222d' }} />,
 }
@@ -43,7 +45,9 @@ const changeTypeColors: Record<string, string> = {
   updated: 'blue',
   status_changed: 'orange',
   valuation_changed: 'purple',
+  valuation: 'purple',
   assignment_changed: 'cyan',
+  assignment: 'cyan',
   delete: 'red',
   disposed: 'red',
 }
@@ -55,8 +59,10 @@ const changeTypeLabels: Record<string, string> = {
   update: '수정',
   updated: '수정',
   status_changed: '상태 변경',
-  valuation_changed: '평가 변경',
+  valuation_changed: '중요도 평가',
+  valuation: '중요도 평가',
   assignment_changed: '담당자 변경',
+  assignment: '담당자 변경',
   delete: '삭제',
   disposed: '폐기',
 }
@@ -76,23 +82,30 @@ const fieldNameLabels: Record<string, string> = {
   status: '상태',
   department_id: '부서',
   owner_id: '소유자',
+  personnel_owner_id: '자산 소유자',
+  asset_type_id: '자산 유형',
   category_id: '분류',
   confidentiality: '기밀성',
   integrity: '무결성',
   availability: '가용성',
+  acquisition_date: '취득일',
+  acquisition_cost: '취득 비용',
+  warranty_end_date: '보증 만료일',
 }
 
 const AssetHistory = ({ history, loading = false }: AssetHistoryProps) => {
   const [userMap, setUserMap] = useState<Record<string, string>>({})
   const [deptMap, setDeptMap] = useState<Record<string, string>>({})
+  const [personnelMap, setPersonnelMap] = useState<Record<string, string>>({})
 
   useEffect(() => {
     // Load user and department names for resolving IDs in history
     const loadLookups = async () => {
       try {
-        const [usersRes, deptsRes] = await Promise.all([
+        const [usersRes, deptsRes, personnelRes] = await Promise.all([
           apiClient.get<{ items: Array<{ id: number; name: string }> }>('/users', { params: { size: 100 } }),
           apiClient.get<{ items: Array<{ id: number; name: string }> }>('/departments', { params: { isActive: true } }),
+          apiClient.get<Array<{ id: number; name: string }>>('/personnel/search', { params: { q: '' } }),
         ])
         const uMap: Record<string, string> = {}
         for (const u of usersRes.data.items || []) {
@@ -104,6 +117,12 @@ const AssetHistory = ({ history, loading = false }: AssetHistoryProps) => {
           dMap[String(d.id)] = d.name
         }
         setDeptMap(dMap)
+        const pMap: Record<string, string> = {}
+        const pItems = Array.isArray(personnelRes.data) ? personnelRes.data : []
+        for (const p of pItems) {
+          pMap[String(p.id)] = p.name
+        }
+        setPersonnelMap(pMap)
       } catch { /* ignore */ }
     }
     if (history.length > 0) {
@@ -117,6 +136,9 @@ const AssetHistory = ({ history, loading = false }: AssetHistoryProps) => {
     if (fieldName === 'owner_id' || fieldName === 'ownerId') {
       return userMap[value] || `사용자 #${value}`
     }
+    if (fieldName === 'personnel_owner_id' || fieldName === 'personnelOwnerId') {
+      return personnelMap[value] || `담당자 #${value}`
+    }
     if (fieldName === 'department_id' || fieldName === 'departmentId') {
       return deptMap[value] || `부서 #${value}`
     }
@@ -124,8 +146,9 @@ const AssetHistory = ({ history, loading = false }: AssetHistoryProps) => {
   }
 
   const formatDateTime = (dateStr: string): string => {
-    const date = new Date(dateStr)
+    const date = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z')
     return date.toLocaleString('ko-KR', {
+      timeZone: 'Asia/Seoul',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -148,7 +171,9 @@ const AssetHistory = ({ history, loading = false }: AssetHistoryProps) => {
       case 'updated':
       case 'status_changed':
       case 'valuation_changed':
-      case 'assignment_changed': {
+      case 'valuation':
+      case 'assignment_changed':
+      case 'assignment': {
         const oldDisplay = resolveValue(item.fieldName, item.oldValue)
         const newDisplay = resolveValue(item.fieldName, item.newValue)
         if (!fieldLabel && !item.oldValue && !item.newValue) {

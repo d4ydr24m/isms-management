@@ -315,6 +315,10 @@ class AssetService:
             new_value=f"자산 생성: {name}",
         )
 
+        # 소유자 지정 시 담당자 자동 할당
+        if kwargs.get("personnel_owner_id"):
+            self._sync_owner_assignment(asset.id, kwargs["personnel_owner_id"], user_id)
+
         self.db.commit()
         self.db.refresh(asset)
         return asset
@@ -368,9 +372,45 @@ class AssetService:
                     new_value=change["new_value"],
                 )
 
+        # personnel_owner_id 변경 시 담당자 탭의 "소유자" 역할 자동 동기화
+        if "personnel_owner_id" in kwargs and kwargs["personnel_owner_id"]:
+            personnel_id = kwargs["personnel_owner_id"]
+            self._sync_owner_assignment(asset.id, personnel_id, user_id)
+
         self.db.commit()
         self.db.refresh(asset)
         return asset
+
+    def _sync_owner_assignment(self, asset_id: int, personnel_id: int, assigned_by: int):
+        """자산 소유자 변경 시 담당자 탭의 소유자 역할 자동 동기화"""
+        from app.models.personnel import Personnel
+
+        # 기존 소유자 역할 비활성화
+        existing_owners = (
+            self.db.query(AssetAssignment)
+            .filter(
+                AssetAssignment.asset_id == asset_id,
+                AssetAssignment.role == AssetAssignmentRole.OWNER.value,
+                AssetAssignment.is_active == True,
+            )
+            .all()
+        )
+        for owner in existing_owners:
+            owner.is_active = False
+
+        # 새 소유자 담당자 할당 생성
+        personnel = self.db.query(Personnel).filter(Personnel.id == personnel_id).first()
+        if personnel:
+            new_assignment = AssetAssignment(
+                asset_id=asset_id,
+                personnel_id=personnel_id,
+                user_id=personnel.user_id,
+                role=AssetAssignmentRole.OWNER.value,
+                assigned_by=assigned_by,
+                assigned_at=utc_now(),
+                is_active=True,
+            )
+            self.db.add(new_assignment)
 
     def delete_asset(self, asset_id: int, user_id: int) -> Asset:
         """자산 비활성화 (소프트 삭제)"""

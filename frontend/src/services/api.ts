@@ -91,6 +91,15 @@ apiClient.interceptors.response.use(
       window.location.href = '/login'
     }
 
+    // 서버 에러 메시지를 error.message에 포함 (catch 블록에서 쉽게 접근 가능)
+    if (error.response?.data) {
+      const data = error.response.data as any
+      const detail = data.detail || data.message
+      if (detail && typeof detail === 'string') {
+        error.message = detail
+      }
+    }
+
     return Promise.reject(error)
   }
 )

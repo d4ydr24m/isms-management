@@ -46,7 +46,7 @@ const PendingTasks: React.FC<PendingTasksProps> = ({ data, onComplete }) => {
   const sortedData = [...data].sort((a, b) => getPriorityOrder(a.priority) - getPriorityOrder(b.priority))
 
   return (
-    <Card title="미완료 업무" bordered={false}>
+    <Card title="미완료 업무" variant="borderless">
       {sortedData.length === 0 ? (
         <Empty description="미완료 업무가 없습니다" />
       ) : (

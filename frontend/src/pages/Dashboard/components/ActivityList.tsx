@@ -55,7 +55,7 @@ const ActivityList: React.FC<ActivityListProps> = ({ data, onChange }) => {
   return (
     <Card
       title="예정 보안 활동"
-      bordered={false}
+      variant="borderless"
       extra={
         <Space>
           <Button size="small" onClick={() => onChange?.('today')}>

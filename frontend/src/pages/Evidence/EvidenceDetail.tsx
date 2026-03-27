@@ -130,8 +130,9 @@ const EvidenceDetail = () => {
     try {
       await evidenceService.downloadEvidence(evidence.id, evidence.fileName)
       message.success('다운로드가 시작되었습니다')
-    } catch {
-      message.error('파일 다운로드에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '파일 다운로드에 실패했습니다')
     }
   }
 
@@ -141,8 +142,9 @@ const EvidenceDetail = () => {
       const { downloadFile } = await import('@/services/api')
       await downloadFile(`/evidences/${evidence.id}/versions/${versionId}/download`, fileName)
       message.success('다운로드가 시작되었습니다')
-    } catch {
-      message.error('파일 다운로드에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '파일 다운로드에 실패했습니다')
     }
   }
 
@@ -153,8 +155,9 @@ const EvidenceDetail = () => {
       await evidenceService.mapControls(evidence.id, controlIds)
       message.success('통제항목 매핑이 수정되었습니다')
       fetchEvidence()
-    } catch {
-      message.error('통제항목 매핑 수정에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '통제항목 매핑 수정에 실패했습니다')
     }
   }
 
@@ -184,9 +187,10 @@ const EvidenceDetail = () => {
       message.success('증적이 수정되었습니다')
       setEditModalVisible(false)
       fetchEvidence()
-    } catch (error: any) {
-      if (error?.errorFields) return
-      message.error('증적 수정에 실패했습니다')
+    } catch (err: any) {
+      if (err?.errorFields) return
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '증적 수정에 실패했습니다')
     }
   }
 
@@ -201,9 +205,10 @@ const EvidenceDetail = () => {
       uploadForm.resetFields()
       fetchEvidence()
       fetchVersions()
-    } catch (error: any) {
-      if (error?.errorFields) return
-      message.error('버전 업로드에 실패했습니다')
+    } catch (err: any) {
+      if (err?.errorFields) return
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '버전 업로드에 실패했습니다')
     }
   }
 

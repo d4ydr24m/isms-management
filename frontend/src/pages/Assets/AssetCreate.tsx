@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
-import { Card, message, Breadcrumb } from 'antd'
+import { App, Card, Breadcrumb } from 'antd'
 import { HomeOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import AssetForm from './components/AssetForm'
@@ -13,6 +13,7 @@ import { apiClient } from '@/services/api'
 import type { AssetCreate as AssetCreateType, AssetType, AssetCategory, Asset, AssetUpdate } from '@/types'
 
 const AssetCreatePage = () => {
+  const { message } = App.useApp()
   const { id } = useParams<{ id: string }>()
   const isEdit = !!id
   const navigate = useNavigate()
@@ -97,8 +98,9 @@ const AssetCreatePage = () => {
         }
       }
       navigate(`/assets/${assetId}`)
-    } catch {
-      message.error(isEdit ? '자산 수정에 실패했습니다' : '자산 등록에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || (isEdit ? '자산 수정에 실패했습니다' : '자산 등록에 실패했습니다'))
     }
   }
 

@@ -153,8 +153,9 @@ function DepartmentsPage() {
       await apiClient.delete(`/departments/${id}`)
       message.success('부서가 삭제되었습니다')
       loadDepartments()
-    } catch {
-      message.error('부서 삭제에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail
+      message.error(detail || '부서 삭제에 실패했습니다')
     }
   }
 

@@ -19,7 +19,7 @@ const ProgressGauge: React.FC<ProgressGaugeProps> = ({ data }) => {
   }
 
   return (
-    <Card title="인증 준비 진척률" bordered={false}>
+    <Card title="인증 준비 진척률" variant="borderless">
       <Row gutter={[16, 16]}>
         <Col span={24}>
           <Progress

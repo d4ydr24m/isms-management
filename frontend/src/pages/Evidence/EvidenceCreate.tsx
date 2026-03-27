@@ -93,8 +93,9 @@ const EvidenceCreate = () => {
 
       message.success('증적이 등록되었습니다')
       navigate(returnTo || '/evidence')
-    } catch {
-      message.error('증적 등록에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '증적 등록에 실패했습니다')
     } finally {
       setLoading(false)
       setUploadProgress(0)

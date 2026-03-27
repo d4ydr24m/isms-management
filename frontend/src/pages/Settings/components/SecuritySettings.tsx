@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Card, Button, Spin, message, Modal, Form, Input, Space, Typography, Image, List, Alert } from 'antd'
+import { App, Card, Button, Spin, Modal, Form, Input, Space, Typography, Image, List, Alert } from 'antd'
 import { LockOutlined, SafetyOutlined } from '@ant-design/icons'
 import { authService } from '@/services/auth'
 import { apiClient } from '@/services/api'
@@ -10,6 +10,7 @@ import dayjs from 'dayjs'
 const { Text, Title } = Typography
 
 const SecuritySettings: React.FC = () => {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(true)
   const [settings, setSettings] = useState<SecuritySettingsType | null>(null)
   const [mfaModalVisible, setMfaModalVisible] = useState(false)
@@ -108,7 +109,7 @@ const SecuritySettings: React.FC = () => {
 
   return (
     <>
-      <Card title="보안 설정" bordered={false}>
+      <Card title="보안 설정" variant="borderless">
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           {/* 2단계 인증 */}
           <div>

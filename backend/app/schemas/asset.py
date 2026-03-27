@@ -179,6 +179,7 @@ class AssetResponse(BaseModel):
     department_name: Optional[str] = None
     owner_id: Optional[int] = None
     owner_name: Optional[str] = None
+    personnel_owner_id: Optional[int] = None
     ip_address: Optional[str] = None
     mac_address: Optional[str] = None
     hostname: Optional[str] = None

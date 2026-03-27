@@ -161,8 +161,9 @@ function AuditorAccountsPage() {
       } else {
         message.success('외부 심사원 계정이 생성되었습니다')
       }
-    } catch {
-      message.error('외부 심사원 계정 생성에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '외부 심사원 계정 생성에 실패했습니다')
     }
   }
 
@@ -191,8 +192,9 @@ function AuditorAccountsPage() {
       editForm.resetFields()
       setEditingAccount(null)
       loadAccounts()
-    } catch {
-      message.error('외부 심사원 계정 수정에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '외부 심사원 계정 수정에 실패했습니다')
     }
   }
 
@@ -201,8 +203,9 @@ function AuditorAccountsPage() {
       await apiClient.delete(`/auditor-accounts/${id}`)
       message.success('외부 심사원 계정이 비활성화되었습니다')
       loadAccounts()
-    } catch {
-      message.error('외부 심사원 계정 비활성화에 실패했습니다')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '외부 심사원 계정 비활성화에 실패했습니다')
     }
   }
 

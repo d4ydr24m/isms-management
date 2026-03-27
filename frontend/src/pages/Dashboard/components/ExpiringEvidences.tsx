@@ -20,7 +20,7 @@ const ExpiringEvidences: React.FC<ExpiringEvidencesProps> = ({ data }) => {
   const sortedData = [...data].sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry)
 
   return (
-    <Card title="만료 예정 증적" bordered={false}>
+    <Card title="만료 예정 증적" variant="borderless">
       {sortedData.length === 0 ? (
         <Empty description="만료 예정 증적이 없습니다" />
       ) : (
