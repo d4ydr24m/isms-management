@@ -49,6 +49,7 @@ import DoASettingsPage from '@/pages/Risk/DoASettings'
 import RiskTreatmentPage from '@/pages/Risk/RiskTreatment'
 import SOAManagementPage from '@/pages/Risk/SOAManagement'
 import RiskReportPage from '@/pages/Risk/RiskReport'
+import VulnCheckScriptsPage from '@/pages/Risk/VulnCheckScripts'
 
 const AppRouter = () => {
   const { isAuthenticated } = useAuthStore()
@@ -415,6 +416,14 @@ const AppRouter = () => {
         element={
           <PrivateRoute>
             <VulnerabilityDBPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/risk/vuln-check"
+        element={
+          <PrivateRoute>
+            <VulnCheckScriptsPage />
           </PrivateRoute>
         }
       />

@@ -14,6 +14,7 @@ celery_app = Celery(
     include=[
         "app.services.scheduler_service",
         "app.services.notification_service",
+        "app.services.vuln_check_scheduler",
     ]
 )
 
@@ -60,5 +61,10 @@ celery_app.conf.beat_schedule = {
     "send-weekly-summary": {
         "task": "app.services.notification_service.send_weekly_summary",
         "schedule": crontab(day_of_week=1, hour=8, minute=0),
+    },
+    # 취약점 점검 스케줄 실행 (매 10분마다 스케줄 확인)
+    "run-vuln-check-schedules": {
+        "task": "app.services.vuln_check_scheduler.run_scheduled_vuln_checks",
+        "schedule": crontab(minute="*/10"),
     },
 }

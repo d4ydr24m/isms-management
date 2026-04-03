@@ -50,6 +50,11 @@ from app.models.risk import (
     RiskTreatmentAction,
     SOARecord,
 )
+from app.models.vuln_check import (
+    VulnCheckScript,
+    VulnCheckSchedule,
+    VulnCheckExecution,
+)
 
 __all__ = [
     "Base",
@@ -101,4 +106,8 @@ __all__ = [
     "RiskTreatmentPlan",
     "RiskTreatmentAction",
     "SOARecord",
+    # Vulnerability Check Scripts
+    "VulnCheckScript",
+    "VulnCheckSchedule",
+    "VulnCheckExecution",
 ]

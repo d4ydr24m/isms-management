@@ -29,6 +29,7 @@ from app.api.v1.asset_impact import router as asset_impact_router
 from app.api.v1.risk_control_linkage import router as risk_control_linkage_router
 from app.api.v1.system_settings import router as system_settings_router
 from app.api.v1.search import router as search_router
+from app.api.v1.vuln_check import router as vuln_check_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth", tags=["인증"])
@@ -57,3 +58,4 @@ api_router.include_router(asset_impact_router, tags=["자산 영향 분석"])
 api_router.include_router(risk_control_linkage_router, tags=["위험-통제 연계"])
 api_router.include_router(system_settings_router)
 api_router.include_router(search_router)
+api_router.include_router(vuln_check_router, prefix="/vuln-check", tags=["취약점 점검"])

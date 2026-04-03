@@ -80,6 +80,7 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
           { key: '/risk/report', label: '보고서' },
           { key: '/risk/threats', label: '위협 DB' },
           { key: '/risk/vulnerabilities', label: '취약점 DB' },
+          { key: '/risk/vuln-check', label: '취약점 점검' },
         ],
       },
       {

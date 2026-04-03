@@ -56,6 +56,10 @@ from app.models import (
     RiskTreatmentPlan,
     RiskTreatmentAction,
     SOARecord,
+    # Vulnerability Check Scripts
+    VulnCheckScript,
+    VulnCheckSchedule,
+    VulnCheckExecution,
 )
 
 # this is the Alembic Config object, which provides
