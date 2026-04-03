@@ -412,11 +412,14 @@ export async function calculateRiskScenario(scenarioId: number): Promise<{ messa
 /**
  * 현재 DoA 설정 조회
  */
-export async function getCurrentDoA(): Promise<DoAConfig> {
+export async function getCurrentDoA(): Promise<DoAConfig | null> {
   try {
     const response = await apiClient.get<DoAConfig>('/risks/doa')
     return response.data
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.response?.status === 404) {
+      return null
+    }
     throw handleApiError(error)
   }
 }

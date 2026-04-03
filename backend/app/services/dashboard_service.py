@@ -330,6 +330,50 @@ class DashboardService:
             "count": len(result),
         }
 
+    # ========== 6.1.3.1 만료된 증적 조회 ==========
+
+    def get_expired_evidences(self) -> Dict[str, Any]:
+        """
+        만료된 증적 조회 (valid_until < 오늘)
+
+        Returns:
+            Dict: 만료된 증적 목록
+        """
+        today = date.today()
+
+        evidences = (
+            self.db.query(Evidence)
+            .options(joinedload(Evidence.control_items))
+            .filter(
+                and_(
+                    Evidence.valid_until.isnot(None),
+                    Evidence.valid_until < today,
+                    Evidence.status.in_(["expired", "active"]),
+                )
+            )
+            .order_by(Evidence.valid_until.desc())
+            .all()
+        )
+
+        result = []
+        for ev in evidences:
+            days_overdue = (today - ev.valid_until).days
+
+            result.append({
+                "id": ev.id,
+                "title": ev.title,
+                "file_name": ev.file_name,
+                "valid_until": ev.valid_until.isoformat(),
+                "days_overdue": days_overdue,
+                "status": ev.status,
+                "control_item_codes": [ci.code for ci in ev.control_items],
+            })
+
+        return {
+            "evidences": result,
+            "count": len(result),
+        }
+
     # ========== 6.1.4 미완료 업무 집계 ==========
 
     def get_pending_tasks(self) -> Dict[str, int]:
@@ -461,6 +505,7 @@ class DashboardService:
             "progress": self.calculate_progress_rate(),
             "activities": self.get_scheduled_activities(),
             "expiring_evidences": self.get_expiring_evidences(),
+            "expired_evidences": self.get_expired_evidences(),
             "pending_tasks": self.get_pending_tasks(),
             "non_conformities": self.get_nonconformity_summary(),
             "generated_at": datetime.utcnow().isoformat(),

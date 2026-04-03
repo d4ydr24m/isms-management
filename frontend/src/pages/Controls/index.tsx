@@ -263,7 +263,7 @@ const ControlListPage = () => {
                     style={{ width: '100%' }}
                     allowClear
                     onChange={handleRequiredChange}
-                    value={filters.isRequired}
+                    value={filters.isRequired ?? undefined}
                   >
                     <Option value={undefined}>전체 항목</Option>
                     <Option value={true}>필수 항목만</Option>

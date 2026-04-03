@@ -468,7 +468,7 @@ const SOAManagement = () => {
         extra={
           <Space>
             <Select
-              value={filterApplicable}
+              value={filterApplicable ?? undefined}
               onChange={setFilterApplicable}
               style={{ width: 130 }}
               options={[
@@ -478,7 +478,7 @@ const SOAManagement = () => {
               ]}
             />
             <Select
-              value={filterStatus}
+              value={filterStatus ?? undefined}
               onChange={setFilterStatus}
               style={{ width: 140 }}
               options={[

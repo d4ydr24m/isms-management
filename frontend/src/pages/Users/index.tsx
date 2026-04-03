@@ -258,7 +258,7 @@ function UserList() {
             allowClear
             style={{ width: 120 }}
             onChange={setStatusFilter}
-            value={statusFilter}
+            value={statusFilter ?? undefined}
             aria-label="상태"
           >
             <Select.Option value={true}>활성</Select.Option>

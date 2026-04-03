@@ -239,7 +239,7 @@ const AuditListPage = () => {
                 style={{ width: '100%' }}
                 allowClear
                 onChange={handleStatusChange}
-                value={filters.status}
+                value={filters.status ?? undefined}
               >
                 <Option value={undefined}>전체 상태</Option>
                 <Option value="planned">예정</Option>
@@ -254,7 +254,7 @@ const AuditListPage = () => {
                 style={{ width: '100%' }}
                 allowClear
                 onChange={handleTypeChange}
-                value={filters.auditType}
+                value={filters.auditType ?? undefined}
               >
                 <Option value={undefined}>전체 유형</Option>
                 <Option value="internal">내부 감사</Option>

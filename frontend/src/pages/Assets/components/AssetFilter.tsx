@@ -57,7 +57,7 @@ const AssetFilter = ({
           style={{ width: '100%' }}
           allowClear
           onChange={onAssetTypeChange}
-          value={filters.assetTypeId}
+          value={filters.assetTypeId ?? undefined}
         >
           {assetTypes.map((type) => (
             <Option key={type.id} value={type.id}>
@@ -72,7 +72,7 @@ const AssetFilter = ({
           style={{ width: '100%' }}
           allowClear
           onChange={onStatusChange}
-          value={filters.status}
+          value={filters.status ?? undefined}
         >
           {statusOptions.map((opt) => (
             <Option key={opt.value} value={opt.value}>
@@ -87,7 +87,7 @@ const AssetFilter = ({
           style={{ width: '100%' }}
           allowClear
           onChange={onImportanceChange}
-          value={filters.importanceLevel}
+          value={filters.importanceLevel ?? undefined}
         >
           {importanceOptions.map((opt) => (
             <Option key={opt.value} value={opt.value}>

@@ -48,6 +48,21 @@ export interface ExpiringEvidencesData {
   count: number
 }
 
+export interface ExpiredEvidenceItem {
+  id: number
+  title: string
+  fileName: string
+  validUntil: string
+  daysOverdue: number
+  status: string
+  controlItemCodes: string[]
+}
+
+export interface ExpiredEvidencesData {
+  evidences: ExpiredEvidenceItem[]
+  count: number
+}
+
 export interface PendingTaskData {
   uncompletedCorrectiveActions: number
   controlsWithoutEvidence: number
@@ -66,6 +81,7 @@ export interface DashboardSummaryData {
   progress: ProgressData
   activities: ActivitiesData
   expiringEvidences: ExpiringEvidencesData
+  expiredEvidences: ExpiredEvidencesData
   pendingTasks: PendingTaskData
   nonConformities: NonConformitySummaryData
   generatedAt: string

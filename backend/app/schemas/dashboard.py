@@ -68,6 +68,25 @@ class ExpiringEvidencesData(BaseModel):
     count: int = Field(..., description="만료 예정 증적 수")
 
 
+class ExpiredEvidence(BaseModel):
+    """만료된 증적"""
+
+    id: int = Field(..., description="증적 ID")
+    title: str = Field(..., description="증적 제목")
+    file_name: str = Field(..., description="파일명")
+    valid_until: date = Field(..., description="유효 만료일")
+    days_overdue: int = Field(..., description="초과 일수")
+    status: str = Field(..., description="상태")
+    control_item_codes: List[str] = Field(default_factory=list, description="연결된 통제항목 코드")
+
+
+class ExpiredEvidencesData(BaseModel):
+    """만료된 증적 데이터"""
+
+    evidences: List[ExpiredEvidence] = Field(default_factory=list, description="만료된 증적 목록")
+    count: int = Field(..., description="만료된 증적 수")
+
+
 class PendingTask(BaseModel):
     """미완료 업무"""
 
@@ -92,6 +111,7 @@ class DashboardSummary(BaseModel):
     progress: ProgressData = Field(..., description="인증 준비 진척률")
     activities: ActivitiesData = Field(..., description="예정 보안 활동")
     expiring_evidences: ExpiringEvidencesData = Field(..., description="만료 예정 증적")
+    expired_evidences: ExpiredEvidencesData = Field(default_factory=lambda: ExpiredEvidencesData(evidences=[], count=0), description="만료된 증적")
     pending_tasks: PendingTask = Field(..., description="미완료 업무")
     non_conformities: NonConformitySummary = Field(..., description="부적합 현황")
     generated_at: datetime = Field(default_factory=datetime.utcnow, description="생성 시각")

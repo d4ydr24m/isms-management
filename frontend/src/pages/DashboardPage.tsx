@@ -30,6 +30,7 @@ import {
   dashboardService,
   type DashboardSummaryData,
   type ExpiringEvidenceItem,
+  type ExpiredEvidenceItem,
   type ActivityItem,
   type DomainProgress,
 } from '@/services/dashboard'
@@ -80,7 +81,7 @@ const DashboardPage = () => {
     )
   }
 
-  const { progress, activities, expiringEvidences, pendingTasks, nonConformities } = data
+  const { progress, activities, expiringEvidences, expiredEvidences, pendingTasks, nonConformities } = data
 
   // Summary stat cards
   const statCards = [
@@ -148,6 +149,42 @@ const DashboardPage = () => {
         const color = days <= 7 ? 'red' : days <= 14 ? 'orange' : 'green'
         return <Tag color={color}>{days}일</Tag>
       },
+    },
+  ]
+
+  // Expired evidence table columns
+  const expiredEvidenceColumns: ColumnsType<ExpiredEvidenceItem> = [
+    {
+      title: '증적',
+      dataIndex: 'title',
+      key: 'title',
+      ellipsis: true,
+      render: (text: string, record) => (
+        <a onClick={() => navigate(`/evidence/${record.id}`)}>{text}</a>
+      ),
+    },
+    {
+      title: '통제항목',
+      dataIndex: 'controlItemCodes',
+      key: 'controls',
+      width: 150,
+      render: (codes: string[]) =>
+        codes.length > 0 ? codes.map((c) => <Tag key={c}>{c}</Tag>) : '-',
+    },
+    {
+      title: '만료일',
+      dataIndex: 'validUntil',
+      key: 'validUntil',
+      width: 110,
+      render: (d: string) => dayjs(d).format('YYYY-MM-DD'),
+    },
+    {
+      title: '초과 일수',
+      dataIndex: 'daysOverdue',
+      key: 'daysOverdue',
+      width: 100,
+      align: 'center',
+      render: (days: number) => <Tag color="red">{days}일 경과</Tag>,
     },
   ]
 
@@ -455,7 +492,33 @@ const DashboardPage = () => {
         </Col>
       </Row>
 
-      {/* Row 4: Upcoming Activities */}
+      {/* Row 4: Expired Evidences */}
+      {expiredEvidences && expiredEvidences.count > 0 && (
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col span={24}>
+            <Card
+              title={
+                <Space>
+                  <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+                  <span>만료된 증적</span>
+                  <Tag color="error">{expiredEvidences.count}건</Tag>
+                </Space>
+              }
+            >
+              <Table
+                columns={expiredEvidenceColumns}
+                dataSource={expiredEvidences.evidences}
+                rowKey="id"
+                pagination={false}
+                size="small"
+                scroll={{ y: 300 }}
+              />
+            </Card>
+          </Col>
+        </Row>
+      )}
+
+      {/* Row 5: Upcoming Activities */}
       <Row gutter={[16, 16]}>
         <Col span={24}>
           <Card

@@ -1066,59 +1066,195 @@ class AssetService:
     # 엑셀 임포트/내보내기 (FR-502)
     # =========================================================================
 
-    def export_assets(self, filters: Optional[Dict] = None) -> bytes:
-        """자산 목록 엑셀 내보내기"""
+    def export_assets(self, filters: Optional[Dict] = None, include_data: bool = True) -> bytes:
+        """자산 목록 엑셀 내보내기 (데이터 검증 드롭다운 포함)"""
         try:
             from openpyxl import Workbook
             from openpyxl.styles import Font, PatternFill, Alignment
+            from openpyxl.worksheet.datavalidation import DataValidation
+            from openpyxl.utils import get_column_letter
         except ImportError:
             raise ImportError("openpyxl 패키지가 필요합니다.")
 
         # 자산 조회
-        search_result = self.search_assets(**(filters or {}), page=1, size=10000)
-        assets = search_result["items"]
+        if include_data:
+            search_result = self.search_assets(**(filters or {}), page=1, size=10000)
+            assets = search_result["items"]
+        else:
+            assets = []
 
         wb = Workbook()
         ws = wb.active
         ws.title = "자산 목록"
 
-        # 헤더 스타일
+        # ── 참조 시트 생성 (드롭다운 데이터 소스) ──
+        ref_ws = wb.create_sheet(title="참조데이터")
+
+        # 자산유형 목록
+        asset_types, _ = self.get_asset_types(is_active=True)
+        ref_ws.cell(row=1, column=1, value="자산유형코드")
+        ref_ws.cell(row=1, column=2, value="자산유형명")
+        type_code_list = []
+        for i, at in enumerate(asset_types, 2):
+            label = f"{at.code} ({at.name})"
+            ref_ws.cell(row=i, column=1, value=label)
+            ref_ws.cell(row=i, column=2, value=at.name)
+            type_code_list.append(label)
+        type_last_row = len(asset_types) + 1
+
+        # 분류 목록
+        categories = self.db.query(AssetCategory).filter(AssetCategory.is_active == True).all()
+        ref_ws.cell(row=1, column=3, value="분류코드")
+        cat_list = []
+        for i, cat in enumerate(categories, 2):
+            label = f"{cat.code} ({cat.name})"
+            ref_ws.cell(row=i, column=3, value=label)
+            cat_list.append(label)
+        cat_last_row = len(categories) + 1
+
+        # 부서 목록
+        departments = self.db.query(Department).order_by(Department.name).all()
+        ref_ws.cell(row=1, column=4, value="부서코드")
+        dept_list = []
+        for i, dept in enumerate(departments, 2):
+            label = f"{dept.code} ({dept.name})"
+            ref_ws.cell(row=i, column=4, value=label)
+            dept_list.append(label)
+        dept_last_row = len(departments) + 1
+
+        # 상태 목록
+        statuses = ["도입", "운영", "변경", "폐기"]
+        ref_ws.cell(row=1, column=5, value="상태")
+        for i, s in enumerate(statuses, 2):
+            ref_ws.cell(row=i, column=5, value=s)
+
+        # 중요도 목록
+        ref_ws.cell(row=1, column=6, value="중요도")
+        for i, v in enumerate(["1", "2", "3", "4", "5"], 2):
+            ref_ws.cell(row=i, column=6, value=v)
+
+        ref_ws.sheet_state = "hidden"
+
+        # ── 메인 시트: 헤더 ──
         header_font = Font(bold=True, color="FFFFFF")
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        required_fill = PatternFill(start_color="FF6B6B", end_color="FF6B6B", fill_type="solid")
 
-        # 헤더
         headers = [
-            "자산코드", "자산명", "자산유형", "분류", "위치", "부서",
-            "IP주소", "호스트명", "제조사", "모델", "상태", "중요도",
-            "취득일", "취득비용"
+            ("자산코드", False),
+            ("자산명 ★", True),
+            ("자산유형 ★", True),
+            ("분류", False),
+            ("위치", False),
+            ("부서", False),
+            ("IP주소", False),
+            ("호스트명", False),
+            ("제조사", False),
+            ("모델", False),
+            ("상태", False),
+            ("중요도", False),
+            ("취득일", False),
+            ("취득비용", False),
         ]
-        for col, header in enumerate(headers, 1):
+        for col, (header, required) in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
             cell.font = header_font
-            cell.fill = header_fill
+            cell.fill = required_fill if required else header_fill
             cell.alignment = Alignment(horizontal="center")
 
-        # 데이터
+        # ── 데이터 검증 (드롭다운) ──
+        max_data_row = max(len(assets) + 1, 1000)
+
+        # 자산유형 (C열) - 참조시트 A열
+        if type_last_row > 1:
+            dv_type = DataValidation(
+                type="list",
+                formula1=f"참조데이터!$A$2:$A${type_last_row}",
+                allow_blank=True,
+            )
+            dv_type.error = "목록에서 자산유형을 선택하세요."
+            dv_type.errorTitle = "자산유형 오류"
+            dv_type.prompt = "자산유형을 선택하세요"
+            dv_type.promptTitle = "자산유형"
+            ws.add_data_validation(dv_type)
+            dv_type.add(f"C2:C{max_data_row}")
+
+        # 분류 (D열) - 참조시트 C열
+        if cat_last_row > 1:
+            dv_cat = DataValidation(
+                type="list",
+                formula1=f"참조데이터!$C$2:$C${cat_last_row}",
+                allow_blank=True,
+            )
+            dv_cat.error = "목록에서 분류를 선택하세요."
+            dv_cat.errorTitle = "분류 오류"
+            dv_cat.prompt = "분류를 선택하세요"
+            dv_cat.promptTitle = "분류"
+            ws.add_data_validation(dv_cat)
+            dv_cat.add(f"D2:D{max_data_row}")
+
+        # 부서 (F열) - 참조시트 D열
+        if dept_last_row > 1:
+            dv_dept = DataValidation(
+                type="list",
+                formula1=f"참조데이터!$D$2:$D${dept_last_row}",
+                allow_blank=True,
+            )
+            dv_dept.error = "목록에서 부서를 선택하세요."
+            dv_dept.errorTitle = "부서 오류"
+            dv_dept.prompt = "부서를 선택하세요"
+            dv_dept.promptTitle = "부서"
+            ws.add_data_validation(dv_dept)
+            dv_dept.add(f"F2:F{max_data_row}")
+
+        # 상태 (K열)
+        dv_status = DataValidation(
+            type="list",
+            formula1=f"참조데이터!$E$2:$E$5",
+            allow_blank=True,
+        )
+        dv_status.error = "도입/운영/변경/폐기 중 선택하세요."
+        dv_status.errorTitle = "상태 오류"
+        dv_status.prompt = "상태를 선택하세요"
+        dv_status.promptTitle = "상태"
+        ws.add_data_validation(dv_status)
+        dv_status.add(f"K2:K{max_data_row}")
+
+        # 중요도 (L열)
+        dv_importance = DataValidation(
+            type="list",
+            formula1=f"참조데이터!$F$2:$F$6",
+            allow_blank=True,
+        )
+        dv_importance.error = "1~5 중 선택하세요."
+        dv_importance.errorTitle = "중요도 오류"
+        dv_importance.prompt = "중요도를 선택하세요 (1~5)"
+        dv_importance.promptTitle = "중요도"
+        ws.add_data_validation(dv_importance)
+        dv_importance.add(f"L2:L{max_data_row}")
+
+        # ── 데이터 (코드 형식으로 기록) ──
         for row, asset in enumerate(assets, 2):
             valuation = self.get_current_valuation(asset.id)
             ws.cell(row=row, column=1, value=asset.asset_code)
             ws.cell(row=row, column=2, value=asset.name)
-            ws.cell(row=row, column=3, value=asset.asset_type.name if asset.asset_type else "")
-            ws.cell(row=row, column=4, value=asset.category.name if asset.category else "")
+            ws.cell(row=row, column=3, value=f"{asset.asset_type.code} ({asset.asset_type.name})" if asset.asset_type else "")
+            ws.cell(row=row, column=4, value=f"{asset.category.code} ({asset.category.name})" if asset.category else "")
             ws.cell(row=row, column=5, value=asset.location or "")
-            ws.cell(row=row, column=6, value=asset.department.name if asset.department else "")
+            ws.cell(row=row, column=6, value=f"{asset.department.code} ({asset.department.name})" if asset.department else "")
             ws.cell(row=row, column=7, value=asset.ip_address or "")
             ws.cell(row=row, column=8, value=asset.hostname or "")
             ws.cell(row=row, column=9, value=asset.manufacturer or "")
             ws.cell(row=row, column=10, value=asset.model or "")
             ws.cell(row=row, column=11, value=asset.status)
-            ws.cell(row=row, column=12, value=valuation.importance_level if valuation else "")
+            ws.cell(row=row, column=12, value=str(valuation.importance_level) if valuation and valuation.importance_level else "")
             ws.cell(row=row, column=13, value=str(asset.acquisition_date) if asset.acquisition_date else "")
             ws.cell(row=row, column=14, value=asset.acquisition_cost or "")
 
         # 열 너비 조정
-        for col in range(1, len(headers) + 1):
-            ws.column_dimensions[chr(64 + col)].width = 15
+        column_widths = [22, 18, 22, 22, 15, 22, 18, 18, 12, 12, 10, 10, 12, 12]
+        for col, width in enumerate(column_widths, 1):
+            ws.column_dimensions[get_column_letter(col)].width = width
 
         # 바이트로 반환
         output = BytesIO()
@@ -1127,113 +1263,17 @@ class AssetService:
         return output.read()
 
     def get_import_template(self) -> bytes:
-        """자산 임포트 템플릿 생성"""
-        try:
-            from openpyxl import Workbook
-            from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-            from openpyxl.worksheet.datavalidation import DataValidation
-        except ImportError:
-            raise ImportError("openpyxl 패키지가 필요합니다.")
+        """자산 임포트 빈 템플릿 생성 (export_assets와 동일한 형식, 데이터 없음)"""
+        return self.export_assets(filters=None, include_data=False)
 
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "자산 임포트"
-
-        # 헤더 스타일
-        header_font = Font(bold=True, color="FFFFFF")
-        required_font = Font(bold=True, color="000000")
-        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
-        required_fill = PatternFill(start_color="FF6B6B", end_color="FF6B6B", fill_type="solid")
-        required_font_white = Font(bold=True, color="FFFFFF")
-        border = Border(
-            left=Side(style='thin'),
-            right=Side(style='thin'),
-            top=Side(style='thin'),
-            bottom=Side(style='thin'),
-        )
-
-        # 헤더 (필수 항목 표시)
-        headers = [
-            ("자산코드", False),
-            ("자산명 (필수)", True),
-            ("자산유형코드 (필수)", True),
-            ("분류코드", False),
-            ("위치", False),
-            ("부서코드", False),
-            ("IP주소", False),
-            ("호스트명", False),
-            ("시리얼번호", False),
-            ("제조사", False),
-            ("모델", False),
-            ("상태", False),
-            ("중요도", False),
-        ]
-
-        for col, (header, required) in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
-            cell.font = required_font_white if required else header_font
-            cell.fill = required_fill if required else header_fill
-            cell.alignment = Alignment(horizontal="center")
-            cell.border = border
-
-        # 자산 유형 코드 목록 (데이터 검증용)
-        asset_types, _ = self.get_asset_types(is_active=True)
-        if asset_types:
-            type_codes = ",".join([t.code for t in asset_types])
-            dv = DataValidation(type="list", formula1=f'"{type_codes}"', allow_blank=False)
-            dv.error = "유효한 자산 유형 코드를 선택하세요."
-            dv.errorTitle = "입력 오류"
-            ws.add_data_validation(dv)
-            dv.add("C2:C1000")
-
-        # 안내 행 (row 2) - 회색 배경
-        guide_fill = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
-        guide_font = Font(color="888888", italic=True, size=9)
-        guides = [
-            "비워두면 자동생성",
-            "필수",
-            "필수 (예: SRV, PC)",
-            "분류 코드",
-            "물리적 위치",
-            "부서 코드",
-            "예: 192.168.1.1",
-            "예: web-srv-01",
-            "",
-            "",
-            "",
-            "도입/운영/폐기",
-            "1~5",
-        ]
-        for col, guide in enumerate(guides, 1):
-            cell = ws.cell(row=2, column=col, value=guide)
-            cell.font = guide_font
-            cell.fill = guide_fill
-
-        # 예시 데이터 (row 3)
-        ws.cell(row=3, column=1, value="")
-        ws.cell(row=3, column=2, value="웹서버-01")
-        ws.cell(row=3, column=3, value="SRV")
-        ws.cell(row=3, column=5, value="서버실")
-        ws.cell(row=3, column=7, value="192.168.1.100")
-        ws.cell(row=3, column=8, value="web-server-01")
-
-        # 데이터 검증 범위 수정 (row 3부터)
-        if asset_types:
-            dv2 = DataValidation(type="list", formula1=f'"{type_codes}"', allow_blank=False)
-            dv2.error = "유효한 자산 유형 코드를 선택하세요."
-            dv2.errorTitle = "입력 오류"
-            ws.add_data_validation(dv2)
-            dv2.add("C3:C1000")
-
-        # 열 너비 조정
-        column_widths = [22, 18, 20, 12, 15, 12, 18, 18, 15, 12, 12, 12, 10]
-        for col, width in enumerate(column_widths, 1):
-            ws.column_dimensions[chr(64 + col)].width = width
-
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
-        return output.read()
+    @staticmethod
+    def _extract_code(value: str) -> str:
+        """'CODE (NAME)' 또는 'CODE' 형식에서 코드 부분만 추출"""
+        s = str(value).strip()
+        # "SRV (서버)" → "SRV"
+        if " (" in s:
+            return s.split(" (")[0].strip()
+        return s
 
     def import_assets(
         self,
@@ -1256,19 +1296,40 @@ class AssetService:
             "errors": [],
         }
 
-        for row_num in range(3, ws.max_row + 1):
+        # 헤더 행 찾기: 첫 번째 열이 "자산코드"인 행을 찾아 데이터 시작 행 결정
+        data_start_row = 2  # 기본값
+        for row_num in range(1, min(ws.max_row + 1, 10)):
+            cell_val = ws.cell(row=row_num, column=1).value
+            if cell_val and "자산코드" in str(cell_val):
+                data_start_row = row_num + 1
+                break
+
+        # 안내/예시 행 건너뛰기: 데이터 행에서 스타일 행(회색 배경, 이탤릭 등) 스킵
+        for row_num in range(data_start_row, min(ws.max_row + 1, data_start_row + 5)):
+            name_val = ws.cell(row=row_num, column=2).value
+            if name_val and str(name_val).strip() in ("필수", "★ 필수 입력", "비워두면 자동생성"):
+                data_start_row = row_num + 1
+                continue
+            # 예시 데이터 행 (이탤릭 폰트) 스킵
+            cell_font = ws.cell(row=row_num, column=2).font
+            if cell_font and cell_font.italic:
+                data_start_row = row_num + 1
+                continue
+            break
+
+        for row_num in range(data_start_row, ws.max_row + 1):
             # 빈 행 무시
             asset_code = ws.cell(row=row_num, column=1).value
             name = ws.cell(row=row_num, column=2).value
-            type_code = ws.cell(row=row_num, column=3).value
+            type_code_raw = ws.cell(row=row_num, column=3).value
 
-            if not name and not type_code and not asset_code:
+            if not name and not type_code_raw and not asset_code:
                 continue
 
             results["total"] += 1
 
             try:
-                if not name or not type_code:
+                if not name or not type_code_raw:
                     results["failed"] += 1
                     results["errors"].append({
                         "row": row_num,
@@ -1276,8 +1337,11 @@ class AssetService:
                     })
                     continue
 
+                # "CODE (NAME)" 형식에서 코드 추출
+                type_code = self._extract_code(type_code_raw)
+
                 # 자산 유형 조회
-                asset_type = self.get_asset_type_by_code(str(type_code).strip())
+                asset_type = self.get_asset_type_by_code(type_code)
                 if not asset_type:
                     results["failed"] += 1
                     results["errors"].append({
@@ -1286,13 +1350,23 @@ class AssetService:
                     })
                     continue
 
-                # 부서 조회
-                dept_code = ws.cell(row=row_num, column=6).value
+                # 부서 조회 ("CODE (NAME)" 형식 지원)
+                dept_raw = ws.cell(row=row_num, column=6).value
                 department_id = None
-                if dept_code:
-                    dept = self.db.query(Department).filter(Department.code == str(dept_code).strip()).first()
+                if dept_raw:
+                    dept_code = self._extract_code(dept_raw)
+                    dept = self.db.query(Department).filter(Department.code == dept_code).first()
                     if dept:
                         department_id = dept.id
+
+                # 분류 조회 ("CODE (NAME)" 형식 지원)
+                cat_raw = ws.cell(row=row_num, column=4).value
+                category_id = None
+                if cat_raw:
+                    cat_code = self._extract_code(cat_raw)
+                    cat = self.db.query(AssetCategory).filter(AssetCategory.code == cat_code).first()
+                    if cat:
+                        category_id = cat.id
 
                 # 자산코드가 있으면 기존 자산 업데이트 시도
                 if asset_code:
@@ -1300,8 +1374,8 @@ class AssetService:
                     if existing:
                         existing.name = str(name)
                         existing.asset_type_id = asset_type.id
-                        if ws.cell(row=row_num, column=4).value:
-                            existing.category_id = None  # TODO: resolve category
+                        if category_id is not None:
+                            existing.category_id = category_id
                         if ws.cell(row=row_num, column=5).value:
                             existing.location = str(ws.cell(row=row_num, column=5).value)
                         if department_id:
@@ -1325,6 +1399,7 @@ class AssetService:
                     name=str(name),
                     asset_type_id=asset_type.id,
                     user_id=user_id,
+                    category_id=category_id,
                     location=ws.cell(row=row_num, column=5).value,
                     department_id=department_id,
                     ip_address=ws.cell(row=row_num, column=7).value,

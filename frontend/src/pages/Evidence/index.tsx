@@ -147,7 +147,7 @@ const EvidenceListPage = () => {
                 style={{ width: '100%' }}
                 allowClear
                 onChange={handleStatusChange}
-                value={filters.status}
+                value={filters.status ?? undefined}
               >
                 <Option value={undefined}>전체 상태</Option>
                 <Option value="active">유효</Option>

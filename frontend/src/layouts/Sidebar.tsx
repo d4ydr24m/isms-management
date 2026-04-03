@@ -1,4 +1,4 @@
-import { Layout, Menu } from 'antd'
+import { Layout, Menu, Button } from 'antd'
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -9,6 +9,8 @@ import {
   DatabaseOutlined,
   WarningOutlined,
   FileSearchOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useMemo, useState, useEffect } from 'react'
@@ -154,27 +156,50 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
       collapsible
       collapsed={collapsed}
       onCollapse={onCollapse}
+      trigger={null}
       style={{
-        overflow: 'auto',
+        overflowY: 'auto',
+        overflowX: 'hidden',
         height: '100vh',
         position: 'fixed',
         left: 0,
         top: 0,
         bottom: 0,
+        scrollbarWidth: 'thin',
       }}
     >
       <div
         style={{
-          height: 32,
-          margin: 16,
-          background: 'rgba(255, 255, 255, 0.2)',
-          textAlign: 'center',
-          lineHeight: '32px',
-          color: '#fff',
-          fontWeight: 'bold',
+          height: 48,
+          margin: '8px 0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: collapsed ? '0' : '0 12px',
+          cursor: 'pointer',
         }}
+        onClick={() => onCollapse(!collapsed)}
       >
-        {collapsed ? 'ISMS' : 'ISMS 관리'}
+        {collapsed ? (
+          <MenuUnfoldOutlined style={{ color: 'rgba(255,255,255,0.85)', fontSize: 18 }} />
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <div
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: 6,
+                padding: '4px 12px',
+                textAlign: 'center',
+                color: '#fff',
+                fontWeight: 'bold',
+                flex: 1,
+              }}
+            >
+              ISMS 관리
+            </div>
+            <MenuFoldOutlined style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, marginLeft: 8 }} />
+          </div>
+        )}
       </div>
       <Menu
         theme="dark"

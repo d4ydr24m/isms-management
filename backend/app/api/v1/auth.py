@@ -137,14 +137,16 @@ def login(
 @router.post("/logout")
 def logout(
     request: Request,
-    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     """
     사용자 로그아웃
 
     HttpOnly 쿠키의 토큰도 함께 제거합니다.
+    만료된 토큰이라도 로그아웃 처리 및 감사 로그를 기록합니다.
     """
+    from jose import jwt as jose_jwt
+
     # Extract token from cookie or Authorization header for blacklisting
     token = request.cookies.get("access_token") or ""
     if not token:
@@ -152,10 +154,27 @@ def logout(
         if auth_header.startswith("Bearer "):
             token = auth_header[7:]
 
-    auth_service = AuthService(db)
-    result = auth_service.logout(current_user, token=token)
+    # 만료된 토큰도 디코딩하여 사용자 식별 (서명은 검증)
+    current_user = None
+    if token:
+        try:
+            payload = jose_jwt.decode(
+                token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM],
+                options={"verify_exp": False},
+            )
+            user_id = payload.get("user_id")
+            if user_id:
+                current_user = db.query(User).filter(User.id == user_id).first()
+        except Exception:
+            pass
 
-    response = JSONResponse(content={"message": result["message"]})
+    if current_user and token:
+        auth_service = AuthService(db)
+        auth_service.logout(current_user, token=token)
+
+    response = JSONResponse(content={"message": "로그아웃 성공"})
     _clear_token_cookies(response)
     return response
 

@@ -226,7 +226,7 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
     AUDIT_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
 
     def _extract_user_info(self, request: Request) -> dict:
-        """JWT 토큰에서 사용자 정보 추출"""
+        """JWT 토큰에서 사용자 정보 추출 (감사 로그용 - 만료된 토큰도 디코딩)"""
         try:
             from jose import jwt as jose_jwt
             from app.core.config import settings as app_settings
@@ -239,7 +239,13 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
             if not token:
                 return {}
 
-            payload = jose_jwt.decode(token, app_settings.SECRET_KEY, algorithms=[app_settings.ALGORITHM])
+            # 감사 로그 목적으로 만료된 토큰도 디코딩 (서명은 검증)
+            payload = jose_jwt.decode(
+                token,
+                app_settings.SECRET_KEY,
+                algorithms=[app_settings.ALGORITHM],
+                options={"verify_exp": False},
+            )
             return {
                 "user_id": payload.get("user_id"),
                 "user_email": payload.get("sub"),

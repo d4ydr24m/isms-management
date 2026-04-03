@@ -391,11 +391,11 @@ function PersonnelPage() {
             allowClear
             style={{ width: 150 }}
             onChange={(value: number | undefined) => {
-              setDepartmentFilter(value)
+              setDepartmentFilter(value ?? undefined)
               setPage(1)
-              fetchPersonnel(1, pageSize, search, value, statusFilter)
+              fetchPersonnel(1, pageSize, search, value ?? undefined, statusFilter)
             }}
-            value={departmentFilter}
+            value={departmentFilter ?? undefined}
             aria-label="부서"
           >
             {departments.filter(dept => dept.id != null).map((dept) => (
@@ -409,11 +409,11 @@ function PersonnelPage() {
             allowClear
             style={{ width: 120 }}
             onChange={(value: boolean | undefined) => {
-              setStatusFilter(value)
+              setStatusFilter(value ?? undefined)
               setPage(1)
-              fetchPersonnel(1, pageSize, search, departmentFilter, value)
+              fetchPersonnel(1, pageSize, search, departmentFilter, value ?? undefined)
             }}
-            value={statusFilter}
+            value={statusFilter ?? undefined}
             aria-label="상태"
           >
             <Select.Option value={true}>활성</Select.Option>

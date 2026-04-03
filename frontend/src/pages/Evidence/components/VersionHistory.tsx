@@ -53,7 +53,11 @@ const VersionHistory = ({
                       )}
                     </Space>
 
-                    <Text type="secondary">{version.changes}</Text>
+                    <Text>{version.fileName}</Text>
+
+                    {version.changes && (
+                      <Text type="secondary">{version.changes}</Text>
+                    )}
 
                     <Space size="middle">
                       <Space size="small">

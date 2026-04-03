@@ -20,6 +20,7 @@ from app.schemas.dashboard import (
     ProgressData,
     ActivitiesData,
     ExpiringEvidencesData,
+    ExpiredEvidencesData,
     PendingTask,
     NonConformitySummary,
 )
@@ -48,6 +49,7 @@ def get_dashboard_summary(
         progress=ProgressData(**data["progress"]),
         activities=ActivitiesData(**data["activities"]),
         expiring_evidences=ExpiringEvidencesData(**data["expiring_evidences"]),
+        expired_evidences=ExpiredEvidencesData(**data["expired_evidences"]),
         pending_tasks=PendingTask(**data["pending_tasks"]),
         non_conformities=NonConformitySummary(**data["non_conformities"]),
     )

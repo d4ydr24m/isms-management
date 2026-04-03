@@ -74,7 +74,11 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest)
       } catch (refreshError) {
         // 토큰 갱신 실패 시 로그아웃 처리
-        // Clear persisted auth state
+        // 만료된 토큰이라도 로그아웃 API 호출하여 감사 로그 기록
+        const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+        try {
+          await axios.post(`${baseURL}/auth/logout`, {}, { withCredentials: true })
+        } catch { /* ignore - logout endpoint handles expired tokens */ }
         try {
           localStorage.removeItem('auth-storage')
         } catch { /* ignore */ }
@@ -85,6 +89,11 @@ apiClient.interceptors.response.use(
 
     // 401 에러이고 이미 재시도한 경우 (or non-401)
     if (error.response?.status === 401) {
+      // 세션 만료 시 로그아웃 API 호출하여 감사 로그 기록
+      const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+      try {
+        await axios.post(`${baseURL}/auth/logout`, {}, { withCredentials: true })
+      } catch { /* ignore */ }
       try {
         localStorage.removeItem('auth-storage')
       } catch { /* ignore */ }

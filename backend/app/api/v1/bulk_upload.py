@@ -9,6 +9,8 @@ from typing import List
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.worksheet.datavalidation import DataValidation
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_active_user, get_db
@@ -24,6 +26,63 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+
+# 공통 스타일
+_HEADER_FONT = Font(bold=True, color="FFFFFF")
+_REQUIRED_FILL = PatternFill(start_color="FF6B6B", end_color="FF6B6B", fill_type="solid")
+_OPTIONAL_FILL = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+_CENTER = Alignment(horizontal="center")
+
+
+def _style_header(ws, headers: list[tuple[str, bool]]):
+    """헤더 행에 스타일 적용 (필수=빨간, 선택=파란)"""
+    for col, (name, required) in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=name)
+        cell.font = _HEADER_FONT
+        cell.fill = _REQUIRED_FILL if required else _OPTIONAL_FILL
+        cell.alignment = _CENTER
+
+
+def _add_dept_validation(ws, db: Session, col_letter: str, max_row: int = 1000):
+    """부서코드 드롭다운을 시트에 추가하고 참조시트를 반환"""
+    wb = ws.parent
+    depts = db.query(Department).filter(Department.is_active == True).order_by(Department.name).all()
+    if not depts:
+        return
+
+    # 참조 시트 생성 (없으면)
+    ref_name = "참조데이터"
+    if ref_name in wb.sheetnames:
+        ref_ws = wb[ref_name]
+    else:
+        ref_ws = wb.create_sheet(title=ref_name)
+        ref_ws.sheet_state = "hidden"
+
+    # 부서 목록을 참조시트 A열에 기록
+    ref_ws.cell(row=1, column=1, value="부서코드")
+    for i, d in enumerate(depts, 2):
+        ref_ws.cell(row=i, column=1, value=f"{d.code} ({d.name})")
+    last_row = len(depts) + 1
+
+    dv = DataValidation(
+        type="list",
+        formula1=f"참조데이터!$A$2:$A${last_row}",
+        allow_blank=True,
+    )
+    dv.error = "목록에서 부서를 선택하세요."
+    dv.errorTitle = "부서 오류"
+    dv.prompt = "부서를 선택하세요"
+    dv.promptTitle = "부서"
+    ws.add_data_validation(dv)
+    dv.add(f"{col_letter}2:{col_letter}{max_row}")
+
+
+def _extract_code(value) -> str:
+    """'CODE (NAME)' 또는 'CODE' 형식에서 코드 부분만 추출"""
+    s = str(value).strip()
+    if " (" in s:
+        return s.split(" (")[0].strip()
+    return s
 
 
 def _workbook_to_streaming_response(wb: Workbook, filename: str) -> StreamingResponse:
@@ -54,22 +113,39 @@ def download_user_template(
     ws = wb.active
     ws.title = "사용자 일괄 등록"
 
-    # 헤더
-    headers = ["이메일(필수)", "비밀번호(필수)", "이름(필수)", "전화번호", "부서코드"]
-    ws.append(headers)
+    # 헤더 (필수=빨간, 선택=파란)
+    headers = [
+        ("이메일 ★", True),
+        ("비밀번호 ★", True),
+        ("이름 ★", True),
+        ("전화번호", False),
+        ("부서", False),
+    ]
+    _style_header(ws, headers)
+
+    # 부서 드롭다운 (E열)
+    _add_dept_validation(ws, db, "E")
 
     if include_data:
         users = db.query(User).filter(User.is_active == True).order_by(User.name).all()
-        for u in users:
-            dept_code = ""
+        for i, u in enumerate(users, 2):
+            ws.cell(row=i, column=1, value=u.email)
+            ws.cell(row=i, column=2, value="")
+            ws.cell(row=i, column=3, value=u.name)
+            ws.cell(row=i, column=4, value=u.phone or "")
+            dept_label = ""
             if u.department_id:
                 dept = db.query(Department).filter(Department.id == u.department_id).first()
                 if dept:
-                    dept_code = dept.code
-            ws.append([u.email, "", u.name, u.phone or "", dept_code])
+                    dept_label = f"{dept.code} ({dept.name})"
+            ws.cell(row=i, column=5, value=dept_label)
     else:
         # 샘플 행
-        ws.append(["user@example.com", "Password1!", "홍길동", "010-1234-5678", "DEV"])
+        ws.append(["user@example.com", "Password1!", "홍길동", "010-1234-5678", ""])
+
+    # 열 너비
+    for col, w in enumerate([25, 18, 15, 18, 25], 1):
+        ws.column_dimensions[chr(64 + col)].width = w
 
     filename = "user_bulk_data.xlsx" if include_data else "user_bulk_template.xlsx"
     return _workbook_to_streaming_response(wb, filename)
@@ -159,16 +235,17 @@ def upload_users(
             errors.append({"row": idx, "email": email, "error": "이미 등록된 이메일입니다."})
             continue
 
-        # 부서 코드 조회
+        # 부서 코드 조회 ("CODE (NAME)" 형식 지원)
         department_id = None
         if dept_code:
-            dept = db.query(Department).filter(Department.code == dept_code).first()
+            parsed_code = _extract_code(dept_code)
+            dept = db.query(Department).filter(Department.code == parsed_code).first()
             if not dept:
                 failed += 1
                 errors.append({
                     "row": idx,
                     "email": email,
-                    "error": f"존재하지 않는 부서코드입니다: {dept_code}",
+                    "error": f"존재하지 않는 부서코드입니다: {parsed_code}",
                 })
                 continue
             department_id = dept.id
@@ -235,19 +312,37 @@ def download_department_template(
     ws = wb.active
     ws.title = "부서 일괄 등록"
 
-    # 헤더
-    headers = ["부서명(필수)", "부서코드(필수)", "설명", "상위부서코드"]
-    ws.append(headers)
+    # 헤더 (필수=빨간, 선택=파란)
+    headers = [
+        ("부서명 ★", True),
+        ("부서코드 ★", True),
+        ("설명", False),
+        ("상위부서", False),
+    ]
+    _style_header(ws, headers)
+
+    # 상위부서 드롭다운 (D열)
+    _add_dept_validation(ws, db, "D")
 
     if include_data:
         depts = db.query(Department).filter(Department.is_active == True).order_by(Department.name).all()
-        dept_map = {d.id: d.code for d in depts}
-        for d in depts:
-            parent_code = dept_map.get(d.parent_id, "") if d.parent_id else ""
-            ws.append([d.name, d.code, d.description or "", parent_code])
+        dept_map = {d.id: d for d in depts}
+        for i, d in enumerate(depts, 2):
+            ws.cell(row=i, column=1, value=d.name)
+            ws.cell(row=i, column=2, value=d.code)
+            ws.cell(row=i, column=3, value=d.description or "")
+            parent_label = ""
+            if d.parent_id and d.parent_id in dept_map:
+                p = dept_map[d.parent_id]
+                parent_label = f"{p.code} ({p.name})"
+            ws.cell(row=i, column=4, value=parent_label)
     else:
         # 샘플 행
-        ws.append(["개발팀", "DEV", "소프트웨어 개발 부서", "IT"])
+        ws.append(["개발팀", "DEV", "소프트웨어 개발 부서", ""])
+
+    # 열 너비
+    for col, w in enumerate([20, 15, 30, 25], 1):
+        ws.column_dimensions[chr(64 + col)].width = w
 
     filename = "department_bulk_data.xlsx" if include_data else "department_bulk_template.xlsx"
     return _workbook_to_streaming_response(wb, filename)
@@ -310,16 +405,17 @@ def upload_departments(
             errors.append({"row": idx, "name": name, "error": f"이미 등록된 부서코드입니다: {code}"})
             continue
 
-        # 상위 부서 코드 조회
+        # 상위 부서 코드 조회 ("CODE (NAME)" 형식 지원)
         parent_id = None
         if parent_code:
-            parent_dept = db.query(Department).filter(Department.code == parent_code).first()
+            parsed_parent = _extract_code(parent_code)
+            parent_dept = db.query(Department).filter(Department.code == parsed_parent).first()
             if not parent_dept:
                 failed += 1
                 errors.append({
                     "row": idx,
                     "name": name,
-                    "error": f"존재하지 않는 상위부서코드입니다: {parent_code}",
+                    "error": f"존재하지 않는 상위부서코드입니다: {parsed_parent}",
                 })
                 continue
             parent_id = parent_dept.id
@@ -383,22 +479,41 @@ def download_personnel_template(
     ws = wb.active
     ws.title = "담당자 일괄 등록"
 
-    # 헤더
-    headers = ["이름(필수)", "이메일", "전화번호", "직위", "부서코드", "비고"]
-    ws.append(headers)
+    # 헤더 (필수=빨간, 선택=파란)
+    headers = [
+        ("이름 ★", True),
+        ("이메일", False),
+        ("전화번호", False),
+        ("직위", False),
+        ("부서", False),
+        ("비고", False),
+    ]
+    _style_header(ws, headers)
+
+    # 부서 드롭다운 (E열)
+    _add_dept_validation(ws, db, "E")
 
     if include_data:
         people = db.query(Personnel).filter(Personnel.is_active == True).order_by(Personnel.name).all()
-        for p in people:
-            dept_code = ""
+        for i, p in enumerate(people, 2):
+            ws.cell(row=i, column=1, value=p.name)
+            ws.cell(row=i, column=2, value=p.email or "")
+            ws.cell(row=i, column=3, value=p.phone or "")
+            ws.cell(row=i, column=4, value=p.position or "")
+            dept_label = ""
             if p.department_id:
                 dept = db.query(Department).filter(Department.id == p.department_id).first()
                 if dept:
-                    dept_code = dept.code
-            ws.append([p.name, p.email or "", p.phone or "", p.position or "", dept_code, p.note or ""])
+                    dept_label = f"{dept.code} ({dept.name})"
+            ws.cell(row=i, column=5, value=dept_label)
+            ws.cell(row=i, column=6, value=p.note or "")
     else:
         # 샘플 행
-        ws.append(["홍길동", "hong@example.com", "010-1234-5678", "대리", "DEV", "개발팀 담당자"])
+        ws.append(["홍길동", "hong@example.com", "010-1234-5678", "대리", "", "개발팀 담당자"])
+
+    # 열 너비
+    for col, w in enumerate([15, 25, 18, 12, 25, 20], 1):
+        ws.column_dimensions[chr(64 + col)].width = w
 
     filename = "personnel_bulk_data.xlsx" if include_data else "personnel_bulk_template.xlsx"
     return _workbook_to_streaming_response(wb, filename)
@@ -466,16 +581,17 @@ def upload_personnel(
                 errors_list.append({"row": idx, "name": p_name, "error": "이미 등록된 이메일입니다."})
                 continue
 
-        # 부서 코드 조회
+        # 부서 코드 조회 ("CODE (NAME)" 형식 지원)
         p_department_id = None
         if p_dept_code:
-            dept = db.query(Department).filter(Department.code == p_dept_code).first()
+            parsed_dept = _extract_code(p_dept_code)
+            dept = db.query(Department).filter(Department.code == parsed_dept).first()
             if not dept:
                 failed += 1
                 errors_list.append({
                     "row": idx,
                     "name": p_name,
-                    "error": f"존재하지 않는 부서코드입니다: {p_dept_code}",
+                    "error": f"존재하지 않는 부서코드입니다: {parsed_dept}",
                 })
                 continue
             p_department_id = dept.id

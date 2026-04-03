@@ -295,7 +295,7 @@ const NonConformitiesPage = () => {
                 style={{ width: '100%' }}
                 allowClear
                 onChange={handleSeverityChange}
-                value={filters.type}
+                value={filters.type ?? undefined}
               >
                 <Option value={undefined}>전체 심각도</Option>
                 <Option value="critical">치명적</Option>
@@ -310,7 +310,7 @@ const NonConformitiesPage = () => {
                 style={{ width: '100%' }}
                 allowClear
                 onChange={handleStatusChange}
-                value={filters.status}
+                value={filters.status ?? undefined}
               >
                 <Option value={undefined}>전체 상태</Option>
                 <Option value="pending">대기</Option>

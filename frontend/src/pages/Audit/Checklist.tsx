@@ -445,7 +445,7 @@ const ChecklistPage = () => {
                 <Text>결과 필터:</Text>
                 <Select
                   style={{ width: 150 }}
-                  value={resultFilter}
+                  value={resultFilter ?? undefined}
                   onChange={setResultFilter}
                 >
                   <Option value="all">전체</Option>

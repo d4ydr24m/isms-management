@@ -717,16 +717,12 @@ const RiskScenarioDetailPage = () => {
           <Descriptions.Item label="생성일">
             {dayjs(scenario.createdAt).format('YYYY-MM-DD HH:mm')}
           </Descriptions.Item>
-          {scenario.completedAt && (
-            <Descriptions.Item label="완료일">
-              {dayjs(scenario.completedAt).format('YYYY-MM-DD HH:mm')}
-            </Descriptions.Item>
-          )}
-          {scenario.description && (
-            <Descriptions.Item label="설명" span={3}>
-              {scenario.description}
-            </Descriptions.Item>
-          )}
+          <Descriptions.Item label="완료일">
+            {scenario.completedAt ? dayjs(scenario.completedAt).format('YYYY-MM-DD HH:mm') : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="설명" span={2}>
+            {scenario.description || '-'}
+          </Descriptions.Item>
         </Descriptions>
       </Card>
 
