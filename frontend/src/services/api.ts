@@ -46,6 +46,28 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
+// 토큰 갱신 락 (동시 갱신 방지)
+let isRefreshing = false
+let refreshSubscribers: Array<() => void> = []
+
+function onRefreshed() {
+  refreshSubscribers.forEach((cb) => cb())
+  refreshSubscribers = []
+}
+
+function subscribeTokenRefresh(): Promise<void> {
+  return new Promise((resolve) => {
+    refreshSubscribers.push(resolve)
+  })
+}
+
+function forceLogout() {
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+  axios.post(`${baseURL}/auth/logout`, {}, { withCredentials: true }).catch(() => {})
+  try { localStorage.removeItem('auth-storage') } catch { /* ignore */ }
+  window.location.href = '/login'
+}
+
 // Response 인터셉터: snake_case → camelCase 변환 및 에러 처리
 apiClient.interceptors.response.use(
   (response) => {
@@ -61,8 +83,15 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
+      // 이미 갱신 중이면 완료를 기다린 후 원래 요청 재시도
+      if (isRefreshing) {
+        await subscribeTokenRefresh()
+        return apiClient(originalRequest)
+      }
+
+      isRefreshing = true
+
       try {
-        // Cookie-based refresh (refresh_token cookie sent automatically)
         const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
         await axios.post(
           `${baseURL}/auth/refresh`,
@@ -70,37 +99,24 @@ apiClient.interceptors.response.use(
           { withCredentials: true }
         )
 
-        // Retry the original request (new cookies are set by the refresh response)
+        // 갱신 성공: 대기 중인 요청들 재시도
+        onRefreshed()
         return apiClient(originalRequest)
       } catch (refreshError) {
-        // 토큰 갱신 실패 시 로그아웃 처리
-        // 만료된 토큰이라도 로그아웃 API 호출하여 감사 로그 기록
-        const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
-        try {
-          await axios.post(`${baseURL}/auth/logout`, {}, { withCredentials: true })
-        } catch { /* ignore - logout endpoint handles expired tokens */ }
-        try {
-          localStorage.removeItem('auth-storage')
-        } catch { /* ignore */ }
-        window.location.href = '/login'
+        // 갱신 실패: 로그아웃
+        forceLogout()
         return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
       }
     }
 
-    // 401 에러이고 이미 재시도한 경우 (or non-401)
+    // 401 에러이고 이미 재시도한 경우
     if (error.response?.status === 401) {
-      // 세션 만료 시 로그아웃 API 호출하여 감사 로그 기록
-      const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
-      try {
-        await axios.post(`${baseURL}/auth/logout`, {}, { withCredentials: true })
-      } catch { /* ignore */ }
-      try {
-        localStorage.removeItem('auth-storage')
-      } catch { /* ignore */ }
-      window.location.href = '/login'
+      forceLogout()
     }
 
-    // 서버 에러 메시지를 error.message에 포함 (catch 블록에서 쉽게 접근 가능)
+    // 서버 에러 메시지를 error.message에 포함
     if (error.response?.data) {
       const data = error.response.data as any
       const detail = data.detail || data.message
