@@ -96,12 +96,23 @@ export const deleteVulnCheckScript = async (id: number): Promise<void> => {
   }
 }
 
-export const downloadVulnCheckScript = async (
-  id: number
-): Promise<{ downloadUrl: string; fileName: string }> => {
+export const downloadVulnCheckScript = async (id: number): Promise<void> => {
   try {
-    const res = await apiClient.get(`${BASE}/scripts/${id}/download`)
-    return res.data
+    const res = await apiClient.get(`${BASE}/scripts/${id}/download`, {
+      responseType: 'blob',
+    })
+    const contentDisposition = res.headers['content-disposition'] || ''
+    const filenameMatch = contentDisposition.match(/filename="?(.+?)"?$/)
+    const fileName = filenameMatch ? filenameMatch[1] : `script-${id}`
+
+    const url = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
   } catch (error) {
     throw handleApiError(error)
   }
@@ -207,6 +218,22 @@ export const updateVulnCheckExecution = async (
 ): Promise<VulnCheckExecution> => {
   try {
     const res = await apiClient.put(`${BASE}/executions/${id}`, data)
+    return res.data
+  } catch (error) {
+    throw handleApiError(error)
+  }
+}
+
+export const uploadVulnCheckResult = async (
+  executionId: number,
+  file: File
+): Promise<VulnCheckExecution> => {
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await apiClient.post(`${BASE}/executions/${executionId}/upload-result`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     return res.data
   } catch (error) {
     throw handleApiError(error)

@@ -265,7 +265,6 @@ const ControlListPage = () => {
                     onChange={handleRequiredChange}
                     value={filters.isRequired ?? undefined}
                   >
-                    <Option value={undefined}>전체 항목</Option>
                     <Option value={true}>필수 항목만</Option>
                     <Option value={false}>선택 항목만</Option>
                   </Select>

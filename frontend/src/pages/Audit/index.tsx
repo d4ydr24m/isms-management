@@ -241,7 +241,6 @@ const AuditListPage = () => {
                 onChange={handleStatusChange}
                 value={filters.status ?? undefined}
               >
-                <Option value={undefined}>전체 상태</Option>
                 <Option value="planned">예정</Option>
                 <Option value="in_progress">진행 중</Option>
                 <Option value="completed">완료</Option>
@@ -256,7 +255,6 @@ const AuditListPage = () => {
                 onChange={handleTypeChange}
                 value={filters.auditType ?? undefined}
               >
-                <Option value={undefined}>전체 유형</Option>
                 <Option value="internal">내부 감사</Option>
                 <Option value="external">외부 감사</Option>
                 <Option value="certification">인증 심사</Option>

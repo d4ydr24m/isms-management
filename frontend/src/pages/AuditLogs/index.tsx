@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Button, Card, Modal, Table, Tag, Space, Input, Select, DatePicker, Typography, Tooltip } from 'antd'
+import { App, Button, Card, Table, Tag, Space, Input, Select, DatePicker, Typography, Tooltip } from 'antd'
 import { FileSearchOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { apiClient } from '@/services/api'
@@ -75,6 +75,7 @@ const resourceLabels: Record<string, string> = {
   personnel: '담당자',
   'auditor-accounts': '외부 심사원',
   'risk-control-linkage': '위험-통제 연계',
+  'vuln-check': '취약점 점검',
   dashboard: '대시보드',
   search: '검색',
 }
@@ -87,6 +88,7 @@ const methodColors: Record<string, string> = {
 }
 
 function AuditLogsPage() {
+  const { modal } = App.useApp()
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -132,12 +134,17 @@ function AuditLogsPage() {
       title: '사용자',
       key: 'user',
       width: 150,
-      render: (_, record) => (
-        <Space direction="vertical" size={0}>
-          <Text strong>{record.userName || '-'}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>{record.userEmail}</Text>
-        </Space>
-      ),
+      render: (_, record) => {
+        if (!record.userName && !record.userEmail) return <Text type="secondary">-</Text>
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong>{record.userName || record.userEmail || '-'}</Text>
+            {record.userName && record.userEmail && (
+              <Text type="secondary" style={{ fontSize: 12 }}>{record.userEmail}</Text>
+            )}
+          </Space>
+        )
+      },
     },
     {
       title: '액션',
@@ -206,7 +213,7 @@ function AuditLogsPage() {
           <Button type="link" size="small" onClick={() => {
             try {
               const data = JSON.parse(record.newValue)
-              Modal.info({
+              modal.info({
                 title: `${actionLabels[record.action] || record.action} 상세`,
                 width: 600,
                 content: (
@@ -216,7 +223,7 @@ function AuditLogsPage() {
                 ),
               })
             } catch {
-              Modal.info({
+              modal.info({
                 title: '상세',
                 content: <Text>{record.newValue}</Text>,
               })

@@ -9,13 +9,13 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Card,
   Button,
   Space,
   Table,
   Input,
   Select,
-  message,
   Modal,
   Form,
   Tag,
@@ -45,8 +45,6 @@ import {
   ThunderboltOutlined,
   BugOutlined,
   WarningOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
   SyncOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
@@ -65,6 +63,7 @@ import {
   getVulnCheckExecutions,
   createVulnCheckExecution,
   updateVulnCheckExecution,
+  uploadVulnCheckResult,
   getVulnCheckStats,
 } from '@/services/vulnCheck'
 import type {
@@ -74,6 +73,8 @@ import type {
   VulnCheckStats,
   ScriptType,
 } from '@/types/vulnCheck'
+import { assetService } from '@/services/assets'
+import type { AssetType, Asset } from '@/types/asset'
 
 const { Search } = Input
 const { Text } = Typography
@@ -101,7 +102,9 @@ const CRON_PRESETS = [
   { label: '매분기 (1,4,7,10월 1일)', value: '0 2 1 1,4,7,10 *' },
 ]
 
+// v2 - file upload support
 const VulnCheckScriptsPage = () => {
+  const { message } = App.useApp()
   const [activeTab, setActiveTab] = useState('scripts')
 
   // 스크립트 상태
@@ -139,6 +142,14 @@ const VulnCheckScriptsPage = () => {
   const [resultModalVisible, setResultModalVisible] = useState(false)
   const [resultTargetExecution, setResultTargetExecution] = useState<VulnCheckExecution | null>(null)
   const [resultForm] = Form.useForm()
+  const [resultFile, setResultFile] = useState<UploadFile | null>(null)
+  const [resultUploading, setResultUploading] = useState(false)
+
+  // 자산 선택 (수동 실행용)
+  const [assetTypes, setAssetTypes] = useState<AssetType[]>([])
+  const [filteredAssets, setFilteredAssets] = useState<Asset[]>([])
+  const [assetsLoading, setAssetsLoading] = useState(false)
+  const [selectedAssetTypeId, setSelectedAssetTypeId] = useState<number | undefined>(undefined)
 
   // 통계
   const [stats, setStats] = useState<VulnCheckStats | null>(null)
@@ -265,8 +276,7 @@ const VulnCheckScriptsPage = () => {
 
   const handleDownloadScript = async (script: VulnCheckScript) => {
     try {
-      const result = await downloadVulnCheckScript(script.id)
-      window.open(result.downloadUrl, '_blank')
+      await downloadVulnCheckScript(script.id)
     } catch {
       message.error('다운로드 실패')
     }
@@ -328,22 +338,47 @@ const VulnCheckScriptsPage = () => {
   // 실행 핸들러
   // =========================================================================
 
-  const handleManualRun = () => {
+  const handleManualRun = async () => {
     runForm.resetFields()
+    setSelectedAssetTypeId(undefined)
+    setFilteredAssets([])
     setRunModalVisible(true)
+
+    // 자산 유형 로드
+    try {
+      const result = await assetService.getAssetTypes()
+      setAssetTypes(result.items.filter((t) => t.isActive))
+    } catch {
+      message.error('자산 유형 목록 조회 실패')
+    }
+  }
+
+  const handleAssetTypeChange = async (typeId: number) => {
+    setSelectedAssetTypeId(typeId)
+    runForm.setFieldsValue({ assetIds: [] })
+    setAssetsLoading(true)
+    try {
+      const result = await assetService.getAssets({
+        assetTypeId: typeId,
+        isActive: true,
+        page: 1,
+        size: 100,
+      })
+      setFilteredAssets(result.items)
+    } catch {
+      message.error('자산 목록 조회 실패')
+    } finally {
+      setAssetsLoading(false)
+    }
   }
 
   const handleRunSubmit = async () => {
     try {
       const values = await runForm.validateFields()
-      const assetIdsStr = values.assetIds as string
-      const assetIds = assetIdsStr
-        .split(',')
-        .map((s: string) => parseInt(s.trim(), 10))
-        .filter((n: number) => !isNaN(n))
+      const assetIds = values.assetIds as number[]
 
-      if (assetIds.length === 0) {
-        message.error('유효한 자산 ID를 입력해주세요.')
+      if (!assetIds || assetIds.length === 0) {
+        message.error('대상 자산을 선택해주세요.')
         return
       }
 
@@ -367,6 +402,7 @@ const VulnCheckScriptsPage = () => {
 
   const handleOpenResultInput = (execution: VulnCheckExecution) => {
     setResultTargetExecution(execution)
+    setResultFile(null)
     resultForm.setFieldsValue({
       status: 'completed',
       resultSummary: execution.resultSummary || '',
@@ -380,8 +416,35 @@ const VulnCheckScriptsPage = () => {
     setResultModalVisible(true)
   }
 
+  const handleResultFileUpload = async () => {
+    if (!resultTargetExecution || !resultFile) return
+    setResultUploading(true)
+    try {
+      await uploadVulnCheckResult(
+        resultTargetExecution.id,
+        resultFile as unknown as File,
+      )
+      message.success('결과 파일이 업로드되고 자동 분석되었습니다.')
+      setResultModalVisible(false)
+      setExecutionDetailOpen(false)
+      loadExecutions(executionPagination.current)
+      loadStats()
+    } catch {
+      message.error('결과 파일 업로드 실패')
+    } finally {
+      setResultUploading(false)
+    }
+  }
+
   const handleResultSubmit = async () => {
     if (!resultTargetExecution) return
+
+    // 파일이 선택되어 있으면 파일 업로드 우선
+    if (resultFile) {
+      await handleResultFileUpload()
+      return
+    }
+
     try {
       const values = await resultForm.validateFields()
       await updateVulnCheckExecution(resultTargetExecution.id, values)
@@ -610,16 +673,19 @@ const VulnCheckScriptsPage = () => {
       title: '발견 취약점',
       dataIndex: 'vulnerabilitiesFound',
       key: 'vulnerabilitiesFound',
-      width: 120,
+      width: 180,
       align: 'center',
-      render: (count: number, record) => (
-        <Space size={4}>
-          <Text>{count}</Text>
-          {record.severityHigh > 0 && <Tag color="red">{record.severityHigh}</Tag>}
-          {record.severityMedium > 0 && <Tag color="orange">{record.severityMedium}</Tag>}
-          {record.severityLow > 0 && <Tag color="blue">{record.severityLow}</Tag>}
-        </Space>
-      ),
+      render: (_: number, record) => {
+        const { severityHigh, severityMedium, severityLow } = record
+        if (!severityHigh && !severityMedium && !severityLow) return '-'
+        return (
+          <Space size={4}>
+            {severityHigh > 0 && <Tag color="red">상 {severityHigh}</Tag>}
+            {severityMedium > 0 && <Tag color="orange">중 {severityMedium}</Tag>}
+            {severityLow > 0 && <Tag color="blue">하 {severityLow}</Tag>}
+          </Space>
+        )
+      },
     },
     {
       title: '실행 시간',
@@ -964,6 +1030,7 @@ const VulnCheckScriptsPage = () => {
         onOk={handleRunSubmit}
         onCancel={() => setRunModalVisible(false)}
         okText="실행"
+        width={600}
       >
         <Form form={runForm} layout="vertical">
           <Form.Item
@@ -979,13 +1046,31 @@ const VulnCheckScriptsPage = () => {
             />
           </Form.Item>
 
+          <Form.Item label="자산 유형">
+            <Select
+              placeholder="자산 유형으로 필터링"
+              allowClear
+              value={selectedAssetTypeId}
+              onChange={handleAssetTypeChange}
+              options={assetTypes.map((t) => ({ value: t.id, label: t.name }))}
+            />
+          </Form.Item>
+
           <Form.Item
             name="assetIds"
-            label="대상 자산 ID"
-            rules={[{ required: true, message: '자산 ID를 입력해주세요.' }]}
-            help="콤마로 구분하여 여러 자산 ID를 입력할 수 있습니다. (예: 1,2,3)"
+            label="대상 자산"
+            rules={[{ required: true, message: '대상 자산을 선택해주세요.' }]}
           >
-            <Input placeholder="1,2,3" />
+            <Select
+              mode="multiple"
+              placeholder={selectedAssetTypeId ? '자산을 선택하세요' : '먼저 자산 유형을 선택하세요'}
+              loading={assetsLoading}
+              optionFilterProp="label"
+              options={filteredAssets.map((a) => ({
+                value: a.id,
+                label: `${a.name} (${a.assetCode})`,
+              }))}
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -1095,8 +1180,36 @@ const VulnCheckScriptsPage = () => {
         onOk={handleResultSubmit}
         onCancel={() => setResultModalVisible(false)}
         width={640}
-        okText="저장"
+        okText={resultFile ? '파일 업로드' : '저장'}
+        confirmLoading={resultUploading}
       >
+        {/* 파일 업로드 섹션 */}
+        <Card
+          size="small"
+          style={{ marginBottom: 16, background: '#f6ffed', borderColor: '#b7eb8f' }}
+        >
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Text strong>결과 파일 업로드 (자동 분석)</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              점검 스크립트의 출력 파일을 업로드하면 취약점 수가 자동으로 분석됩니다.
+              (TXT, JSON, CSV 지원)
+            </Text>
+            <Upload
+              beforeUpload={(file) => {
+                setResultFile(file as unknown as UploadFile)
+                return false
+              }}
+              maxCount={1}
+              fileList={resultFile ? [resultFile] : []}
+              onRemove={() => setResultFile(null)}
+              accept=".txt,.json,.csv,.log"
+            >
+              <Button icon={<UploadOutlined />}>결과 파일 선택</Button>
+            </Upload>
+          </Space>
+        </Card>
+
+        {!resultFile && (
         <Form form={resultForm} layout="vertical">
           <Form.Item
             name="status"
@@ -1154,6 +1267,7 @@ const VulnCheckScriptsPage = () => {
             <TextArea rows={2} placeholder="실패 시 에러 메시지" />
           </Form.Item>
         </Form>
+        )}
       </Modal>
     </div>
   )

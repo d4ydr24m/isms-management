@@ -297,7 +297,6 @@ const NonConformitiesPage = () => {
                 onChange={handleSeverityChange}
                 value={filters.type ?? undefined}
               >
-                <Option value={undefined}>전체 심각도</Option>
                 <Option value="critical">치명적</Option>
                 <Option value="major">중대</Option>
                 <Option value="minor">경미</Option>
@@ -312,7 +311,6 @@ const NonConformitiesPage = () => {
                 onChange={handleStatusChange}
                 value={filters.status ?? undefined}
               >
-                <Option value={undefined}>전체 상태</Option>
                 <Option value="pending">대기</Option>
                 <Option value="in_progress">진행 중</Option>
                 <Option value="completed">완료</Option>

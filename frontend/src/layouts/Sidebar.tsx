@@ -135,6 +135,7 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
     if (pathname === '/risk/treatments') return ['/risk/treatments']
     if (pathname === '/risk/soa') return ['/risk/soa']
     if (pathname === '/risk/report') return ['/risk/report']
+    if (pathname === '/risk/vuln-check') return ['/risk/vuln-check']
     if (pathname.startsWith('/risk')) return ['/risk']
     return [pathname]
   }, [location.pathname])

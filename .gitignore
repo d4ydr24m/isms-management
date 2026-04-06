@@ -88,3 +88,5 @@ Thumbs.db
 
 .claude/*
 *.pdf
+
+scripts/*.txt

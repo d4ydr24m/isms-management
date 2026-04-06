@@ -321,7 +321,9 @@ def download_script(
     service: VulnCheckService = Depends(get_vuln_check_service),
     current_user: User = Depends(require_permission("risk:read")),
 ):
-    """스크립트 파일 다운로드 URL 생성"""
+    """스크립트 파일 다운로드 (백엔드 프록시)"""
+    from fastapi.responses import Response
+
     script = service.get_script_by_id(script_id)
     if not script:
         raise HTTPException(
@@ -331,8 +333,14 @@ def download_script(
 
     file_service = get_file_service()
     try:
-        url = file_service.get_presigned_url(script.file_path, expires_minutes=15)
-        return {"download_url": url, "file_name": script.file_name}
+        content = file_service.download_file(script.file_path)
+        return Response(
+            content=content,
+            media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": f'attachment; filename="{script.file_name}"',
+            },
+        )
     except FileNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -519,6 +527,73 @@ def update_execution(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
+
+
+@router.post("/executions/{execution_id}/upload-result", response_model=VulnCheckExecutionResponse)
+async def upload_execution_result(
+    execution_id: int,
+    file: UploadFile = File(..., description="결과 파일 (TXT, JSON, CSV)"),
+    service: VulnCheckService = Depends(get_vuln_check_service),
+    current_user: User = Depends(require_permission("risk:update")),
+) -> VulnCheckExecutionResponse:
+    """
+    실행 결과 파일 업로드 및 자동 파싱
+
+    지원 형식:
+    - TXT: ISMS-P 취약점 점검 보고서 형식 ([VULN], [WARN], [PASS], [INFO] 태그)
+    - JSON: { "summary": { "vuln": N, "warn": N, "pass": N, "info": N }, ... }
+    - CSV: severity, check_id, check_name, result, description 컬럼
+    """
+    from app.services.vuln_result_parser import parse_result_file
+
+    # 파일 확장자 검증
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="파일명이 없습니다.")
+    filename = os.path.basename(file.filename)
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    allowed = {"txt", "json", "csv", "log", "xml"}
+    if ext not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"지원하지 않는 파일 형식입니다. 허용: {', '.join(sorted(allowed))}",
+        )
+
+    # 파일 읽기 (최대 10MB)
+    content_bytes = await file.read()
+    if len(content_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="파일 크기가 10MB를 초과합니다.")
+
+    # 텍스트 디코딩 (UTF-8 우선, 실패 시 CP949/EUC-KR)
+    content = None
+    for encoding in ("utf-8", "utf-8-sig", "cp949", "euc-kr", "latin-1"):
+        try:
+            content = content_bytes.decode(encoding)
+            break
+        except (UnicodeDecodeError, LookupError):
+            continue
+
+    if content is None:
+        raise HTTPException(status_code=400, detail="파일 인코딩을 인식할 수 없습니다.")
+
+    # 파싱
+    parsed = parse_result_file(content, filename)
+
+    # 실행 결과 업데이트
+    try:
+        execution = service.update_execution_result(
+            execution_id=execution_id,
+            status=parsed.status,
+            result_summary=parsed.result_summary,
+            result_detail=parsed.result_detail,
+            vulnerabilities_found=parsed.vulnerabilities_found,
+            severity_high=parsed.severity_high,
+            severity_medium=parsed.severity_medium,
+            severity_low=parsed.severity_low,
+            error_message=parsed.error_message,
+        )
+        return _execution_to_response(execution)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/executions/{execution_id}", response_model=VulnCheckExecutionResponse)

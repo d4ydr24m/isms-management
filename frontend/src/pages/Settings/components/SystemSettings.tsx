@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import {
+  App,
   Card,
   Radio,
   Button,
   Spin,
-  message,
   Space,
   Typography,
   Alert,
@@ -85,6 +85,7 @@ function parseNum(val: string | undefined, fallback: number): number {
 }
 
 const SystemSettings: React.FC = () => {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [testingEmail, setTestingEmail] = useState(false)
@@ -199,7 +200,7 @@ const SystemSettings: React.FC = () => {
             <span>인증 유형</span>
           </Space>
         }
-        bordered={false}
+        variant="borderless"
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <Text type="secondary">
@@ -240,7 +241,7 @@ const SystemSettings: React.FC = () => {
             <span>보안 정책</span>
           </Space>
         }
-        bordered={false}
+        variant="borderless"
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <div>
@@ -252,7 +253,7 @@ const SystemSettings: React.FC = () => {
               value={settings.maxLoginAttempts}
               onChange={(v) => update('maxLoginAttempts', v ?? 5)}
               style={{ width: 200, marginTop: 4 }}
-              addonAfter="회"
+              suffix="회"
             />
           </div>
 
@@ -265,7 +266,7 @@ const SystemSettings: React.FC = () => {
               value={settings.accountLockoutDurationMinutes}
               onChange={(v) => update('accountLockoutDurationMinutes', v ?? 30)}
               style={{ width: 200, marginTop: 4 }}
-              addonAfter="분"
+              suffix="분"
             />
           </div>
 
@@ -278,7 +279,7 @@ const SystemSettings: React.FC = () => {
               value={settings.sessionTimeoutMinutes}
               onChange={(v) => update('sessionTimeoutMinutes', v ?? 30)}
               style={{ width: 200, marginTop: 4 }}
-              addonAfter="분"
+              suffix="분"
             />
           </div>
 
@@ -293,7 +294,7 @@ const SystemSettings: React.FC = () => {
               value={settings.passwordMinLength}
               onChange={(v) => update('passwordMinLength', v ?? 8)}
               style={{ width: 200, marginTop: 4 }}
-              addonAfter="자"
+              suffix="자"
             />
           </div>
 
@@ -309,7 +310,7 @@ const SystemSettings: React.FC = () => {
               value={settings.passwordExpiryDays}
               onChange={(v) => update('passwordExpiryDays', v ?? 90)}
               style={{ width: 200, marginTop: 4 }}
-              addonAfter="일"
+              suffix="일"
             />
           </div>
 
@@ -355,7 +356,7 @@ const SystemSettings: React.FC = () => {
             <span>IP 접근 제한</span>
           </Space>
         }
-        bordered={false}
+        variant="borderless"
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <div>
@@ -409,7 +410,7 @@ const SystemSettings: React.FC = () => {
             <span>이메일(SMTP) 설정</span>
           </Space>
         }
-        bordered={false}
+        variant="borderless"
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <div>

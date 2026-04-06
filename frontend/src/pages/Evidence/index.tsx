@@ -149,7 +149,6 @@ const EvidenceListPage = () => {
                 onChange={handleStatusChange}
                 value={filters.status ?? undefined}
               >
-                <Option value={undefined}>전체 상태</Option>
                 <Option value="active">유효</Option>
                 <Option value="draft">초안</Option>
                 <Option value="expired">만료</Option>
