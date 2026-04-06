@@ -3,7 +3,7 @@
  * 정렬, 필터, 페이지네이션 지원
  */
 import { Link } from 'react-router-dom'
-import { Table, Tag, Button, Space, Tooltip } from 'antd'
+import { Table, Tag, Button, Space, Tooltip, Select } from 'antd'
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons'
 import type { TableProps, TablePaginationConfig } from 'antd'
 import type { Asset, AssetStatus } from '@/types'
@@ -18,6 +18,7 @@ interface AssetTableProps {
   }
   onTableChange: TableProps<Asset>['onChange']
   onDelete: (id: number) => void
+  onStatusChange?: (id: number, status: string) => void
 }
 
 /** 자산 상태 태그 색상 매핑 (DB에 한국어로 저장됨) */
@@ -52,12 +53,20 @@ const importanceLabelMap: Record<number, { label: string; color: string }> = {
   3: { label: '상', color: 'red' },
 }
 
+const statusOptions = [
+  { value: '도입', label: '도입', color: 'blue' },
+  { value: '운영', label: '운영', color: 'green' },
+  { value: '변경', label: '변경', color: 'orange' },
+  { value: '폐기', label: '폐기', color: 'default' },
+]
+
 const AssetTable = ({
   data,
   loading,
   pagination,
   onTableChange,
   onDelete,
+  onStatusChange,
 }: AssetTableProps) => {
   const columns: TableProps<Asset>['columns'] = [
     {
@@ -104,8 +113,20 @@ const AssetTable = ({
       title: '상태',
       dataIndex: 'status',
       key: 'status',
-      width: 80,
-      render: (status: string) => status ? (
+      width: 110,
+      render: (status: string, record: Asset) => onStatusChange ? (
+        <Select
+          value={statusLabelMap[status] ? (Object.entries(statusLabelMap).find(([k, v]) => k === status)?.[0] || status) : status}
+          size="small"
+          variant="borderless"
+          style={{ width: 90 }}
+          onChange={(val) => onStatusChange(record.id, val)}
+          options={statusOptions.map(o => ({
+            value: o.value,
+            label: <Tag color={o.color} style={{ margin: 0 }}>{o.label}</Tag>,
+          }))}
+        />
+      ) : status ? (
         <Tag color={statusColorMap[status] || 'default'}>{statusLabelMap[status] || status}</Tag>
       ) : '—',
     },

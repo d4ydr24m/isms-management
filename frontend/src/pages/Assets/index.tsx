@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Card, Button, Space, message, Modal } from 'antd'
+import { App, Card, Button, Space, Modal } from 'antd'
 import { PlusOutlined, UploadOutlined, DownloadOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { AssetTable, AssetFilter } from './components'
 import { assetService } from '@/services/assets'
@@ -12,6 +12,7 @@ import type { Asset, AssetType, AssetStatus, AssetFilterParams } from '@/types'
 import type { TableProps } from 'antd'
 
 const AssetListPage = () => {
+  const { message } = App.useApp()
   const [assets, setAssets] = useState<Asset[]>([])
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([])
   const [loading, setLoading] = useState(false)
@@ -99,6 +100,18 @@ const AssetListPage = () => {
     setPagination((prev) => ({ ...prev, current: 1 }))
   }
 
+  // 상태 변경 핸들러 (테이블 인라인)
+  const handleAssetStatusChange = async (id: number, status: string) => {
+    try {
+      await assetService.updateAsset(id, { status } as any)
+      message.success('상태가 변경되었습니다')
+      fetchAssets()
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '상태 변경에 실패했습니다')
+    }
+  }
+
   // 삭제 핸들러
   const handleDelete = (id: number) => {
     Modal.confirm({
@@ -168,6 +181,7 @@ const AssetListPage = () => {
             pagination={pagination}
             onTableChange={handleTableChange}
             onDelete={handleDelete}
+            onStatusChange={handleAssetStatusChange}
           />
         </Space>
       </Card>

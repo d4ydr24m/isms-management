@@ -351,24 +351,19 @@ const AssetForm = ({
         </Col>
       </Row>
 
-      {/* 수정 시에만 상태 변경 가능 */}
-      {initialValues && (
-        <>
-          <Divider orientation="left">상태 정보</Divider>
-          <Row gutter={16}>
-            <Col xs={24} sm={12}>
-              <Form.Item name="status" label="상태">
-                <Select placeholder="상태 선택">
-                  <Option value="도입">도입</Option>
-                  <Option value="운영">운영</Option>
-                  <Option value="변경">변경</Option>
-                  <Option value="폐기">폐기</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-        </>
-      )}
+      <Divider orientation="left">상태 정보</Divider>
+      <Row gutter={16}>
+        <Col xs={24} sm={12}>
+          <Form.Item name="status" label="상태">
+            <Select placeholder="상태 선택">
+              <Option value="도입">도입</Option>
+              <Option value="운영">운영</Option>
+              <Option value="변경">변경</Option>
+              <Option value="폐기">폐기</Option>
+            </Select>
+          </Form.Item>
+        </Col>
+      </Row>
 
       {/* 버튼 */}
       <Divider />

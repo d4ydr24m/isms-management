@@ -293,11 +293,13 @@ class AssetService:
                 raise ValueError("사양 정보가 너무 깁니다 (최대 5000자)")
             specs = specs_json
 
+        status = kwargs.pop("status", None) or AssetStatus.INTRODUCED.value
+
         asset = Asset(
             asset_code=asset_code,
             name=name,
             asset_type_id=asset_type_id,
-            status=AssetStatus.INTRODUCED.value,
+            status=status,
             is_active=True,
             **kwargs,
         )

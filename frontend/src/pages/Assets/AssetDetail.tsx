@@ -157,8 +157,8 @@ const AssetDetailPage = () => {
     try {
       await assetService.createAssetAssignment(assetId, values)
       message.success('담당자가 추가되었습니다')
-      setAssignModalVisible(false)
       assignForm.resetFields()
+      setAssignModalVisible(false)
       await fetchAssignments()
     } catch (err: any) {
       const detail = err?.response?.data?.detail || err?.message
@@ -226,10 +226,10 @@ const AssetDetailPage = () => {
           <Col xs={24} lg={14}>
             <Card title="상세 정보">
               <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
-                <Descriptions.Item label="자산코드" span={2}>
+                <Descriptions.Item label="자산코드">
                   <code>{asset.assetCode}</code>
                 </Descriptions.Item>
-                <Descriptions.Item label="자산명" span={2}>
+                <Descriptions.Item label="자산명">
                   {asset.name}
                 </Descriptions.Item>
                 <Descriptions.Item label="자산 유형">
@@ -379,10 +379,11 @@ const AssetDetailPage = () => {
             title="담당자 추가"
             open={assignModalVisible}
             onCancel={() => {
-              setAssignModalVisible(false)
               assignForm.resetFields()
+              setAssignModalVisible(false)
             }}
             footer={null}
+            forceRender
           >
             <Form form={assignForm} layout="vertical" onFinish={handleAddAssignment}>
               <Form.Item

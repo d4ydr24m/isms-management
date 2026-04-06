@@ -110,7 +110,8 @@ class AssetBase(BaseModel):
     category_id: Optional[int] = Field(None, description="자산 분류 ID")
     location: Optional[str] = Field(None, max_length=200, description="물리적 위치")
     department_id: Optional[int] = Field(None, description="담당 부서 ID")
-    owner_id: Optional[int] = Field(None, description="자산 소유자 ID")
+    owner_id: Optional[int] = Field(None, description="자산 소유자 ID (사용자)")
+    personnel_owner_id: Optional[int] = Field(None, description="자산 소유자 ID (담당자)")
     ip_address: Optional[str] = Field(None, max_length=50, description="IP 주소")
     mac_address: Optional[str] = Field(None, max_length=50, description="MAC 주소")
     hostname: Optional[str] = Field(None, max_length=100, description="호스트명")
@@ -122,6 +123,17 @@ class AssetBase(BaseModel):
     acquisition_date: Optional[date] = Field(None, description="취득일")
     acquisition_cost: Optional[int] = Field(None, ge=0, le=9999999999, description="취득 비용 (최대 99억)")
     warranty_end_date: Optional[date] = Field(None, description="보증 만료일")
+    status: Optional[str] = Field(None, description="상태 (도입/운영/변경/폐기)")
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: Optional[str]) -> Optional[str]:
+        """자산 상태 검증"""
+        if v is not None:
+            valid_statuses = [s.value for s in AssetStatus]
+            if v not in valid_statuses:
+                raise ValueError(f"유효하지 않은 상태입니다. 허용값: {valid_statuses}")
+        return v
 
 
 class AssetCreate(AssetBase):
