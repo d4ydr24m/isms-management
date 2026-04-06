@@ -76,6 +76,7 @@ const resourceLabels: Record<string, string> = {
   'auditor-accounts': '외부 심사원',
   'risk-control-linkage': '위험-통제 연계',
   'vuln-check': '취약점 점검',
+  backup: '백업/복원',
   dashboard: '대시보드',
   search: '검색',
 }

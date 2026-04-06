@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Card,
   Table,
   Button,
@@ -10,7 +11,6 @@ import {
   Input,
   Select,
   Switch,
-  message,
   Row,
   Col,
   Statistic,
@@ -56,6 +56,7 @@ const { Title, Text } = Typography
 const { TextArea } = Input
 
 const SOAManagement = () => {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<SOARecordList | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -74,25 +75,30 @@ const SOAManagement = () => {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const params: Record<string, unknown> = {}
-      if (filterApplicable !== 'all') {
-        params.isApplicable = filterApplicable === 'true'
-      }
-      if (filterStatus !== 'all') {
-        params.implementationStatus = filterStatus
-      }
-      const result = await getSOARecords(params)
+      const result = await getSOARecords()
       setData(result)
     } catch {
       message.error('SOA 데이터를 불러오는데 실패했습니다.')
     } finally {
       setLoading(false)
     }
-  }, [filterApplicable, filterStatus])
+  }, [])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // 클라이언트 사이드 필터링
+  const filteredItems = (data?.items || []).filter((item) => {
+    if (filterApplicable !== 'all') {
+      const isApplicable = filterApplicable === 'true'
+      if (item.isApplicable !== isApplicable) return false
+    }
+    if (filterStatus !== 'all') {
+      if (item.implementationStatus !== filterStatus) return false
+    }
+    return true
+  })
 
   // SOA 자동 생성
   const handleGenerate = async () => {
@@ -494,7 +500,7 @@ const SOAManagement = () => {
       >
         <Table
           columns={columns}
-          dataSource={data?.items || []}
+          dataSource={filteredItems}
           loading={loading}
           rowKey="id"
           scroll={{ x: 1500 }}

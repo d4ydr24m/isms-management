@@ -15,6 +15,7 @@ celery_app = Celery(
         "app.services.scheduler_service",
         "app.services.notification_service",
         "app.services.vuln_check_scheduler",
+        "app.services.backup_scheduler",
     ]
 )
 
@@ -66,5 +67,10 @@ celery_app.conf.beat_schedule = {
     "run-vuln-check-schedules": {
         "task": "app.services.vuln_check_scheduler.run_scheduled_vuln_checks",
         "schedule": crontab(minute="*/10"),
+    },
+    # 자동 데이터베이스 백업 (매일 오전 3시)
+    "auto-database-backup": {
+        "task": "app.services.backup_scheduler.auto_database_backup",
+        "schedule": crontab(hour=3, minute=0),
     },
 }

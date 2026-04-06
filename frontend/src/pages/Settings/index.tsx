@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Tabs } from 'antd'
-import { UserOutlined, SafetyOutlined, BellOutlined, SettingOutlined } from '@ant-design/icons'
-import { ProfileSettings, SecuritySettings, NotificationSettings, SystemSettings } from './components'
+import { UserOutlined, SafetyOutlined, BellOutlined, SettingOutlined, DatabaseOutlined } from '@ant-design/icons'
+import { ProfileSettings, SecuritySettings, NotificationSettings, SystemSettings, BackupSettings } from './components'
 import { useAuthStore } from '@/stores/authStore'
 import { apiClient } from '@/services/api'
 
@@ -66,6 +66,16 @@ const Settings: React.FC = () => {
               </span>
             ),
             children: <SystemSettings />,
+          },
+          {
+            key: 'backup',
+            label: (
+              <span>
+                <DatabaseOutlined />
+                백업/복원
+              </span>
+            ),
+            children: <BackupSettings />,
           },
         ]
       : []),
