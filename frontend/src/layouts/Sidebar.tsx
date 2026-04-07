@@ -11,6 +11,7 @@ import {
   FileSearchOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useMemo, useState, useEffect } from 'react'
@@ -57,6 +58,11 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
         key: '/controls',
         icon: <SafetyCertificateOutlined />,
         label: '통제항목',
+      },
+      {
+        key: '/isms-scope',
+        icon: <GlobalOutlined />,
+        label: '인증 범위',
       },
       {
         key: '/evidence',

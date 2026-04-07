@@ -23,6 +23,12 @@ class Department(Base):
     is_active = Column(Boolean, default=True, nullable=False, comment="활성 상태")
     description = Column(String(500), nullable=True, comment="부서 설명")
 
+    # ISMS 인증 범위
+    in_isms_scope = Column(
+        Boolean, default=True, nullable=False, comment="ISMS 인증 범위 포함 여부"
+    )
+    scope_reason = Column(String(500), nullable=True, comment="범위 포함/제외 사유")
+
     # 관계
     parent = relationship(
         "Department", remote_side="Department.id", backref="children"

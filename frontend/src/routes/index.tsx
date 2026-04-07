@@ -32,6 +32,8 @@ import AssetImport from '@/pages/Assets/AssetImport'
 import DepartmentsPage from '@/pages/Departments'
 // Personnel Management
 import PersonnelPage from '@/pages/Personnel'
+// ISMS Scope Management
+import IsmsScopePage from '@/pages/IsmsScope'
 // Audit Logs
 import AuditLogsPage from '@/pages/AuditLogs'
 // Controls Management
@@ -314,6 +316,16 @@ const AppRouter = () => {
         element={
           <PrivateRoute>
             <AssetCreate />
+          </PrivateRoute>
+        }
+      />
+
+      {/* ISMS Scope Management route */}
+      <Route
+        path="/isms-scope"
+        element={
+          <PrivateRoute>
+            <IsmsScopePage />
           </PrivateRoute>
         }
       />

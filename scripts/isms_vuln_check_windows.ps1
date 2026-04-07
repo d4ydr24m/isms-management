@@ -14,8 +14,6 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 # --- Setup ---
 $scriptDir = Split-Path -Parent $PSCommandPath
 $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-$resultFile = Join-Path $scriptDir "ISMS_VulnCheck_Result_$timestamp.txt"
-
 $totalChecks = 0
 $vulnCount = 0
 $warnCount = 0
@@ -51,6 +49,11 @@ function Add-Info {
     $script:infoCount++
 }
 
+# --- User name prompt ---
+Write-Host ""
+$userName = Read-Host "Enter your name"
+$resultFile = Join-Path $scriptDir "ISMS_VulnCheck_Result_${userName}_$timestamp.txt"
+
 # --- Header ---
 $osCaption = (Get-CimInstance Win32_OperatingSystem).Caption
 $osVersion = [Environment]::OSVersion.VersionString
@@ -60,6 +63,7 @@ Write-Result " ISMS-P Windows Vulnerability Check Report"
 Write-Result "============================================================================"
 Write-Result ""
 Write-Result " Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+Write-Result " Inspector: $userName"
 Write-Result " Computer: $env:COMPUTERNAME"
 Write-Result " User: $env:USERNAME"
 Write-Result " OS: $osCaption ($osVersion)"

@@ -186,6 +186,12 @@ class Asset(Base):
     )
     is_active = Column(Boolean, default=True, nullable=False, comment="활성 상태")
 
+    # ISMS 인증 범위
+    in_isms_scope = Column(
+        Boolean, default=True, nullable=False, comment="ISMS 인증 범위 포함 여부"
+    )
+    scope_reason = Column(String(500), nullable=True, comment="범위 포함/제외 사유")
+
     # 관계
     asset_type = relationship("AssetType", back_populates="assets")
     category = relationship("AssetCategory", back_populates="assets")

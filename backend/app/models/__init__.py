@@ -55,6 +55,7 @@ from app.models.vuln_check import (
     VulnCheckSchedule,
     VulnCheckExecution,
 )
+from app.models.isms_scope import IsmsScopeChange
 
 __all__ = [
     "Base",
@@ -110,4 +111,6 @@ __all__ = [
     "VulnCheckScript",
     "VulnCheckSchedule",
     "VulnCheckExecution",
+    # ISMS Scope
+    "IsmsScopeChange",
 ]

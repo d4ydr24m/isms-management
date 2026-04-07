@@ -31,6 +31,7 @@ from app.api.v1.system_settings import router as system_settings_router
 from app.api.v1.search import router as search_router
 from app.api.v1.vuln_check import router as vuln_check_router
 from app.api.v1.backup import router as backup_router
+from app.api.v1.isms_scope import router as isms_scope_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth", tags=["인증"])
@@ -61,3 +62,4 @@ api_router.include_router(system_settings_router)
 api_router.include_router(search_router)
 api_router.include_router(vuln_check_router, prefix="/vuln-check", tags=["취약점 점검"])
 api_router.include_router(backup_router, prefix="/backup", tags=["백업/복원"])
+api_router.include_router(isms_scope_router, prefix="/isms-scope", tags=["인증 범위"])
