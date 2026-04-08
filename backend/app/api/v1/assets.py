@@ -68,6 +68,12 @@ def get_asset_service(db: Session = Depends(get_db)) -> AssetService:
 def asset_to_response(asset, service: AssetService) -> AssetResponse:
     """Asset 모델을 AssetResponse로 변환"""
     valuation = service.get_current_valuation(asset.id)
+    assignments = service.get_assignments(asset.id)
+    assignee_names = []
+    for a in assignments:
+        name = (a.user.name if a.user else None) or (a.personnel.name if a.personnel else None)
+        if name:
+            assignee_names.append(name)
     return AssetResponse(
         id=asset.id,
         asset_code=asset.asset_code,
@@ -85,10 +91,13 @@ def asset_to_response(asset, service: AssetService) -> AssetResponse:
         owner_name=asset.owner.name if asset.owner else None,
         personnel_owner_id=asset.personnel_owner_id,
         personnel_owner_name=asset.personnel_owner.name if hasattr(asset, 'personnel_owner') and asset.personnel_owner else None,
+        assignee_names=assignee_names,
         ip_address=asset.ip_address,
         mac_address=asset.mac_address,
         hostname=asset.hostname,
         os_version=asset.os_version,
+        url=asset.url if hasattr(asset, 'url') else None,
+        service_version=asset.service_version if hasattr(asset, 'service_version') else None,
         serial_number=asset.serial_number,
         manufacturer=asset.manufacturer,
         model=asset.model,

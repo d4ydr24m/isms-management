@@ -253,7 +253,7 @@ const AssetDetailPage = () => {
                   {asset.personnelOwnerName || '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="담당자">
-                  {asset.ownerName || '-'}
+                  {asset.assigneeNames && asset.assigneeNames.length > 0 ? asset.assigneeNames.join(', ') : '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="IP 주소">
                   {asset.ipAddress ? <code>{asset.ipAddress}</code> : '-'}
@@ -266,6 +266,12 @@ const AssetDetailPage = () => {
                 </Descriptions.Item>
                 <Descriptions.Item label="OS 버전">
                   {asset.osVersion || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="URL">
+                  {asset.url ? <a href={asset.url} target="_blank" rel="noopener noreferrer">{asset.url}</a> : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="버전">
+                  {asset.serviceVersion || '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="제조사">
                   {asset.manufacturer || '-'}

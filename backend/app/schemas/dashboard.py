@@ -87,6 +87,26 @@ class ExpiredEvidencesData(BaseModel):
     count: int = Field(..., description="만료된 증적 수")
 
 
+class ExpiringAsset(BaseModel):
+    """보증 만료 예정 자산"""
+
+    id: int = Field(..., description="자산 ID")
+    asset_code: str = Field(..., description="자산코드")
+    name: str = Field(..., description="자산명")
+    asset_type_name: Optional[str] = Field(None, description="자산 유형명")
+    warranty_end_date: date = Field(..., description="보증 만료일")
+    days_remaining: int = Field(..., description="남은 일수")
+    status: str = Field(..., description="상태")
+    location: Optional[str] = Field(None, description="위치")
+
+
+class ExpiringAssetsData(BaseModel):
+    """보증 만료 예정 자산 데이터"""
+
+    assets: List[ExpiringAsset] = Field(default_factory=list, description="만료 예정 자산 목록")
+    count: int = Field(..., description="만료 예정 자산 수")
+
+
 class PendingTask(BaseModel):
     """미완료 업무"""
 
@@ -112,6 +132,7 @@ class DashboardSummary(BaseModel):
     activities: ActivitiesData = Field(..., description="예정 보안 활동")
     expiring_evidences: ExpiringEvidencesData = Field(..., description="만료 예정 증적")
     expired_evidences: ExpiredEvidencesData = Field(default_factory=lambda: ExpiredEvidencesData(evidences=[], count=0), description="만료된 증적")
+    expiring_assets: ExpiringAssetsData = Field(default_factory=lambda: ExpiringAssetsData(assets=[], count=0), description="보증 만료 예정 자산")
     pending_tasks: PendingTask = Field(..., description="미완료 업무")
     non_conformities: NonConformitySummary = Field(..., description="부적합 현황")
     generated_at: datetime = Field(default_factory=datetime.utcnow, description="생성 시각")

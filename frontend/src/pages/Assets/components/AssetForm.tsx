@@ -16,7 +16,6 @@ interface AssetFormProps {
   categories: AssetCategory[]
   departments: Array<{ id: number; name: string }>
   users: Array<{ id: number; name: string; email: string }>
-  systemUsers?: Array<{ id: number; name: string; email: string }>
   loading?: boolean
   onSubmit: (values: AssetCreate | AssetUpdate, ciaData?: { confidentiality: number; integrity: number; availability: number; evaluationReason?: string }) => Promise<void>
   onCancel: () => void
@@ -24,14 +23,14 @@ interface AssetFormProps {
 
 /** 자산 유형별 추가 필드 정의 */
 const typeSpecificFields: Record<string, string[]> = {
-  SERVER: ['ipAddress', 'hostname', 'osVersion', 'specifications'],
-  NETWORK: ['ipAddress', 'macAddress', 'hostname'],
-  SECURITY: ['ipAddress', 'hostname', 'osVersion'],
-  DATABASE: ['ipAddress', 'hostname'],
-  APPLICATION: ['hostname'],
+  SRV: ['ipAddress', 'url', 'hostname', 'osVersion', 'serviceVersion', 'specifications'],
+  NET: ['ipAddress', 'url', 'macAddress', 'hostname', 'serviceVersion'],
+  SEC: ['ipAddress', 'url', 'hostname', 'osVersion', 'serviceVersion'],
+  DB: ['ipAddress', 'url', 'hostname', 'serviceVersion'],
+  APP: ['ipAddress', 'url', 'hostname', 'serviceVersion'],
   PC: ['ipAddress', 'macAddress', 'hostname', 'osVersion'],
-  DOCUMENT: [],
-  PERSONNEL: [],
+  DOC: [],
+  HUM: [],
 }
 
 const AssetForm = ({
@@ -40,7 +39,6 @@ const AssetForm = ({
   categories,
   departments,
   users,
-  systemUsers = [],
   loading = false,
   onSubmit,
   onCancel,
@@ -232,19 +230,6 @@ const AssetForm = ({
           </Form.Item>
         </Col>
       </Row>
-      <Row gutter={16}>
-        <Col xs={24} sm={12}>
-          <Form.Item name="ownerId" label="담당자">
-            <Select placeholder="담당자 선택" allowClear showSearch optionFilterProp="children">
-              {systemUsers.map(user => (
-                <Option key={user.id} value={user.id}>
-                  {user.name}{user.email ? ` (${user.email})` : ''}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-        </Col>
-      </Row>
 
       {/* 기술 정보 (유형에 따라 동적 표시) */}
       {selectedTypeCode && (
@@ -276,6 +261,20 @@ const AssetForm = ({
               <Col xs={24} sm={12} md={8}>
                 <Form.Item name="osVersion" label="OS 버전">
                   <Input placeholder="예: Windows Server 2019" maxLength={100} />
+                </Form.Item>
+              </Col>
+            )}
+            {shouldShowField('url') && (
+              <Col xs={24} sm={12} md={8}>
+                <Form.Item name="url" label="URL">
+                  <Input placeholder="예: https://example.com" maxLength={500} />
+                </Form.Item>
+              </Col>
+            )}
+            {shouldShowField('serviceVersion') && (
+              <Col xs={24} sm={12} md={8}>
+                <Form.Item name="serviceVersion" label="버전">
+                  <Input placeholder="예: 3.2.1" maxLength={100} />
                 </Form.Item>
               </Col>
             )}

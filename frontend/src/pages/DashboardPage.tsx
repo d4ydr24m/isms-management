@@ -31,6 +31,7 @@ import {
   type DashboardSummaryData,
   type ExpiringEvidenceItem,
   type ExpiredEvidenceItem,
+  type ExpiringAssetItem,
   type ActivityItem,
   type DomainProgress,
 } from '@/services/dashboard'
@@ -81,7 +82,7 @@ const DashboardPage = () => {
     )
   }
 
-  const { progress, activities, expiringEvidences, expiredEvidences, pendingTasks, nonConformities } = data
+  const { progress, activities, expiringEvidences, expiredEvidences, expiringAssets, pendingTasks, nonConformities } = data
 
   // Summary stat cards
   const statCards = [
@@ -185,6 +186,50 @@ const DashboardPage = () => {
       width: 100,
       align: 'center',
       render: (days: number) => <Tag color="red">{days}일 경과</Tag>,
+    },
+  ]
+
+  // Expiring asset table columns
+  const expiringAssetColumns: ColumnsType<ExpiringAssetItem> = [
+    {
+      title: '자산코드',
+      dataIndex: 'assetCode',
+      key: 'assetCode',
+      width: 120,
+      render: (code: string, record) => (
+        <a onClick={() => navigate(`/assets/${record.id}`)}>{code}</a>
+      ),
+    },
+    {
+      title: '자산명',
+      dataIndex: 'name',
+      key: 'name',
+      ellipsis: true,
+    },
+    {
+      title: '유형',
+      dataIndex: 'assetTypeName',
+      key: 'assetTypeName',
+      width: 120,
+      render: (name: string | null) => name ? <Tag color="geekblue">{name}</Tag> : '-',
+    },
+    {
+      title: '보증 만료일',
+      dataIndex: 'warrantyEndDate',
+      key: 'warrantyEndDate',
+      width: 110,
+      render: (d: string) => dayjs(d).format('YYYY-MM-DD'),
+    },
+    {
+      title: '남은 일수',
+      dataIndex: 'daysRemaining',
+      key: 'daysRemaining',
+      width: 100,
+      align: 'center',
+      render: (days: number) => {
+        const color = days <= 14 ? 'red' : days <= 30 ? 'orange' : 'green'
+        return <Tag color={color}>{days}일</Tag>
+      },
     },
   ]
 
@@ -518,7 +563,42 @@ const DashboardPage = () => {
         </Row>
       )}
 
-      {/* Row 5: Upcoming Activities */}
+      {/* Row 5: Expiring Assets */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col span={24}>
+          <Card
+            title={
+              <Space>
+                <ClockCircleOutlined style={{ color: '#fa8c16' }} />
+                <span>보증 만료 예정 자산</span>
+                {expiringAssets && expiringAssets.count > 0 && (
+                  <Tag color="warning">{expiringAssets.count}건</Tag>
+                )}
+              </Space>
+            }
+          >
+            {!expiringAssets || expiringAssets.assets.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 40 }}>
+                <CheckCircleOutlined style={{ fontSize: 40, color: '#52c41a' }} />
+                <div style={{ marginTop: 8 }}>
+                  <Text type="secondary">90일 내 보증 만료 예정 자산이 없습니다</Text>
+                </div>
+              </div>
+            ) : (
+              <Table
+                columns={expiringAssetColumns}
+                dataSource={expiringAssets.assets}
+                rowKey="id"
+                pagination={false}
+                size="small"
+                scroll={{ y: 300 }}
+              />
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Row 6: Upcoming Activities */}
       <Row gutter={[16, 16]}>
         <Col span={24}>
           <Card

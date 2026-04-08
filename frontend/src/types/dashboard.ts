@@ -3,6 +3,7 @@ export interface DashboardSummary {
   evidenceProgress: EvidenceProgress
   upcomingActivities: UpcomingActivity[]
   expiringEvidences: ExpiringEvidence[]
+  expiringAssets: ExpiringAsset[]
   pendingTasks: PendingTask[]
   nonConformitySummary: NonConformitySummary
 }
@@ -35,6 +36,17 @@ export interface ExpiringEvidence {
   validUntil: string
   daysUntilExpiry: number
   controlItems: string[]
+}
+
+export interface ExpiringAsset {
+  id: number
+  assetCode: string
+  name: string
+  assetTypeName: string | null
+  warrantyEndDate: string
+  daysRemaining: number
+  status: string
+  location: string | null
 }
 
 export interface PendingTask {

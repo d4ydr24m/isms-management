@@ -19,6 +19,7 @@ from app.models.control import ControlDomain, ControlCategory, ControlItem
 from app.models.evidence import Evidence, control_item_evidences
 from app.models.scheduled_task import ScheduledTask
 from app.models.audit import NonConformity, CorrectiveAction
+from app.models.asset import Asset
 
 
 # Redis 클라이언트 (선택적 - 없으면 캐싱 비활성화)
@@ -374,6 +375,56 @@ class DashboardService:
             "count": len(result),
         }
 
+    # ========== 6.1.3.2 보증 만료 예정 자산 조회 ==========
+
+    def get_expiring_assets(self, days: int = 90) -> Dict[str, Any]:
+        """
+        보증 만료 예정 자산 조회
+
+        Args:
+            days: 조회 기간 (일, 기본 90일)
+
+        Returns:
+            Dict: 만료 예정 자산 목록
+        """
+        today = date.today()
+        end_date = today + timedelta(days=days)
+
+        assets = (
+            self.db.query(Asset)
+            .filter(
+                and_(
+                    Asset.warranty_end_date.isnot(None),
+                    Asset.warranty_end_date >= today,
+                    Asset.warranty_end_date <= end_date,
+                    Asset.is_active == True,
+                    Asset.status != "폐기",
+                )
+            )
+            .order_by(Asset.warranty_end_date)
+            .all()
+        )
+
+        result = []
+        for asset in assets:
+            days_remaining = (asset.warranty_end_date - today).days
+
+            result.append({
+                "id": asset.id,
+                "asset_code": asset.asset_code,
+                "name": asset.name,
+                "asset_type_name": asset.asset_type.name if asset.asset_type else None,
+                "warranty_end_date": asset.warranty_end_date.isoformat(),
+                "days_remaining": days_remaining,
+                "status": asset.status,
+                "location": asset.location,
+            })
+
+        return {
+            "assets": result,
+            "count": len(result),
+        }
+
     # ========== 6.1.4 미완료 업무 집계 ==========
 
     def get_pending_tasks(self) -> Dict[str, int]:
@@ -506,6 +557,7 @@ class DashboardService:
             "activities": self.get_scheduled_activities(),
             "expiring_evidences": self.get_expiring_evidences(),
             "expired_evidences": self.get_expired_evidences(),
+            "expiring_assets": self.get_expiring_assets(),
             "pending_tasks": self.get_pending_tasks(),
             "non_conformities": self.get_nonconformity_summary(),
             "generated_at": datetime.utcnow().isoformat(),

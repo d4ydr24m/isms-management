@@ -63,6 +63,22 @@ export interface ExpiredEvidencesData {
   count: number
 }
 
+export interface ExpiringAssetItem {
+  id: number
+  assetCode: string
+  name: string
+  assetTypeName: string | null
+  warrantyEndDate: string
+  daysRemaining: number
+  status: string
+  location: string | null
+}
+
+export interface ExpiringAssetsData {
+  assets: ExpiringAssetItem[]
+  count: number
+}
+
 export interface PendingTaskData {
   uncompletedCorrectiveActions: number
   controlsWithoutEvidence: number
@@ -82,6 +98,7 @@ export interface DashboardSummaryData {
   activities: ActivitiesData
   expiringEvidences: ExpiringEvidencesData
   expiredEvidences: ExpiredEvidencesData
+  expiringAssets: ExpiringAssetsData
   pendingTasks: PendingTaskData
   nonConformities: NonConformitySummaryData
   generatedAt: string
@@ -118,6 +135,17 @@ export const dashboardService = {
   async getExpiringEvidences(days?: number): Promise<ExpiringEvidencesData> {
     try {
       const response = await apiClient.get<ExpiringEvidencesData>('/dashboard/expiring-evidences', {
+        params: { days },
+      })
+      return response.data
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  async getExpiringAssets(days?: number): Promise<ExpiringAssetsData> {
+    try {
+      const response = await apiClient.get<ExpiringAssetsData>('/dashboard/expiring-assets', {
         params: { days },
       })
       return response.data

@@ -6,6 +6,7 @@ import type { DashboardSummary } from '@/types'
 import ProgressGauge from './components/ProgressGauge'
 import ActivityList from './components/ActivityList'
 import ExpiringEvidences from './components/ExpiringEvidences'
+import ExpiringAssets from './components/ExpiringAssets'
 import PendingTasks from './components/PendingTasks'
 import NonConformityStatus from './components/NonConformityStatus'
 
@@ -109,6 +110,12 @@ const Dashboard: React.FC = () => {
               만료 예정 증적이 없습니다
             </div>
           )}
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} lg={12}>
+          <ExpiringAssets data={data.expiringAssets} />
         </Col>
       </Row>
 

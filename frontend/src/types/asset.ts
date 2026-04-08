@@ -129,6 +129,8 @@ export interface AssetBase {
   macAddress?: string
   hostname?: string
   osVersion?: string
+  url?: string
+  serviceVersion?: string
   serialNumber?: string
   manufacturer?: string
   model?: string
@@ -154,6 +156,8 @@ export interface AssetUpdate {
   macAddress?: string
   hostname?: string
   osVersion?: string
+  url?: string
+  serviceVersion?: string
   serialNumber?: string
   manufacturer?: string
   model?: string
@@ -175,6 +179,7 @@ export interface Asset extends AssetBase {
   departmentName?: string
   ownerName?: string
   personnelOwnerName?: string
+  assigneeNames?: string[]
   disposalDate?: string
   status: AssetStatus
   isActive: boolean

@@ -21,6 +21,7 @@ from app.schemas.dashboard import (
     ActivitiesData,
     ExpiringEvidencesData,
     ExpiredEvidencesData,
+    ExpiringAssetsData,
     PendingTask,
     NonConformitySummary,
 )
@@ -50,6 +51,7 @@ def get_dashboard_summary(
         activities=ActivitiesData(**data["activities"]),
         expiring_evidences=ExpiringEvidencesData(**data["expiring_evidences"]),
         expired_evidences=ExpiredEvidencesData(**data["expired_evidences"]),
+        expiring_assets=ExpiringAssetsData(**data["expiring_assets"]),
         pending_tasks=PendingTask(**data["pending_tasks"]),
         non_conformities=NonConformitySummary(**data["non_conformities"]),
     )
@@ -114,6 +116,29 @@ def get_expiring_evidences(
     data = service.get_expiring_evidences(days=days)
 
     return ExpiringEvidencesData(**data)
+
+
+@router.get("/expiring-assets", response_model=ExpiringAssetsData)
+def get_expiring_assets(
+    days: int = Query(default=90, ge=1, le=365, description="조회 기간 (일)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ExpiringAssetsData:
+    """
+    6.2.4.1 보증 만료 예정 자산 조회
+
+    지정된 기간 내 보증 만료 예정인 자산 목록을 반환합니다.
+
+    Args:
+        days: 조회 기간 (기본 90일, 최대 365일)
+
+    Returns:
+        ExpiringAssetsData: 만료 예정 자산 데이터
+    """
+    service = DashboardService(db)
+    data = service.get_expiring_assets(days=days)
+
+    return ExpiringAssetsData(**data)
 
 
 @router.get("/pending-tasks", response_model=PendingTask)

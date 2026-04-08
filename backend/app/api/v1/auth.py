@@ -34,6 +34,9 @@ def _set_token_cookies(response: JSONResponse, access_token: str, refresh_token:
     """Set HttpOnly cookie for JWT tokens on the response."""
     secure = settings.ENVIRONMENT != "development"
 
+    # Cookie max_age should outlive the JWT so the browser retains the cookie
+    # until the interceptor can attempt a refresh. The JWT's own `exp` claim
+    # enforces the real expiration server-side.
     response.set_cookie(
         key="access_token",
         value=access_token,
@@ -41,7 +44,7 @@ def _set_token_cookies(response: JSONResponse, access_token: str, refresh_token:
         secure=secure,
         samesite="lax",
         path="/",
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
     )
     response.set_cookie(
         key="refresh_token",

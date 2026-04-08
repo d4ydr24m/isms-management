@@ -116,6 +116,8 @@ class AssetBase(BaseModel):
     mac_address: Optional[str] = Field(None, max_length=50, description="MAC 주소")
     hostname: Optional[str] = Field(None, max_length=100, description="호스트명")
     os_version: Optional[str] = Field(None, max_length=100, description="OS 버전")
+    url: Optional[str] = Field(None, max_length=500, description="URL")
+    service_version: Optional[str] = Field(None, max_length=100, description="버전 정보")
     serial_number: Optional[str] = Field(None, max_length=100, description="시리얼 번호")
     manufacturer: Optional[str] = Field(None, max_length=100, description="제조사")
     model: Optional[str] = Field(None, max_length=100, description="모델명")
@@ -155,6 +157,8 @@ class AssetUpdate(BaseModel):
     mac_address: Optional[str] = Field(None, max_length=50)
     hostname: Optional[str] = Field(None, max_length=100)
     os_version: Optional[str] = Field(None, max_length=100)
+    url: Optional[str] = Field(None, max_length=500)
+    service_version: Optional[str] = Field(None, max_length=100)
     serial_number: Optional[str] = Field(None, max_length=100)
     manufacturer: Optional[str] = Field(None, max_length=100)
     model: Optional[str] = Field(None, max_length=100)
@@ -193,10 +197,13 @@ class AssetResponse(BaseModel):
     owner_name: Optional[str] = None
     personnel_owner_id: Optional[int] = None
     personnel_owner_name: Optional[str] = None
+    assignee_names: List[str] = []
     ip_address: Optional[str] = None
     mac_address: Optional[str] = None
     hostname: Optional[str] = None
     os_version: Optional[str] = None
+    url: Optional[str] = None
+    service_version: Optional[str] = None
     serial_number: Optional[str] = None
     manufacturer: Optional[str] = None
     model: Optional[str] = None

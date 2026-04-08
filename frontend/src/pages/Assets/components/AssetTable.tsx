@@ -111,10 +111,10 @@ const AssetTable = ({
     },
     {
       title: '담당자',
-      dataIndex: 'ownerName',
-      key: 'ownerName',
-      width: 100,
-      render: (name?: string) => name || '-',
+      dataIndex: 'assigneeNames',
+      key: 'assigneeNames',
+      width: 120,
+      render: (names?: string[]) => names && names.length > 0 ? names.join(', ') : '-',
     },
     {
       title: '상태',

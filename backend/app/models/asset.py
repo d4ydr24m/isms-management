@@ -166,7 +166,7 @@ class Asset(Base):
         Integer, ForeignKey("users.id"), nullable=True, comment="자산 소유자 ID"
     )
     personnel_owner_id = Column(
-        Integer, ForeignKey("personnel.id"), nullable=True, comment="담당자 소유자 ID"
+        Integer, ForeignKey("personnel.id"), nullable=True, comment="자산 소유자 ID (담당자)"
     )
 
     # 상세 정보
@@ -174,6 +174,8 @@ class Asset(Base):
     mac_address = Column(String(50), nullable=True, comment="MAC 주소")
     hostname = Column(String(100), nullable=True, comment="호스트명")
     os_version = Column(String(100), nullable=True, comment="OS 버전")
+    url = Column(String(500), nullable=True, comment="URL")
+    service_version = Column(String(100), nullable=True, comment="버전 정보")
     serial_number = Column(String(100), nullable=True, comment="시리얼 번호")
     manufacturer = Column(String(100), nullable=True, comment="제조사")
     model = Column(String(100), nullable=True, comment="모델명")
