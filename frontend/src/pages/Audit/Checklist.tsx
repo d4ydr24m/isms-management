@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  App,
   Card,
   Button,
   Space,
@@ -10,7 +11,6 @@ import {
   Tag,
   Progress,
   Modal,
-  message,
   Row,
   Col,
   Typography,
@@ -39,15 +39,15 @@ const { Option } = Select
 const { Title, Text } = Typography
 
 const resultColors: Record<ChecklistResultType, string> = {
-  conforming: 'green',
-  non_conforming: 'red',
+  conformity: 'green',
+  non_conformity: 'red',
   observation: 'orange',
   not_applicable: 'default',
 }
 
 const resultLabels: Record<ChecklistResultType, string> = {
-  conforming: '적합',
-  non_conforming: '부적합',
+  conformity: '적합',
+  non_conformity: '부적합',
   observation: '관찰사항',
   not_applicable: '해당없음',
 }
@@ -61,6 +61,7 @@ interface ChecklistItemEdit {
 }
 
 const ChecklistPage = () => {
+  const { message, modal } = App.useApp()
   const navigate = useNavigate()
   const { auditId } = useParams<{ auditId: string }>()
   const [audit, setAudit] = useState<AuditPlan | null>(null)
@@ -88,14 +89,18 @@ const ChecklistPage = () => {
       setChecklist(checklistData)
       setEvidences(evidenceData.items || [])
 
-      // Initialize edited items
+      // Initialize edited items from backend data
       const initialEdits = new Map<number, ChecklistItemEdit>()
       checklistData.forEach((item) => {
+        const lr = item.latestResult
+        const evidenceIds = lr?.evidenceReference
+          ? lr.evidenceReference.split(',').map(Number).filter((n) => !isNaN(n))
+          : []
         initialEdits.set(item.id, {
           id: item.id,
-          result: item.result,
-          findings: item.findings,
-          evidenceIds: item.evidenceIds,
+          result: (lr?.result as ChecklistResultType) || null,
+          findings: lr?.finding || null,
+          evidenceIds,
           modified: false,
         })
       })
@@ -165,8 +170,10 @@ const ChecklistPage = () => {
         modifiedItems.map((item) =>
           auditService.updateChecklistItem(Number(auditId), item.id, {
             result: item.result!,
-            findings: item.findings || undefined,
-            evidenceIds: item.evidenceIds,
+            finding: item.findings || undefined,
+            evidenceReference: item.evidenceIds.length > 0
+              ? item.evidenceIds.join(',')
+              : undefined,
           })
         )
       )
@@ -194,7 +201,7 @@ const ChecklistPage = () => {
     ).length
 
     if (uncheckedCount > 0) {
-      Modal.confirm({
+      modal.confirm({
         title: '감사 완료 확인',
         content: `미점검 항목이 ${uncheckedCount}건 있습니다. 감사를 완료하시겠습니까?`,
         okText: '확인',
@@ -210,7 +217,7 @@ const ChecklistPage = () => {
         },
       })
     } else {
-      Modal.confirm({
+      modal.confirm({
         title: '감사 완료 확인',
         content: '이 감사를 완료하시겠습니까?',
         okText: '확인',
@@ -267,8 +274,8 @@ const ChecklistPage = () => {
   const columns: ColumnsType<AuditChecklist> = [
     {
       title: '번호',
-      dataIndex: 'order',
-      key: 'order',
+      dataIndex: 'sortOrder',
+      key: 'sortOrder',
       width: 60,
       align: 'center',
     },
@@ -278,9 +285,9 @@ const ChecklistPage = () => {
       width: 300,
       render: (_, record) => (
         <div>
-          <Text strong>{record.controlItem.number}</Text>
+          <Text strong>{record.controlItemCode || '-'}</Text>
           <br />
-          <Text>{record.controlItem.title}</Text>
+          <Text>{record.controlItemTitle || record.question}</Text>
         </div>
       ),
     },
@@ -298,11 +305,11 @@ const ChecklistPage = () => {
             placeholder="결과 선택"
             aria-label="result"
           >
-            <Option value="conforming">
-              <Tag color={resultColors.conforming}>{resultLabels.conforming}</Tag>
+            <Option value="conformity">
+              <Tag color={resultColors.conformity}>{resultLabels.conformity}</Tag>
             </Option>
-            <Option value="non_conforming">
-              <Tag color={resultColors.non_conforming}>{resultLabels.non_conforming}</Tag>
+            <Option value="non_conformity">
+              <Tag color={resultColors.non_conformity}>{resultLabels.non_conformity}</Tag>
             </Option>
             <Option value="observation">
               <Tag color={resultColors.observation}>{resultLabels.observation}</Tag>
@@ -336,7 +343,7 @@ const ChecklistPage = () => {
       render: (_, record) => {
         const edited = editedItems.get(record.id)
         const attachedEvidences = evidences.filter((e) =>
-          edited?.evidenceIds.includes(e.id)
+          (edited?.evidenceIds || []).includes(e.id)
         )
         return (
           <Space direction="vertical" size="small">
@@ -363,7 +370,7 @@ const ChecklistPage = () => {
       width: 150,
       render: (_, record) => {
         const edited = editedItems.get(record.id)
-        if (edited?.result === 'non_conforming') {
+        if (edited?.result === 'non_conformity') {
           return (
             <Button
               type="link"
@@ -449,8 +456,8 @@ const ChecklistPage = () => {
                   onChange={setResultFilter}
                 >
                   <Option value="all">전체</Option>
-                  <Option value="conforming">적합</Option>
-                  <Option value="non_conforming">부적합</Option>
+                  <Option value="conformity">적합</Option>
+                  <Option value="non_conformity">부적합</Option>
                   <Option value="observation">관찰사항</Option>
                   <Option value="not_applicable">해당없음</Option>
                 </Select>

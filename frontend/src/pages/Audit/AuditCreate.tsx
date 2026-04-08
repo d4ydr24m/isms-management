@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  App,
   Card,
   Form,
   Input,
@@ -8,7 +9,6 @@ import {
   DatePicker,
   Button,
   Space,
-  message,
   Row,
   Col,
   Transfer,
@@ -46,6 +46,7 @@ interface TransferItem {
 }
 
 const AuditCreate = () => {
+  const { message } = App.useApp()
   const navigate = useNavigate()
   const [form] = Form.useForm<FormValues>()
   const [loading, setLoading] = useState(false)
@@ -89,12 +90,13 @@ const AuditCreate = () => {
 
       const data: AuditPlanCreate = {
         title: values.title,
-        description: values.description,
+        description: values.description || '',
         auditType: values.auditType,
         startDate: values.period[0].format('YYYY-MM-DD'),
         endDate: values.period[1].format('YYYY-MM-DD'),
         scope: values.scope,
         auditorIds,
+        controlItemIds: selectedControls.map(Number),
       }
 
       const result = await auditService.createAudit(data)

@@ -47,16 +47,23 @@ class AuditService:
 
     # ========== 감사 계획 관리 ==========
 
-    def create_audit_plan(self, plan_data: AuditPlanCreate) -> AuditPlan:
+    def create_audit_plan(self, plan_data: AuditPlanCreate, current_user_id: int = None) -> AuditPlan:
         """
         감사 계획 생성
 
         Args:
             plan_data: 감사 계획 생성 데이터
+            current_user_id: 현재 사용자 ID (감사원 미지정 시 수석감사원으로 사용)
 
         Returns:
             AuditPlan: 생성된 감사 계획
         """
+        # auditor_ids에서 첫 번째를 수석감사원, 나머지를 팀원으로 분리
+        auditor_ids = plan_data.auditor_ids or []
+        lead_auditor_id = auditor_ids[0] if auditor_ids else current_user_id
+        team_member_ids = auditor_ids[1:] if len(auditor_ids) > 1 else []
+        team_members = ",".join(str(mid) for mid in team_member_ids) if team_member_ids else None
+
         plan = AuditPlan(
             title=plan_data.title,
             description=plan_data.description,
@@ -65,14 +72,41 @@ class AuditService:
             end_date=plan_data.end_date,
             scope=plan_data.scope,
             control_domains=plan_data.control_domains,
-            lead_auditor_id=plan_data.lead_auditor_id,
-            team_members=plan_data.team_members,
+            lead_auditor_id=lead_auditor_id,
+            team_members=team_members,
             status="planning",
         )
         self.db.add(plan)
         self.db.commit()
         self.db.refresh(plan)
+
+        # control_item_ids가 있으면 체크리스트 자동 생성
+        if plan_data.control_item_ids:
+            self._create_checklists_from_items(plan.id, plan_data.control_item_ids)
+
         return plan
+
+    def _create_checklists_from_items(self, plan_id: int, control_item_ids: List[int]) -> None:
+        """통제항목 ID 목록으로 체크리스트 생성"""
+        from app.models.control import ControlItem
+
+        items = (
+            self.db.query(ControlItem)
+            .filter(ControlItem.id.in_(control_item_ids))
+            .order_by(ControlItem.sort_order)
+            .all()
+        )
+
+        for idx, item in enumerate(items):
+            checklist = AuditChecklist(
+                audit_plan_id=plan_id,
+                control_item_id=item.id,
+                question=f"[{item.code}] {item.title}에 대한 이행 여부를 점검합니다.",
+                sort_order=idx + 1,
+            )
+            self.db.add(checklist)
+
+        self.db.commit()
 
     def get_audit_plan(self, plan_id: int) -> Optional[AuditPlan]:
         """

@@ -21,6 +21,7 @@ class AuditType(str, Enum):
     INTERNAL = "internal"  # 내부감사
     EXTERNAL = "external"  # 외부심사
     CERTIFICATION = "certification"  # 인증심사
+    SURVEILLANCE = "surveillance"  # 사후심사
 
 
 class AuditStatus(str, Enum):
@@ -100,8 +101,8 @@ class AuditPlanBase(BaseModel):
 
 class AuditPlanCreate(AuditPlanBase):
     """감사 계획 생성 스키마"""
-    lead_auditor_id: int
-    team_members: Optional[str] = None  # 쉼표로 구분된 사용자 ID
+    auditor_ids: List[int] = Field(default_factory=list)  # 감사원 ID 목록 (첫 번째가 수석감사원)
+    control_item_ids: List[int] = Field(default_factory=list)  # 통제항목 ID 목록
 
 
 class AuditPlanUpdate(BaseModel):

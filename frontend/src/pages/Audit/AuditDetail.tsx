@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import {
+  App,
   Card,
   Button,
   Space,
@@ -13,28 +14,36 @@ import {
   Typography,
   Spin,
   Statistic,
+  Form,
+  Input,
+  Select,
+  DatePicker,
 } from 'antd'
 import {
   ArrowLeftOutlined,
   EditOutlined,
   FileTextOutlined,
   ExclamationCircleOutlined,
+  SaveOutlined,
+  CloseOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
+import dayjs from 'dayjs'
 import { auditService } from '@/services/audits'
-import type { AuditPlan, AuditChecklist, NonConformity, AuditStatus, NonConformityType } from '@/types'
+import { ncTypeLabels, ncTypeColors, ncStatusLabels, ncStatusColors, formatDateTime } from '@/utils/format'
+import type { AuditPlan, AuditChecklist, NonConformity, AuditStatus } from '@/types'
 
 const { Title, Text } = Typography
 
 const statusColors: Record<AuditStatus, string> = {
-  planned: 'blue',
+  planning: 'blue',
   in_progress: 'orange',
   completed: 'green',
   cancelled: 'default',
 }
 
 const statusLabels: Record<AuditStatus, string> = {
-  planned: '예정',
+  planning: '계획 중',
   in_progress: '진행 중',
   completed: '완료',
   cancelled: '취소',
@@ -47,20 +56,23 @@ const auditTypeLabels: Record<string, string> = {
   surveillance: '사후 심사',
 }
 
-const severityColors: Record<NonConformityType, string> = {
-  critical: 'red',
-  major: 'orange',
-  minor: 'gold',
-  observation: 'blue',
-}
+
+const { TextArea } = Input
+const { Option } = Select
+const { RangePicker } = DatePicker
 
 const AuditDetail = () => {
+  const { message } = App.useApp()
   const navigate = useNavigate()
+  const location = useLocation()
   const { id } = useParams<{ id: string }>()
   const [audit, setAudit] = useState<AuditPlan | null>(null)
   const [checklist, setChecklist] = useState<AuditChecklist[]>([])
   const [nonConformities, setNonConformities] = useState<NonConformity[]>([])
   const [loading, setLoading] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form] = Form.useForm()
 
   const fetchData = useCallback(async () => {
     if (!id) return
@@ -70,7 +82,7 @@ const AuditDetail = () => {
       const [auditData, checklistData, ncData] = await Promise.all([
         auditService.getAudit(Number(id)),
         auditService.getChecklist(Number(id)),
-        auditService.getNonConformities({ auditId: Number(id), size: 100 }),
+        auditService.getNonConformities({ auditPlanId: Number(id), size: 100 }),
       ])
       setAudit(auditData)
       setChecklist(checklistData)
@@ -86,12 +98,69 @@ const AuditDetail = () => {
     fetchData()
   }, [fetchData])
 
+  // Enter edit mode when URL ends with /edit
+  useEffect(() => {
+    if (location.pathname.endsWith('/edit') && audit) {
+      setIsEditing(true)
+    }
+  }, [location.pathname, audit])
+
+  // Populate form after it mounts (isEditing becomes true)
+  useEffect(() => {
+    if (isEditing && audit) {
+      form.setFieldsValue({
+        title: audit.title,
+        description: audit.description,
+        auditType: audit.auditType,
+        period: [dayjs(audit.startDate), dayjs(audit.endDate)],
+        scope: audit.scope,
+        status: audit.status,
+      })
+    }
+  }, [isEditing, audit, form])
+
   const handleBack = () => {
     navigate('/audits')
   }
 
   const handleEdit = () => {
-    navigate(`/audits/${id}/edit`)
+    if (audit) {
+      setIsEditing(true)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    form.resetFields()
+    if (location.pathname.endsWith('/edit')) {
+      navigate(`/audits/${id}`)
+    }
+  }
+
+  const handleSaveEdit = async () => {
+    try {
+      const values = await form.validateFields()
+      setSaving(true)
+      await auditService.updateAudit(Number(id), {
+        title: values.title,
+        description: values.description,
+        auditType: values.auditType,
+        startDate: values.period[0].format('YYYY-MM-DD'),
+        endDate: values.period[1].format('YYYY-MM-DD'),
+        scope: values.scope,
+        status: values.status,
+      })
+      message.success('감사 계획이 수정되었습니다')
+      setIsEditing(false)
+      if (location.pathname.endsWith('/edit')) {
+        navigate(`/audits/${id}`)
+      }
+      fetchData()
+    } catch {
+      message.error('감사 계획 수정에 실패했습니다')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleViewChecklist = () => {
@@ -103,20 +172,20 @@ const AuditDetail = () => {
   }
 
   const handleNonConformityClick = (record: NonConformity) => {
-    navigate(`/non-conformities/${record.id}`)
+    navigate(`/non-conformities/${record.id}`, { state: { from: `/audits/${id}` } })
   }
 
   // Calculate checklist progress
-  const checkedItems = checklist.filter((item) => item.result !== null).length
+  const checkedItems = checklist.filter((item) => item.latestResult !== null).length
   const totalItems = checklist.length
   const progressPercent = totalItems > 0 ? Math.round((checkedItems / totalItems) * 100) : 0
 
   // Calculate severity statistics
   const severityStats = {
-    critical: nonConformities.filter((nc) => nc.type === 'critical').length,
-    major: nonConformities.filter((nc) => nc.type === 'major').length,
-    minor: nonConformities.filter((nc) => nc.type === 'minor').length,
-    observation: nonConformities.filter((nc) => nc.type === 'observation').length,
+    critical: nonConformities.filter((nc) => nc.severity === 'critical').length,
+    major: nonConformities.filter((nc) => nc.ncType === 'major').length,
+    minor: nonConformities.filter((nc) => nc.ncType === 'minor').length,
+    observation: nonConformities.filter((nc) => nc.ncType === 'observation').length,
   }
 
   const nonConformityColumns: ColumnsType<NonConformity> = [
@@ -124,7 +193,7 @@ const AuditDetail = () => {
       title: '통제항목',
       key: 'control',
       width: 100,
-      render: (_, record) => record.controlItem.number,
+      render: (_, record) => record.controlItemCode || '-',
     },
     {
       title: '제목',
@@ -140,12 +209,12 @@ const AuditDetail = () => {
       ),
     },
     {
-      title: '심각도',
-      dataIndex: 'type',
-      key: 'type',
+      title: '유형',
+      dataIndex: 'ncType',
+      key: 'ncType',
       width: 100,
-      render: (type: NonConformityType) => (
-        <Tag color={severityColors[type]}>{type.toUpperCase()}</Tag>
+      render: (ncType: string) => (
+        <Tag color={ncTypeColors[ncType] || 'default'}>{ncTypeLabels[ncType] || ncType}</Tag>
       ),
     },
     {
@@ -153,16 +222,9 @@ const AuditDetail = () => {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status: string) => {
-        const colors: Record<string, string> = {
-          pending: 'default',
-          in_progress: 'processing',
-          completed: 'success',
-          verified: 'cyan',
-          rejected: 'error',
-        }
-        return <Tag color={colors[status] || 'default'}>{status.replace('_', ' ').toUpperCase()}</Tag>
-      },
+      render: (status: string) => (
+        <Tag color={ncStatusColors[status] || 'default'}>{ncStatusLabels[status] || status}</Tag>
+      ),
     },
     {
       title: '기한',
@@ -206,52 +268,109 @@ const AuditDetail = () => {
             </Col>
             <Col>
               <Space>
-                <Button icon={<EditOutlined />} onClick={handleEdit} aria-label="수정">
-                  수정
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<FileTextOutlined />}
-                  onClick={handleViewChecklist}
-                  aria-label="체크리스트 보기"
-                >
-                  체크리스트 보기
-                </Button>
-                <Button
-                  icon={<ExclamationCircleOutlined />}
-                  onClick={handleRegisterNonConformity}
-                  aria-label="부적합 등록"
-                >
-                  부적합 등록
-                </Button>
+                {isEditing ? (
+                  <>
+                    <Button icon={<SaveOutlined />} type="primary" onClick={handleSaveEdit} loading={saving}>
+                      저장
+                    </Button>
+                    <Button icon={<CloseOutlined />} onClick={handleCancelEdit}>
+                      취소
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button icon={<EditOutlined />} onClick={handleEdit} aria-label="수정">
+                      수정
+                    </Button>
+                    <Button
+                      type="primary"
+                      icon={<FileTextOutlined />}
+                      onClick={handleViewChecklist}
+                      aria-label="체크리스트 보기"
+                    >
+                      체크리스트 보기
+                    </Button>
+                    <Button
+                      icon={<ExclamationCircleOutlined />}
+                      onClick={handleRegisterNonConformity}
+                      aria-label="부적합 등록"
+                    >
+                      부적합 등록
+                    </Button>
+                  </>
+                )}
               </Space>
             </Col>
           </Row>
 
-          <Descriptions bordered column={{ xs: 1, sm: 2, md: 3 }}>
-            <Descriptions.Item label="유형">
-              <Tag>{auditTypeLabels[audit.auditType] || audit.auditType}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="상태">
-              <Tag color={statusColors[audit.status]}>{statusLabels[audit.status]}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="기간">
-              {audit.startDate} ~ {audit.endDate}
-            </Descriptions.Item>
-            <Descriptions.Item label="범위" span={3}>
-              {audit.scope}
-            </Descriptions.Item>
-            <Descriptions.Item label="감사원" span={2}>
-              <Space>
-                {audit.auditors.map((auditor) => (
-                  <Tag key={auditor.id}>{auditor.name}</Tag>
-                ))}
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="작성자">{audit.createdByName}</Descriptions.Item>
-            <Descriptions.Item label="작성일">{audit.createdAt}</Descriptions.Item>
-            <Descriptions.Item label="수정일">{audit.updatedAt}</Descriptions.Item>
-          </Descriptions>
+          {isEditing ? (
+            <Form form={form} layout="vertical">
+              <Row gutter={24}>
+                <Col xs={24} md={12}>
+                  <Form.Item name="title" label="감사 제목" rules={[{ required: true }]}>
+                    <Input />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item name="auditType" label="감사 유형" rules={[{ required: true }]}>
+                    <Select>
+                      <Option value="internal">내부 감사</Option>
+                      <Option value="external">외부 감사</Option>
+                      <Option value="certification">인증 심사</Option>
+                      <Option value="surveillance">사후 심사</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={24}>
+                <Col xs={24} md={12}>
+                  <Form.Item name="period" label="감사 기간" rules={[{ required: true }]}>
+                    <RangePicker style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item name="status" label="상태">
+                    <Select>
+                      <Option value="planning">계획 중</Option>
+                      <Option value="in_progress">진행 중</Option>
+                      <Option value="completed">완료</Option>
+                      <Option value="cancelled">취소</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item name="scope" label="감사 범위" rules={[{ required: true }]}>
+                <TextArea rows={3} />
+              </Form.Item>
+              <Form.Item name="description" label="설명">
+                <TextArea rows={3} />
+              </Form.Item>
+            </Form>
+          ) : (
+            <Descriptions bordered column={{ xs: 1, sm: 2, md: 3 }}>
+              <Descriptions.Item label="유형">
+                <Tag>{auditTypeLabels[audit.auditType] || audit.auditType}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="상태">
+                <Tag color={statusColors[audit.status]}>{statusLabels[audit.status]}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="기간">
+                {audit.startDate} ~ {audit.endDate}
+              </Descriptions.Item>
+              <Descriptions.Item label="범위" span={3}>
+                {audit.scope}
+              </Descriptions.Item>
+              <Descriptions.Item label="수석감사원" span={2}>
+                {audit.leadAuditorName ? (
+                  <Tag>{audit.leadAuditorName}</Tag>
+                ) : (
+                  <Text type="secondary">미지정</Text>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="작성일">{formatDateTime(audit.createdAt)}</Descriptions.Item>
+              <Descriptions.Item label="수정일">{formatDateTime(audit.updatedAt)}</Descriptions.Item>
+            </Descriptions>
+          )}
         </Card>
 
         <Row gutter={16}>

@@ -83,7 +83,7 @@ def create_audit_plan(
     감사 계획 생성
     """
     service = AuditService(db)
-    plan = service.create_audit_plan(plan_data)
+    plan = service.create_audit_plan(plan_data, current_user_id=current_user.id)
     return _plan_to_response(plan)
 
 

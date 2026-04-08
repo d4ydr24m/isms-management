@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Button,
   Space,
   Tag,
-  message,
   Modal,
   Form,
   Input,
@@ -51,6 +51,7 @@ const accessScopeOptions = [
 ]
 
 function AuditorAccountsPage() {
+  const { message } = App.useApp()
   const [accounts, setAccounts] = useState<AuditorAccount[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

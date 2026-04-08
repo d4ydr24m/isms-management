@@ -255,6 +255,27 @@ def list_corrective_actions(
     return {"items": items, "total": total}
 
 
+@router.delete("/{nc_id}/corrective-actions/{ca_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_corrective_action(
+    nc_id: int,
+    ca_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("audit:delete")),
+):
+    """
+    시정조치 삭제
+    """
+    from app.models.audit import CorrectiveAction as CAModel
+    ca = db.query(CAModel).filter(CAModel.id == ca_id, CAModel.non_conformity_id == nc_id).first()
+    if not ca:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="시정조치를 찾을 수 없습니다.",
+        )
+    db.delete(ca)
+    db.commit()
+
+
 # ========== 헬퍼 함수 ==========
 
 def _nc_to_response(nc) -> NonConformityResponse:

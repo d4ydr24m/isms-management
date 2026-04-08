@@ -219,6 +219,14 @@ const AppRouter = () => {
         }
       />
       <Route
+        path="/audits/:id/edit"
+        element={
+          <PrivateRoute>
+            <AuditDetail />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="/audits/:auditId/checklist"
         element={
           <PrivateRoute>

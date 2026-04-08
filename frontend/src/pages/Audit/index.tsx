@@ -16,14 +16,14 @@ interface FilterState {
 }
 
 const statusColors: Record<AuditStatus, string> = {
-  planned: 'blue',
+  planning: 'blue',
   in_progress: 'orange',
   completed: 'green',
   cancelled: 'default',
 }
 
 const statusLabels: Record<AuditStatus, string> = {
-  planned: '예정',
+  planning: '계획 중',
   in_progress: '진행 중',
   completed: '완료',
   cancelled: '취소',
@@ -150,13 +150,11 @@ const AuditListPage = () => {
       ),
     },
     {
-      title: '감사원',
-      dataIndex: 'auditors',
-      key: 'auditors',
+      title: '수석감사원',
+      dataIndex: 'leadAuditorName',
+      key: 'leadAuditorName',
       width: 150,
-      render: (auditors: AuditPlan['auditors']) => (
-        <span>{auditors.map((a) => a.name).join(', ') || '-'}</span>
-      ),
+      render: (name: string | null) => <span>{name || '-'}</span>,
     },
     {
       title: '부적합',
@@ -185,7 +183,7 @@ const AuditListPage = () => {
 
   // Calculate statistics
   const stats = {
-    planned: audits.filter((a) => a.status === 'planned').length,
+    planned: audits.filter((a) => a.status === 'planning').length,
     inProgress: audits.filter((a) => a.status === 'in_progress').length,
     completed: audits.filter((a) => a.status === 'completed').length,
   }
@@ -241,7 +239,7 @@ const AuditListPage = () => {
                 onChange={handleStatusChange}
                 value={filters.status ?? undefined}
               >
-                <Option value="planned">예정</Option>
+                <Option value="planning">계획 중</Option>
                 <Option value="in_progress">진행 중</Option>
                 <Option value="completed">완료</Option>
                 <Option value="cancelled">취소</Option>

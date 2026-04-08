@@ -31,8 +31,8 @@ export const auditService = {
   // 감사 계획 상세 조회
   async getAudit(id: number): Promise<AuditPlan> {
     try {
-      const response = await apiClient.get<ApiResponse<AuditPlan>>(`/audits/${id}`)
-      return response.data.data!
+      const response = await apiClient.get<AuditPlan>(`/audits/${id}`)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -41,8 +41,8 @@ export const auditService = {
   // 감사 계획 생성
   async createAudit(data: AuditPlanCreate): Promise<AuditPlan> {
     try {
-      const response = await apiClient.post<ApiResponse<AuditPlan>>('/audits', data)
-      return response.data.data!
+      const response = await apiClient.post<AuditPlan>('/audits', data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -51,8 +51,8 @@ export const auditService = {
   // 감사 계획 수정
   async updateAudit(id: number, data: AuditPlanUpdate): Promise<AuditPlan> {
     try {
-      const response = await apiClient.put<ApiResponse<AuditPlan>>(`/audits/${id}`, data)
-      return response.data.data!
+      const response = await apiClient.put<AuditPlan>(`/audits/${id}`, data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -79,8 +79,8 @@ export const auditService = {
   // 체크리스트 조회
   async getChecklist(auditId: number): Promise<AuditChecklist[]> {
     try {
-      const response = await apiClient.get<ApiResponse<AuditChecklist[]>>(`/audits/${auditId}/checklist`)
-      return response.data.data!
+      const response = await apiClient.get<{ items: AuditChecklist[]; total: number }>(`/audits/${auditId}/checklist`)
+      return response.data.items || []
     } catch (error) {
       return handleApiError(error)
     }
@@ -114,7 +114,7 @@ export const auditService = {
   },
 
   // 부적합 목록 조회
-  async getNonConformities(params?: PaginationParams & { auditId?: number; status?: string }): Promise<PaginatedResponse<NonConformity>> {
+  async getNonConformities(params?: PaginationParams & { auditPlanId?: number; status?: string }): Promise<PaginatedResponse<NonConformity>> {
     try {
       const response = await apiClient.get<PaginatedResponse<NonConformity>>('/nonconformities', { params })
       return response.data
@@ -126,8 +126,8 @@ export const auditService = {
   // 부적합 상세 조회
   async getNonConformity(id: number): Promise<NonConformity> {
     try {
-      const response = await apiClient.get<ApiResponse<NonConformity>>(`/nonconformities/${id}`)
-      return response.data.data!
+      const response = await apiClient.get<NonConformity>(`/nonconformities/${id}`)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -136,8 +136,8 @@ export const auditService = {
   // 부적합 등록
   async createNonConformity(data: NonConformityCreate): Promise<NonConformity> {
     try {
-      const response = await apiClient.post<ApiResponse<NonConformity>>('/nonconformities', data)
-      return response.data.data!
+      const response = await apiClient.post<NonConformity>('/nonconformities', data)
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -146,8 +146,20 @@ export const auditService = {
   // 부적합 수정
   async updateNonConformity(id: number, data: NonConformityUpdate): Promise<NonConformity> {
     try {
-      const response = await apiClient.put<ApiResponse<NonConformity>>(`/nonconformities/${id}`, data)
-      return response.data.data!
+      const response = await apiClient.put<NonConformity>(`/nonconformities/${id}`, data)
+      return response.data
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  // 시정조치 목록 조회
+  async getCorrectiveActions(nonConformityId: number): Promise<CorrectiveAction[]> {
+    try {
+      const response = await apiClient.get<{ items: CorrectiveAction[]; total: number }>(
+        `/nonconformities/${nonConformityId}/corrective-actions`
+      )
+      return response.data.items || []
     } catch (error) {
       return handleApiError(error)
     }
@@ -156,11 +168,11 @@ export const auditService = {
   // 시정조치 요청
   async createCorrectiveAction(nonConformityId: number, data: CorrectiveActionCreate): Promise<CorrectiveAction> {
     try {
-      const response = await apiClient.post<ApiResponse<CorrectiveAction>>(
+      const response = await apiClient.post<CorrectiveAction>(
         `/nonconformities/${nonConformityId}/corrective-actions`,
         data
       )
-      return response.data.data!
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -173,11 +185,11 @@ export const auditService = {
     data: CorrectiveActionUpdate
   ): Promise<CorrectiveAction> {
     try {
-      const response = await apiClient.put<ApiResponse<CorrectiveAction>>(
+      const response = await apiClient.put<CorrectiveAction>(
         `/nonconformities/${nonConformityId}/corrective-actions/${actionId}`,
         data
       )
-      return response.data.data!
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }
@@ -187,6 +199,15 @@ export const auditService = {
   async verifyCorrectiveAction(nonConformityId: number, actionId: number, data: CorrectiveActionVerify): Promise<void> {
     try {
       await apiClient.post(`/nonconformities/${nonConformityId}/corrective-actions/${actionId}/verify`, data)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  // 시정조치 삭제
+  async deleteCorrectiveAction(nonConformityId: number, actionId: number): Promise<void> {
+    try {
+      await apiClient.delete(`/nonconformities/${nonConformityId}/corrective-actions/${actionId}`)
     } catch (error) {
       return handleApiError(error)
     }

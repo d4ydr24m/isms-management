@@ -99,6 +99,7 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
         label: '감사 관리',
         children: [
           { key: '/audits', label: '감사 계획' },
+          { key: '/non-conformities', label: '부적합 관리' },
           { key: '/auditor-accounts', label: '외부 심사원' },
         ],
       },

@@ -1,6 +1,6 @@
 // 감사 관련 타입
-export type AuditStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled'
-export type ChecklistResultType = 'conforming' | 'non_conforming' | 'observation' | 'not_applicable'
+export type AuditStatus = 'planning' | 'in_progress' | 'completed' | 'cancelled'
+export type ChecklistResultType = 'conformity' | 'non_conformity' | 'observation' | 'not_applicable'
 export type NonConformityType = 'critical' | 'major' | 'minor' | 'observation'
 export type CorrectiveActionStatus = 'pending' | 'in_progress' | 'completed' | 'verified' | 'rejected'
 
@@ -13,21 +13,16 @@ export interface AuditPlan {
   startDate: string
   endDate: string
   scope: string
-  auditorIds: number[]
-  auditors: AuditorInfo[]
+  controlDomains: string | null
+  leadAuditorId: number
+  leadAuditorName: string | null
+  teamMembers: string | null
   checklistCount: number
+  completedChecklistCount: number
   nonConformityCount: number
-  createdBy: number
-  createdByName: string
+  overallResult: string | null
   createdAt: string
   updatedAt: string
-}
-
-export interface AuditorInfo {
-  id: number
-  name: string
-  email: string
-  department: string | null
 }
 
 export interface AuditPlanCreate {
@@ -38,135 +33,145 @@ export interface AuditPlanCreate {
   endDate: string
   scope: string
   auditorIds: number[]
+  controlItemIds: number[]
 }
 
 export interface AuditPlanUpdate {
   title?: string
   description?: string
+  auditType?: string
   status?: AuditStatus
   startDate?: string
   endDate?: string
   scope?: string
-  auditorIds?: number[]
+}
+
+export interface AuditChecklistResult {
+  id: number
+  checklistId: number
+  result: string
+  finding: string | null
+  evidenceReference: string | null
+  auditorId: number
+  auditorName: string | null
+  checkedAt: string
 }
 
 export interface AuditChecklist {
   id: number
-  auditId: number
+  auditPlanId: number
   controlItemId: number
-  controlItem: {
-    number: string
-    title: string
-    description: string
-  }
-  order: number
-  result: ChecklistResultType | null
-  findings: string | null
-  evidenceIds: number[]
-  evidences: ChecklistEvidence[]
-  auditorId: number | null
-  auditorName: string | null
-  checkedAt: string | null
+  controlItemCode: string | null
+  controlItemTitle: string | null
+  question: string
+  sortOrder: number
+  latestResult: AuditChecklistResult | null
   createdAt: string
-}
-
-export interface ChecklistEvidence {
-  id: number
-  title: string
-  fileName: string
-  version: number
 }
 
 export interface ChecklistResultCreate {
   result: ChecklistResultType
-  findings?: string
-  evidenceIds?: number[]
+  finding?: string
+  evidenceReference?: string
 }
 
 export interface NonConformity {
   id: number
-  auditId: number
-  auditTitle: string
+  auditPlanId: number
+  auditPlanTitle: string | null
   controlItemId: number
-  controlItem: {
-    number: string
-    title: string
-  }
-  type: NonConformityType
+  controlItemCode: string | null
+  controlItemTitle: string | null
+  ncType: string
+  severity: string
   title: string
   description: string
-  evidence: string
-  rootCause: string | null
-  assigneeId: number | null
-  assigneeName: string | null
-  status: CorrectiveActionStatus
-  dueDate: string | null
-  createdBy: number
-  createdByName: string
+  requirement: string
+  evidence: string | null
+  responsiblePersonId: number
+  responsiblePersonName: string | null
+  departmentId: number | null
+  departmentName: string | null
+  status: string
+  detectedAt: string
+  dueDate: string
+  closedAt: string | null
+  correctiveActionCount: number
   createdAt: string
-  updatedAt: string
+  updatedAt: string | null
 }
 
 export interface NonConformityCreate {
-  auditId: number
+  auditPlanId: number
   controlItemId: number
-  type: NonConformityType
+  ncType: NonConformityType
+  severity: string
   title: string
   description: string
-  evidence: string
-  assigneeId?: number
-  dueDate?: string
+  requirement: string
+  evidence?: string
+  responsiblePersonId: number
+  dueDate: string
+  detectedAt?: string
 }
 
 export interface NonConformityUpdate {
-  type?: NonConformityType
   title?: string
+  ncType?: string
+  severity?: string
   description?: string
+  requirement?: string
   evidence?: string
-  rootCause?: string
-  assigneeId?: number
+  responsiblePersonId?: number
+  departmentId?: number
+  status?: string
   dueDate?: string
-  status?: CorrectiveActionStatus
 }
 
 export interface CorrectiveAction {
   id: number
   nonConformityId: number
-  action: string
-  implementationPlan: string
-  responsibleId: number
-  responsibleName: string
-  dueDate: string
-  status: CorrectiveActionStatus
-  completedAt: string | null
-  result: string | null
+  actionPlan: string
+  rootCause: string | null
+  preventiveMeasures: string | null
+  responsiblePersonId: number
+  responsiblePersonName: string | null
+  plannedCompletionDate: string
+  actualCompletionDate: string | null
+  resultDescription: string | null
+  resultEvidenceId: number | null
   verifiedBy: number | null
-  verifiedByName: string | null
+  verifierName: string | null
   verifiedAt: string | null
-  verificationNotes: string | null
+  verificationResult: string | null
+  verificationComment: string | null
+  status: CorrectiveActionStatus
   createdAt: string
-  updatedAt: string
+  updatedAt: string | null
 }
 
 export interface CorrectiveActionCreate {
-  action: string
-  implementationPlan: string
-  responsibleId: number
-  dueDate: string
+  actionPlan: string
+  rootCause?: string
+  preventiveMeasures?: string
+  responsiblePersonId: number
+  plannedCompletionDate: string
 }
 
 export interface CorrectiveActionUpdate {
-  action?: string
-  implementationPlan?: string
-  responsibleId?: number
-  dueDate?: string
+  actionPlan?: string
+  rootCause?: string
+  preventiveMeasures?: string
+  responsiblePersonId?: number
+  plannedCompletionDate?: string
+  actualCompletionDate?: string
+  resultDescription?: string
   status?: CorrectiveActionStatus
-  result?: string
 }
 
 export interface CorrectiveActionVerify {
-  verificationNotes: string
-  approved: boolean
+  verificationResult: string
+  verificationComment?: string
 }
 
 // 심사원 계정
