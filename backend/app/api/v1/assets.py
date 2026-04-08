@@ -76,14 +76,15 @@ def asset_to_response(asset, service: AssetService) -> AssetResponse:
         asset_type_id=asset.asset_type_id,
         asset_type_name=asset.asset_type.name if asset.asset_type else None,
         asset_type_code=asset.asset_type.code if asset.asset_type else None,
-        category_id=asset.category_id,
-        category_name=asset.category.name if asset.category else None,
+        category_ids=[c.id for c in asset.categories],
+        category_names=[c.name for c in asset.categories],
         location=asset.location,
         department_id=asset.department_id,
         department_name=asset.department.name if asset.department else None,
         owner_id=asset.owner_id,
-        owner_name=(asset.owner.name if asset.owner else None) or (asset.personnel_owner.name if hasattr(asset, 'personnel_owner') and asset.personnel_owner else None),
+        owner_name=asset.owner.name if asset.owner else None,
         personnel_owner_id=asset.personnel_owner_id,
+        personnel_owner_name=asset.personnel_owner.name if hasattr(asset, 'personnel_owner') and asset.personnel_owner else None,
         ip_address=asset.ip_address,
         mac_address=asset.mac_address,
         hostname=asset.hostname,
@@ -281,6 +282,27 @@ def update_asset_category(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+
+@router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_asset_category(
+    category_id: int,
+    service: AssetService = Depends(get_asset_service),
+    current_user: User = Depends(require_permission("asset:delete")),
+):
+    """
+    자산 분류 삭제
+
+    - 하위 분류가 있으면 삭제 불가
+    - 연결된 자산이 있으면 삭제 불가
+    """
+    try:
+        service.delete_asset_category(category_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
 

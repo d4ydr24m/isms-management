@@ -26,6 +26,7 @@ from app.models.audit_log import AuditLog
 from app.models.system_setting import SystemSetting
 from app.models.personnel import Personnel
 from app.models.asset import (
+    asset_category_mappings,
     AssetType,
     AssetCategory,
     Asset,
@@ -85,6 +86,7 @@ __all__ = [
     # Personnel
     "Personnel",
     # Phase 2 - Asset models
+    "asset_category_mappings",
     "AssetType",
     "AssetCategory",
     "Asset",

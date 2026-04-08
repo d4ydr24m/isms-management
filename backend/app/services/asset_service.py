@@ -236,6 +236,32 @@ class AssetService:
         self.db.refresh(category)
         return category
 
+    def delete_asset_category(self, category_id: int) -> None:
+        """자산 분류 삭제 (하위 분류가 있거나 자산에 연결된 경우 불가)"""
+        category = self.get_asset_category_by_id(category_id)
+        if not category:
+            raise ValueError("자산 분류를 찾을 수 없습니다.")
+
+        # 하위 분류 존재 여부 확인
+        children_count = (
+            self.db.query(AssetCategory)
+            .filter(AssetCategory.parent_id == category_id)
+            .count()
+        )
+        if children_count > 0:
+            raise ValueError(
+                f"하위 분류가 {children_count}개 존재합니다. 하위 분류를 먼저 삭제해주세요."
+            )
+
+        # 자산에 연결된 경우 확인
+        if category.assets:
+            raise ValueError(
+                f"이 분류에 연결된 자산이 {len(category.assets)}개 있습니다. 자산의 분류를 먼저 변경해주세요."
+            )
+
+        self.db.delete(category)
+        self.db.commit()
+
     # =========================================================================
     # 자산 CRUD (FR-502)
     # =========================================================================
@@ -285,6 +311,9 @@ class AssetService:
         # 자산코드 자동 채번
         asset_code = self.generate_asset_code(asset_type.code)
 
+        # 다중 분류 처리
+        category_ids = kwargs.pop("category_ids", None)
+
         # specifications JSON 변환 (크기 제한 5KB)
         specs = kwargs.pop("specifications", None)
         if specs and isinstance(specs, dict):
@@ -308,6 +337,13 @@ class AssetService:
 
         self.db.add(asset)
         self.db.flush()
+
+        # 분류 매핑
+        if category_ids:
+            for cat_id in category_ids:
+                cat = self.get_asset_category_by_id(cat_id)
+                if cat:
+                    asset.categories.append(cat)
 
         # 생성 이력 기록
         self._record_history(
@@ -344,6 +380,9 @@ class AssetService:
         if not asset:
             raise ValueError("자산을 찾을 수 없습니다.")
 
+        # 다중 분류 처리
+        category_ids = kwargs.pop("category_ids", None)
+
         # 변경 이력 기록을 위한 이전 값 저장
         changes = []
         for key, value in kwargs.items():
@@ -356,6 +395,23 @@ class AssetService:
                         "new_value": str(value),
                     })
                     setattr(asset, key, value)
+
+        # 분류 변경 처리
+        if category_ids is not None:
+            old_ids = sorted([c.id for c in asset.categories])
+            new_ids = sorted(category_ids)
+            if old_ids != new_ids:
+                old_names = ", ".join(c.name for c in asset.categories) or None
+                asset.categories = [
+                    c for c_id in category_ids
+                    if (c := self.get_asset_category_by_id(c_id))
+                ]
+                new_names = ", ".join(c.name for c in asset.categories) or None
+                changes.append({
+                    "field_name": "category_ids",
+                    "old_value": old_names,
+                    "new_value": new_names,
+                })
 
         if changes:
             # 상태 변경 시 status도 "변경"으로
@@ -467,7 +523,7 @@ class AssetService:
         if asset_type_id is not None:
             query = query.filter(Asset.asset_type_id == asset_type_id)
         if category_id is not None:
-            query = query.filter(Asset.category_id == category_id)
+            query = query.filter(Asset.categories.any(AssetCategory.id == category_id))
         if department_id is not None:
             query = query.filter(Asset.department_id == department_id)
         if status is not None:
@@ -1241,7 +1297,7 @@ class AssetService:
             ws.cell(row=row, column=1, value=asset.asset_code)
             ws.cell(row=row, column=2, value=asset.name)
             ws.cell(row=row, column=3, value=f"{asset.asset_type.code} ({asset.asset_type.name})" if asset.asset_type else "")
-            ws.cell(row=row, column=4, value=f"{asset.category.code} ({asset.category.name})" if asset.category else "")
+            ws.cell(row=row, column=4, value=", ".join(f"{c.code} ({c.name})" for c in asset.categories) if asset.categories else "")
             ws.cell(row=row, column=5, value=asset.location or "")
             ws.cell(row=row, column=6, value=f"{asset.department.code} ({asset.department.name})" if asset.department else "")
             ws.cell(row=row, column=7, value=asset.ip_address or "")
@@ -1361,14 +1417,16 @@ class AssetService:
                     if dept:
                         department_id = dept.id
 
-                # 분류 조회 ("CODE (NAME)" 형식 지원)
+                # 분류 조회 ("CODE (NAME)" 형식 지원, 쉼표 구분 복수 가능)
                 cat_raw = ws.cell(row=row_num, column=4).value
-                category_id = None
+                category_ids = []
                 if cat_raw:
-                    cat_code = self._extract_code(cat_raw)
-                    cat = self.db.query(AssetCategory).filter(AssetCategory.code == cat_code).first()
-                    if cat:
-                        category_id = cat.id
+                    for cat_token in str(cat_raw).split(","):
+                        cat_code = self._extract_code(cat_token.strip())
+                        if cat_code:
+                            cat = self.db.query(AssetCategory).filter(AssetCategory.code == cat_code).first()
+                            if cat:
+                                category_ids.append(cat.id)
 
                 # 자산코드가 있으면 기존 자산 업데이트 시도
                 if asset_code:
@@ -1376,8 +1434,11 @@ class AssetService:
                     if existing:
                         existing.name = str(name)
                         existing.asset_type_id = asset_type.id
-                        if category_id is not None:
-                            existing.category_id = category_id
+                        if category_ids:
+                            existing.categories = [
+                                c for cid in category_ids
+                                if (c := self.get_asset_category_by_id(cid))
+                            ]
                         if ws.cell(row=row_num, column=5).value:
                             existing.location = str(ws.cell(row=row_num, column=5).value)
                         if department_id:
@@ -1401,7 +1462,7 @@ class AssetService:
                     name=str(name),
                     asset_type_id=asset_type.id,
                     user_id=user_id,
-                    category_id=category_id,
+                    category_ids=category_ids or None,
                     location=ws.cell(row=row_num, column=5).value,
                     department_id=department_id,
                     ip_address=ws.cell(row=row_num, column=7).value,

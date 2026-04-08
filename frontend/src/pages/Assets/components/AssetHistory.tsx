@@ -84,7 +84,7 @@ const fieldNameLabels: Record<string, string> = {
   owner_id: '소유자',
   personnel_owner_id: '자산 소유자',
   asset_type_id: '자산 유형',
-  category_id: '분류',
+  category_ids: '분류',
   confidentiality: '기밀성',
   integrity: '무결성',
   availability: '가용성',

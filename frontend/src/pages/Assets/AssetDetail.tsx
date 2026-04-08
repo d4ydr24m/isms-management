@@ -236,7 +236,7 @@ const AssetDetailPage = () => {
                   {asset.assetTypeName}
                 </Descriptions.Item>
                 <Descriptions.Item label="분류">
-                  {asset.categoryName || '-'}
+                  {asset.categoryNames?.length ? asset.categoryNames.join(', ') : '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="상태">
                   <Tag color={statusColorMap[asset.status]}>
@@ -250,6 +250,9 @@ const AssetDetailPage = () => {
                   {asset.departmentName || '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="소유자">
+                  {asset.personnelOwnerName || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="담당자">
                   {asset.ownerName || '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="IP 주소">

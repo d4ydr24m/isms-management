@@ -120,10 +120,11 @@ export interface AssetBase {
   name: string
   description?: string
   assetTypeId: number
-  categoryId?: number
+  categoryIds?: number[]
   location?: string
   departmentId?: number
   ownerId?: number
+  personnelOwnerId?: number
   ipAddress?: string
   macAddress?: string
   hostname?: string
@@ -144,10 +145,11 @@ export interface AssetCreate extends AssetBase {}
 export interface AssetUpdate {
   name?: string
   description?: string
-  categoryId?: number
+  categoryIds?: number[]
   location?: string
   departmentId?: number
   ownerId?: number
+  personnelOwnerId?: number
   ipAddress?: string
   macAddress?: string
   hostname?: string
@@ -168,9 +170,11 @@ export interface Asset extends AssetBase {
   assetCode: string
   assetTypeName?: string
   assetTypeCode?: string
-  categoryName?: string
+  categoryIds?: number[]
+  categoryNames?: string[]
   departmentName?: string
   ownerName?: string
+  personnelOwnerName?: string
   disposalDate?: string
   status: AssetStatus
   isActive: boolean
@@ -202,6 +206,7 @@ export interface AssetListItem {
   location?: string
   departmentName?: string
   ownerName?: string
+  personnelOwnerName?: string
   status: AssetStatus
   importanceLevel?: number
   createdAt: string

@@ -16,6 +16,7 @@ interface AssetFormProps {
   categories: AssetCategory[]
   departments: Array<{ id: number; name: string }>
   users: Array<{ id: number; name: string; email: string }>
+  systemUsers?: Array<{ id: number; name: string; email: string }>
   loading?: boolean
   onSubmit: (values: AssetCreate | AssetUpdate, ciaData?: { confidentiality: number; integrity: number; availability: number; evaluationReason?: string }) => Promise<void>
   onCancel: () => void
@@ -39,6 +40,7 @@ const AssetForm = ({
   categories,
   departments,
   users,
+  systemUsers = [],
   loading = false,
   onSubmit,
   onCancel,
@@ -173,9 +175,10 @@ const AssetForm = ({
 
       <Row gutter={16}>
         <Col xs={24} sm={12}>
-          <Form.Item name="categoryId" label="분류">
+          <Form.Item name="categoryIds" label="분류">
             <Select
-              placeholder="분류 선택"
+              mode="multiple"
+              placeholder="분류 선택 (복수 선택 가능)"
               allowClear
               showSearch
               filterOption={(input, option) =>
@@ -218,9 +221,22 @@ const AssetForm = ({
           </Form.Item>
         </Col>
         <Col xs={24} sm={12}>
-          <Form.Item name="personnelOwnerId" label="자산 소유자">
-            <Select placeholder="담당자 선택" allowClear showSearch optionFilterProp="children">
+          <Form.Item name="personnelOwnerId" label="소유자">
+            <Select placeholder="소유자 선택" allowClear showSearch optionFilterProp="children">
               {users.map(user => (
+                <Option key={user.id} value={user.id}>
+                  {user.name}{user.email ? ` (${user.email})` : ''}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+        </Col>
+      </Row>
+      <Row gutter={16}>
+        <Col xs={24} sm={12}>
+          <Form.Item name="ownerId" label="담당자">
+            <Select placeholder="담당자 선택" allowClear showSearch optionFilterProp="children">
+              {systemUsers.map(user => (
                 <Option key={user.id} value={user.id}>
                   {user.name}{user.email ? ` (${user.email})` : ''}
                 </Option>

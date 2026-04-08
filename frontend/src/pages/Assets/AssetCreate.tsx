@@ -23,6 +23,7 @@ const AssetCreatePage = () => {
   const [categories, setCategories] = useState<AssetCategory[]>([])
   const [departments, setDepartments] = useState<Array<{ id: number; name: string }>>([])
   const [users, setUsers] = useState<Array<{ id: number; name: string; email: string }>>([])
+  const [systemUsers, setSystemUsers] = useState<Array<{ id: number; name: string; email: string }>>([])
   const [existingAsset, setExistingAsset] = useState<Asset | undefined>(undefined)
   const [loading, setLoading] = useState(true)
 
@@ -48,7 +49,13 @@ const AssetCreatePage = () => {
       const usersRes = await apiClient.get<Array<{ id: number; name: string; email: string }>>('/personnel/search', { params: { q: '' } })
       setUsers(Array.isArray(usersRes.data) ? usersRes.data : [])
     } catch (e) {
-      console.warn('담당자 목록 로드 실패:', e)
+      console.warn('소유자 목록 로드 실패:', e)
+    }
+    try {
+      const sysUsersRes = await apiClient.get<{ items: Array<{ id: number; name: string; email: string }>; total: number }>('/users', { params: { isActive: true } })
+      setSystemUsers(sysUsersRes.data.items || [])
+    } catch (e) {
+      console.warn('담당자(사용자) 목록 로드 실패:', e)
     }
     // 수정 모드: 기존 자산 및 CIA 평가 로드
     if (id) {
@@ -127,6 +134,7 @@ const AssetCreatePage = () => {
           categories={categories}
           departments={departments}
           users={users}
+          systemUsers={systemUsers}
           loading={loading}
           onSubmit={handleSubmit}
           onCancel={handleCancel}

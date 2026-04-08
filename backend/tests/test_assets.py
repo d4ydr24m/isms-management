@@ -180,7 +180,6 @@ class TestAssetModel:
             asset_code="AST-SRV-202601-0001",
             name="웹서버 #1",
             asset_type_id=sample_asset_type.id,
-            category_id=sample_asset_category.id,
             department_id=test_department.id,
             owner_id=test_user.id,
             location="데이터센터 A동 3층",
@@ -191,6 +190,7 @@ class TestAssetModel:
             status="운영",
             is_active=True,
         )
+        asset.categories.append(sample_asset_category)
         db.add(asset)
         db.commit()
         db.refresh(asset)
@@ -212,7 +212,7 @@ class TestAssetModel:
             asset_code="AST-SRV-202601-0001",
             name="서버1",
             asset_type_id=sample_asset_type.id,
-            category_id=sample_asset_category.id,
+
             department_id=test_department.id,
             owner_id=test_user.id,
             status="운영",
@@ -224,7 +224,7 @@ class TestAssetModel:
             asset_code="AST-SRV-202601-0001",  # 중복 코드
             name="서버2",
             asset_type_id=sample_asset_type.id,
-            category_id=sample_asset_category.id,
+
             department_id=test_department.id,
             owner_id=test_user.id,
             status="운영",
@@ -245,7 +245,7 @@ class TestAssetModel:
             asset_code="AST-SRV-202601-0002",
             name="DB서버",
             asset_type_id=sample_asset_type.id,
-            category_id=sample_asset_category.id,
+
             department_id=test_department.id,
             owner_id=test_user.id,
             status="운영",
@@ -256,8 +256,7 @@ class TestAssetModel:
 
         assert asset.asset_type is not None
         assert asset.asset_type.name == "서버"
-        assert asset.category is not None
-        assert asset.category.name == "하드웨어"
+        assert len(asset.categories) == 0  # M2M - no categories assigned in this test
         assert asset.department is not None
         assert asset.department.name == "테스트부서"
         assert asset.owner is not None
@@ -276,7 +275,7 @@ class TestAssetModel:
                 asset_code=f"AST-TEST-202601-{i:04d}",
                 name=f"테스트 자산 {status}",
                 asset_type_id=sample_asset_type.id,
-                category_id=sample_asset_category.id,
+    
                 department_id=test_department.id,
                 owner_id=test_user.id,
                 status=status,
@@ -310,7 +309,7 @@ class TestAssetValuationModel:
             asset_code="AST-SRV-202601-0001",
             name="테스트서버",
             asset_type_id=asset_type.id,
-            category_id=category.id,
+
             department_id=test_department.id,
             owner_id=test_user.id,
             status="운영",
@@ -403,7 +402,7 @@ class TestAssetHistoryModel:
             asset_code="AST-SRV-202601-0001",
             name="테스트서버",
             asset_type_id=asset_type.id,
-            category_id=category.id,
+
             department_id=test_department.id,
             owner_id=test_user.id,
             status="운영",
@@ -482,7 +481,7 @@ class TestAssetDisposalModel:
             asset_code="AST-SRV-202601-0001",
             name="테스트서버",
             asset_type_id=asset_type.id,
-            category_id=category.id,
+
             department_id=test_department.id,
             owner_id=test_user.id,
             status="폐기",
@@ -538,7 +537,7 @@ class TestAssetAssignmentModel:
             asset_code="AST-SRV-202601-0001",
             name="테스트서버",
             asset_type_id=asset_type.id,
-            category_id=category.id,
+
             department_id=test_department.id,
             owner_id=test_user.id,
             status="운영",
@@ -612,7 +611,7 @@ class TestAssetHandoverModel:
             asset_code="AST-SRV-202601-0001",
             name="테스트서버",
             asset_type_id=asset_type.id,
-            category_id=category.id,
+
             department_id=test_department.id,
             owner_id=test_user.id,
             status="운영",

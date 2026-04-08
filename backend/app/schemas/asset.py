@@ -107,7 +107,7 @@ class AssetBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=200, description="자산명")
     description: Optional[str] = Field(None, description="자산 설명")
     asset_type_id: int = Field(..., description="자산 유형 ID")
-    category_id: Optional[int] = Field(None, description="자산 분류 ID")
+    category_ids: Optional[List[int]] = Field(None, description="자산 분류 ID 목록")
     location: Optional[str] = Field(None, max_length=200, description="물리적 위치")
     department_id: Optional[int] = Field(None, description="담당 부서 ID")
     owner_id: Optional[int] = Field(None, description="자산 소유자 ID (사용자)")
@@ -146,7 +146,7 @@ class AssetUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     asset_type_id: Optional[int] = None
     description: Optional[str] = None
-    category_id: Optional[int] = None
+    category_ids: Optional[List[int]] = None
     location: Optional[str] = Field(None, max_length=200)
     department_id: Optional[int] = None
     owner_id: Optional[int] = None
@@ -184,14 +184,15 @@ class AssetResponse(BaseModel):
     asset_type_id: int
     asset_type_name: Optional[str] = None
     asset_type_code: Optional[str] = None
-    category_id: Optional[int] = None
-    category_name: Optional[str] = None
+    category_ids: List[int] = []
+    category_names: List[str] = []
     location: Optional[str] = None
     department_id: Optional[int] = None
     department_name: Optional[str] = None
     owner_id: Optional[int] = None
     owner_name: Optional[str] = None
     personnel_owner_id: Optional[int] = None
+    personnel_owner_name: Optional[str] = None
     ip_address: Optional[str] = None
     mac_address: Optional[str] = None
     hostname: Optional[str] = None

@@ -104,6 +104,17 @@ export const assetService = {
     }
   },
 
+  /**
+   * 자산 분류 삭제
+   */
+  async deleteAssetCategory(id: number): Promise<void> {
+    try {
+      await apiClient.delete(`/assets/categories/${id}`)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
   // ==========================================================================
   // 자산 CRUD API (FR-502)
   // ==========================================================================

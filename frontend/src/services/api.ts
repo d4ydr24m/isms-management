@@ -48,16 +48,21 @@ apiClient.interceptors.request.use(
 
 // 토큰 갱신 락 (동시 갱신 방지)
 let isRefreshing = false
-let refreshSubscribers: Array<() => void> = []
+let refreshSubscribers: Array<{ resolve: () => void; reject: (err: Error) => void }> = []
 
 function onRefreshed() {
-  refreshSubscribers.forEach((cb) => cb())
+  refreshSubscribers.forEach((sub) => sub.resolve())
+  refreshSubscribers = []
+}
+
+function onRefreshFailed() {
+  refreshSubscribers.forEach((sub) => sub.reject(new Error('Token refresh failed')))
   refreshSubscribers = []
 }
 
 function subscribeTokenRefresh(): Promise<void> {
-  return new Promise((resolve) => {
-    refreshSubscribers.push(resolve)
+  return new Promise((resolve, reject) => {
+    refreshSubscribers.push({ resolve, reject })
   })
 }
 
@@ -85,8 +90,13 @@ apiClient.interceptors.response.use(
 
       // 이미 갱신 중이면 완료를 기다린 후 원래 요청 재시도
       if (isRefreshing) {
-        await subscribeTokenRefresh()
-        return apiClient(originalRequest)
+        try {
+          await subscribeTokenRefresh()
+          return apiClient(originalRequest)
+        } catch {
+          // 갱신 실패 시 에러 전파 (forceLogout은 갱신 주체가 처리)
+          return Promise.reject(error)
+        }
       }
 
       isRefreshing = true
@@ -103,17 +113,13 @@ apiClient.interceptors.response.use(
         onRefreshed()
         return apiClient(originalRequest)
       } catch (refreshError) {
-        // 갱신 실패: 로그아웃
+        // 갱신 실패: 대기 중인 요청들에 실패 전파 후 로그아웃
+        onRefreshFailed()
         forceLogout()
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false
       }
-    }
-
-    // 401 에러이고 이미 재시도한 경우
-    if (error.response?.status === 401) {
-      forceLogout()
     }
 
     // 서버 에러 메시지를 error.message에 포함

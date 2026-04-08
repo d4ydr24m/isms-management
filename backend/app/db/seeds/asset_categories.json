@@ -41,7 +41,9 @@
             {"code": "HW-SEC-IDS", "name": "IDS/IPS", "level": 3, "sort_order": 1},
             {"code": "HW-SEC-WAF", "name": "WAF", "level": 3, "sort_order": 2},
             {"code": "HW-SEC-DLP", "name": "DLP", "level": 3, "sort_order": 3},
-            {"code": "HW-SEC-HSM", "name": "HSM", "level": 3, "sort_order": 4}
+            {"code": "HW-SEC-HSM", "name": "HSM", "level": 3, "sort_order": 4},
+            {"code": "HW-SEC-NAC", "name": "NAC", "level": 3, "sort_order": 5},
+            {"code": "HW-SEC-PMS", "name": "PMS", "level": 3, "sort_order": 6}
           ]
         },
         {

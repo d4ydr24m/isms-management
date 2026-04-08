@@ -103,6 +103,13 @@ const AssetTable = ({
       render: (name?: string) => name || '-',
     },
     {
+      title: '소유자',
+      dataIndex: 'personnelOwnerName',
+      key: 'personnelOwnerName',
+      width: 100,
+      render: (name?: string) => name || '-',
+    },
+    {
       title: '담당자',
       dataIndex: 'ownerName',
       key: 'ownerName',

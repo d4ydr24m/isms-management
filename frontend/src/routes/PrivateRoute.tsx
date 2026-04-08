@@ -22,13 +22,19 @@ const PrivateRoute = ({ children }: PrivateRouteProps) => {
     }
 
     // Verify session is still valid by calling /auth/me
+    // Note: 401 handling (token refresh, forceLogout) is done by the api interceptor.
+    // We only clear auth state here if the interceptor couldn't recover the session.
     const verify = async () => {
       try {
         await apiClient.get('/auth/me')
         setVerified(true)
       } catch {
-        // Session expired — clear auth state
-        setUser(null)
+        // Interceptor already attempted refresh. If we still get an error,
+        // the interceptor will have called forceLogout() for 401s.
+        // Only clear local state for non-redirect scenarios.
+        if (useAuthStore.getState().isAuthenticated) {
+          setUser(null)
+        }
       } finally {
         setVerifying(false)
       }

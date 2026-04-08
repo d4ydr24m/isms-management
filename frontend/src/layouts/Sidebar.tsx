@@ -55,14 +55,14 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
         label: '대시보드',
       },
       {
-        key: '/controls',
-        icon: <SafetyCertificateOutlined />,
-        label: '통제항목',
-      },
-      {
         key: '/isms-scope',
         icon: <GlobalOutlined />,
         label: '인증 범위',
+      },
+      {
+        key: '/controls',
+        icon: <SafetyCertificateOutlined />,
+        label: '통제항목',
       },
       {
         key: '/evidence',
@@ -70,9 +70,13 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
         label: '증적 관리',
       },
       {
-        key: '/assets',
+        key: 'assets-group',
         icon: <DatabaseOutlined />,
         label: '자산 관리',
+        children: [
+          { key: '/assets', label: '자산 목록' },
+          { key: '/assets/categories', label: '분류 관리' },
+        ],
       },
       {
         key: 'risk-group',
@@ -135,6 +139,8 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
   // 현재 경로에 맞는 선택된 메뉴 키 계산
   const selectedKeys = useMemo(() => {
     const pathname = location.pathname
+    if (pathname === '/assets/categories') return ['/assets/categories']
+    if (pathname.startsWith('/assets')) return ['/assets']
     if (pathname === '/risk/threats') return ['/risk/threats']
     if (pathname === '/risk/vulnerabilities') return ['/risk/vulnerabilities']
     if (pathname === '/risk/doa') return ['/risk/doa']
@@ -149,6 +155,7 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
   // 하위 경로인 경우 서브메뉴 자동 열기
   const defaultOpenKeys = useMemo(() => {
     const keys: string[] = []
+    if (location.pathname.startsWith('/assets')) keys.push('assets-group')
     if (location.pathname.startsWith('/risk')) keys.push('risk-group')
     if (location.pathname.startsWith('/audits') || location.pathname.startsWith('/auditor-accounts')) keys.push('audit-group')
     if (location.pathname.startsWith('/users') || location.pathname.startsWith('/departments') || location.pathname.startsWith('/personnel')) keys.push('org-group')

@@ -22,6 +22,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Table,
     Text,
     event,
 )
@@ -33,6 +34,16 @@ from app.db.base import Base
 def utc_now():
     """UTC 현재 시간 반환 (timezone-aware)"""
     return datetime.now(timezone.utc)
+
+
+# 자산-분류 다대다 연결 테이블
+asset_category_mappings = Table(
+    "asset_category_mappings",
+    Base.metadata,
+    Column("asset_id", Integer, ForeignKey("assets.id"), primary_key=True),
+    Column("category_id", Integer, ForeignKey("asset_categories.id"), primary_key=True),
+    Column("created_at", DateTime, default=datetime.now, nullable=False),
+)
 
 
 class AssetStatus(str, enum.Enum):
@@ -114,7 +125,7 @@ class AssetCategory(Base):
     parent = relationship(
         "AssetCategory", remote_side="AssetCategory.id", backref="children"
     )
-    assets = relationship("Asset", back_populates="category")
+    assets = relationship("Asset", secondary=asset_category_mappings, back_populates="categories")
 
     @validates('level')
     def validate_level(self, key, value):
@@ -144,9 +155,6 @@ class Asset(Base):
     # 분류 정보
     asset_type_id = Column(
         Integer, ForeignKey("asset_types.id"), nullable=False, comment="자산 유형 ID"
-    )
-    category_id = Column(
-        Integer, ForeignKey("asset_categories.id"), nullable=True, comment="자산 분류 ID"
     )
 
     # 위치 및 소속
@@ -194,7 +202,7 @@ class Asset(Base):
 
     # 관계
     asset_type = relationship("AssetType", back_populates="assets")
-    category = relationship("AssetCategory", back_populates="assets")
+    categories = relationship("AssetCategory", secondary=asset_category_mappings, back_populates="assets")
     department = relationship("Department", backref="assets")
     owner = relationship("User", foreign_keys=[owner_id], backref="owned_assets")
     personnel_owner = relationship("Personnel", foreign_keys=[personnel_owner_id])
