@@ -505,14 +505,21 @@ class DashboardService:
 
         - 상태별 부적합 건수
         - 등급별 부적합 건수
+        - total은 종료(closed) 상태를 제외한 미해결 건수
 
         Returns:
             Dict: 부적합 현황 요약
         """
-        # 전체 부적합 수
-        total = self.db.query(func.count(NonConformity.id)).scalar() or 0
+        active_filter = NonConformity.status != "closed"
 
-        # 상태별 집계
+        # 미해결 부적합 수 (closed 제외)
+        total = (
+            self.db.query(func.count(NonConformity.id))
+            .filter(active_filter)
+            .scalar() or 0
+        )
+
+        # 상태별 집계 (전체 — closed 포함하여 현황 파악 가능)
         status_counts = (
             self.db.query(NonConformity.status, func.count(NonConformity.id))
             .group_by(NonConformity.status)
@@ -520,17 +527,19 @@ class DashboardService:
         )
         by_status = {status: count for status, count in status_counts}
 
-        # 심각도별 집계
+        # 심각도별 집계 (closed 제외)
         severity_counts = (
             self.db.query(NonConformity.severity, func.count(NonConformity.id))
+            .filter(active_filter)
             .group_by(NonConformity.severity)
             .all()
         )
         by_severity = {severity: count for severity, count in severity_counts}
 
-        # 유형별 집계
+        # 유형별 집계 (closed 제외)
         type_counts = (
             self.db.query(NonConformity.nc_type, func.count(NonConformity.id))
+            .filter(active_filter)
             .group_by(NonConformity.nc_type)
             .all()
         )

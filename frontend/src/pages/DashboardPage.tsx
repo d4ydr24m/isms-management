@@ -105,12 +105,14 @@ const DashboardPage = () => {
       value: pendingTasks.overdueTasks + pendingTasks.upcomingDeadlines,
       icon: <ClockCircleOutlined style={{ fontSize: 24, color: '#faad14' }} />,
       color: '#faad14',
+      link: '/non-conformities?dueDateFilter=overdue',
     },
     {
-      title: '부적합 사항',
+      title: '잔여 부적합 사항',
       value: nonConformities.total,
       icon: <BugOutlined style={{ fontSize: 24, color: '#ff4d4f' }} />,
       color: '#ff4d4f',
+      link: '/non-conformities?status=open&status=in_progress&status=resolved&status=reopened',
     },
   ]
 
@@ -337,7 +339,11 @@ const DashboardPage = () => {
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         {statCards.map((card, idx) => (
           <Col xs={24} sm={12} lg={6} key={idx}>
-            <Card hoverable>
+            <Card
+              hoverable
+              onClick={card.link ? () => navigate(card.link!) : undefined}
+              style={card.link ? { cursor: 'pointer' } : undefined}
+            >
               <Space align="start" size="large">
                 {card.icon}
                 <Statistic
@@ -397,7 +403,10 @@ const DashboardPage = () => {
             style={{ height: '100%' }}
           >
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                onClick={() => navigate('/non-conformities?dueDateFilter=overdue')}
+              >
                 <Space>
                   <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
                   <Text>기한 초과 업무</Text>
@@ -405,7 +414,10 @@ const DashboardPage = () => {
                 <Badge count={pendingTasks.overdueTasks} showZero overflowCount={99}
                   style={{ backgroundColor: pendingTasks.overdueTasks > 0 ? '#ff4d4f' : '#d9d9d9' }} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                onClick={() => navigate('/non-conformities?dueDateFilter=upcoming')}
+              >
                 <Space>
                   <CalendarOutlined style={{ color: '#faad14' }} />
                   <Text>7일 내 마감 예정</Text>
@@ -413,7 +425,10 @@ const DashboardPage = () => {
                 <Badge count={pendingTasks.upcomingDeadlines} showZero overflowCount={99}
                   style={{ backgroundColor: pendingTasks.upcomingDeadlines > 0 ? '#faad14' : '#d9d9d9' }} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                onClick={() => navigate('/non-conformities?status=open&status=in_progress')}
+              >
                 <Space>
                   <WarningOutlined style={{ color: '#fa8c16' }} />
                   <Text>미완료 시정조치</Text>
@@ -421,7 +436,10 @@ const DashboardPage = () => {
                 <Badge count={pendingTasks.uncompletedCorrectiveActions} showZero overflowCount={99}
                   style={{ backgroundColor: pendingTasks.uncompletedCorrectiveActions > 0 ? '#fa8c16' : '#d9d9d9' }} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                onClick={() => navigate('/controls')}
+              >
                 <Space>
                   <FileTextOutlined style={{ color: '#1890ff' }} />
                   <Text>미확보 증적 통제항목</Text>

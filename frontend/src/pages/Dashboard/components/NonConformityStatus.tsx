@@ -62,7 +62,7 @@ const NonConformityStatus: React.FC<NonConformityStatusProps> = ({ data }) => {
       <Row gutter={[16, 16]}>
         <Col xs={12} sm={12}>
           <Statistic
-            title="전체 부적합"
+            title="잔여 부적합 사항"
             value={data.total}
             prefix={<WarningOutlined />}
             valueStyle={{ color: '#1890ff' }}

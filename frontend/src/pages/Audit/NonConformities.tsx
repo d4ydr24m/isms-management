@@ -1,19 +1,21 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Card, Button, Space, Select, Input, Tag, Row, Col, Statistic } from 'antd'
 import { PlusOutlined, SearchOutlined, EyeOutlined } from '@ant-design/icons'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import DataTable from '@/components/common/DataTable'
 import { auditService } from '@/services/audits'
 import { formatDateTime } from '@/utils/format'
-import type { NonConformity } from '@/types'
+import type { NonConformity, AuditPlan } from '@/types'
 
 const { Option } = Select
 
 interface FilterState {
   search: string
   ncType?: string
-  status?: string
+  status?: string[]
+  auditPlanId?: number
+  dueDateFilter?: string
 }
 
 const ncTypeColors: Record<string, string> = {
@@ -46,7 +48,11 @@ const statusLabels: Record<string, string> = {
 
 const NonConformitiesPage = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const initialStatus = searchParams.getAll('status')
+  const initialDueDateFilter = searchParams.get('dueDateFilter') || undefined
   const [nonConformities, setNonConformities] = useState<NonConformity[]>([])
+  const [audits, setAudits] = useState<AuditPlan[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
     current: 1,
@@ -55,9 +61,17 @@ const NonConformitiesPage = () => {
   })
   const [filters, setFilters] = useState<FilterState>({
     search: '',
-    type: undefined,
-    status: undefined,
+    ncType: undefined,
+    status: initialStatus.length > 0 ? initialStatus : undefined,
+    auditPlanId: undefined,
+    dueDateFilter: initialDueDateFilter,
   })
+
+  useEffect(() => {
+    auditService.getAudits({ pageSize: 200 }).then((data) => {
+      setAudits(data.items || [])
+    }).catch(() => {})
+  }, [])
 
   const fetchNonConformities = useCallback(async () => {
     setLoading(true)
@@ -66,6 +80,9 @@ const NonConformitiesPage = () => {
         page: pagination.current,
         size: pagination.pageSize,
         status: filters.status,
+        ncType: filters.ncType,
+        auditPlanId: filters.auditPlanId,
+        dueDateFilter: filters.dueDateFilter,
       })
       setNonConformities(response.items || [])
       setPagination((prev) => ({
@@ -101,8 +118,13 @@ const NonConformitiesPage = () => {
     setPagination((prev) => ({ ...prev, current: 1 }))
   }
 
-  const handleStatusChange = (value: string | undefined) => {
-    setFilters((prev) => ({ ...prev, status: value }))
+  const handleStatusChange = (value: string[]) => {
+    setFilters((prev) => ({ ...prev, status: value.length > 0 ? value : undefined }))
+    setPagination((prev) => ({ ...prev, current: 1 }))
+  }
+
+  const handleAuditChange = (value: number | undefined) => {
+    setFilters((prev) => ({ ...prev, auditPlanId: value }))
     setPagination((prev) => ({ ...prev, current: 1 }))
   }
 
@@ -128,6 +150,14 @@ const NonConformitiesPage = () => {
   }, [nonConformities])
 
   const columns: ColumnsType<NonConformity> = [
+    {
+      title: '감사',
+      dataIndex: 'auditPlanTitle',
+      key: 'auditPlanTitle',
+      width: 200,
+      ellipsis: true,
+      render: (title: string | null) => title || '-',
+    },
     {
       title: '통제항목',
       key: 'control',
@@ -277,15 +307,50 @@ const NonConformitiesPage = () => {
             <Col xs={24} sm={6} md={4}>
               <Select
                 placeholder="상태 필터"
+                mode="multiple"
                 style={{ width: '100%' }}
                 allowClear
                 onChange={handleStatusChange}
-                value={filters.status ?? undefined}
+                value={filters.status ?? []}
+                maxTagCount="responsive"
               >
                 <Option value="open">열림</Option>
                 <Option value="in_progress">진행 중</Option>
                 <Option value="resolved">해결됨</Option>
                 <Option value="closed">종료</Option>
+                <Option value="reopened">재개</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={6} md={4}>
+              <Select
+                placeholder="기한 필터"
+                style={{ width: '100%' }}
+                allowClear
+                onChange={(value: string | undefined) => {
+                  setFilters((prev) => ({ ...prev, dueDateFilter: value }))
+                  setPagination((prev) => ({ ...prev, current: 1 }))
+                }}
+                value={filters.dueDateFilter ?? undefined}
+              >
+                <Option value="overdue">기한 초과</Option>
+                <Option value="upcoming">7일 내 마감</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Select
+                placeholder="감사 필터"
+                style={{ width: '100%' }}
+                allowClear
+                showSearch
+                optionFilterProp="children"
+                onChange={handleAuditChange}
+                value={filters.auditPlanId ?? undefined}
+              >
+                {audits.map((audit) => (
+                  <Option key={audit.id} value={audit.id}>
+                    {audit.title}
+                  </Option>
+                ))}
               </Select>
             </Col>
           </Row>

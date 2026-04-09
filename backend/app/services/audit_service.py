@@ -8,7 +8,7 @@
 - 시정조치 워크플로우
 - 부적합 이력 분석 (동일 항목 반복 지적)
 """
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 
 from sqlalchemy import func, desc
@@ -477,10 +477,11 @@ class AuditService:
         page: int = 1,
         size: int = 10,
         audit_plan_id: Optional[int] = None,
-        status: Optional[str] = None,
+        status: Optional[List[str]] = None,
         severity: Optional[str] = None,
         nc_type: Optional[str] = None,
         responsible_person_id: Optional[int] = None,
+        due_date_filter: Optional[str] = None,
     ) -> Tuple[List[NonConformity], int]:
         """
         부적합 목록 조회
@@ -489,10 +490,11 @@ class AuditService:
             page: 페이지 번호
             size: 페이지 크기
             audit_plan_id: 감사 계획 ID 필터
-            status: 상태 필터
+            status: 상태 필터 (복수 선택 가능)
             severity: 심각도 필터
             nc_type: 유형 필터
             responsible_person_id: 담당자 ID 필터
+            due_date_filter: 기한 필터 (overdue: 기한 초과, upcoming: 7일 내 마감 예정)
 
         Returns:
             Tuple[List[NonConformity], int]: 부적합 목록, 전체 개수
@@ -506,7 +508,10 @@ class AuditService:
         if audit_plan_id:
             query = query.filter(NonConformity.audit_plan_id == audit_plan_id)
         if status:
-            query = query.filter(NonConformity.status == status)
+            if len(status) == 1:
+                query = query.filter(NonConformity.status == status[0])
+            else:
+                query = query.filter(NonConformity.status.in_(status))
         if severity:
             query = query.filter(NonConformity.severity == severity)
         if nc_type:
@@ -515,6 +520,19 @@ class AuditService:
             query = query.filter(
                 NonConformity.responsible_person_id == responsible_person_id
             )
+        if due_date_filter:
+            today = date.today()
+            if due_date_filter == "overdue":
+                query = query.filter(
+                    NonConformity.due_date < today,
+                    NonConformity.status.in_(["open", "in_progress"]),
+                )
+            elif due_date_filter == "upcoming":
+                query = query.filter(
+                    NonConformity.due_date >= today,
+                    NonConformity.due_date <= today + timedelta(days=7),
+                    NonConformity.status.in_(["open", "in_progress"]),
+                )
 
         total = query.count()
 

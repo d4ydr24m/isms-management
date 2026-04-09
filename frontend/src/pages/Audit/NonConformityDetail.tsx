@@ -53,6 +53,7 @@ import type {
   NonConformityCreate,
   CorrectiveActionCreate,
   ControlItem,
+  AuditPlan,
 } from '@/types'
 
 const { Title, Text, Paragraph } = Typography
@@ -497,6 +498,30 @@ const NonConformityDetail = () => {
             dataSource={correctiveActions}
             rowKey="id"
             pagination={false}
+            expandable={{
+              expandedRowRender: (record) => (
+                <Descriptions column={1} size="small" bordered>
+                  <Descriptions.Item label="근본 원인">
+                    {record.rootCause || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="재발 방지 대책">
+                    {record.preventiveMeasures || '-'}
+                  </Descriptions.Item>
+                  {record.resultDescription && (
+                    <Descriptions.Item label="수행 결과">
+                      {record.resultDescription}
+                    </Descriptions.Item>
+                  )}
+                  {record.verificationComment && (
+                    <Descriptions.Item label="검증 의견">
+                      {record.verificationComment}
+                    </Descriptions.Item>
+                  )}
+                </Descriptions>
+              ),
+              rowExpandable: (record) =>
+                !!(record.rootCause || record.preventiveMeasures || record.resultDescription || record.verificationComment),
+            }}
           />
         </Card>
 
@@ -649,13 +674,19 @@ const NonConformityCreateForm = ({
   const controlItemIdParam = searchParams.get('controlItemId')
   const [createForm] = Form.useForm()
   const [controls, setControls] = useState<ControlItem[]>([])
+  const [audits, setAudits] = useState<AuditPlan[]>([])
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     controlService.getControls({ pageSize: 200 }).then((data) => {
       setControls(data.items || [])
     }).catch(() => {})
-  }, [])
+    if (!auditId) {
+      auditService.getAudits({ pageSize: 200 }).then((data) => {
+        setAudits(data.items || [])
+      }).catch(() => {})
+    }
+  }, [auditId])
 
   useEffect(() => {
     if (controlItemIdParam) {
@@ -711,6 +742,25 @@ const NonConformityCreateForm = ({
         </Button>
       </Space>
       <Form form={createForm} layout="vertical" onFinish={handleSubmit}>
+        {!auditId && (
+          <Row gutter={24}>
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="auditPlanId"
+                label="감사"
+                rules={[{ required: true, message: '감사를 선택해주세요' }]}
+              >
+                <Select placeholder="감사 선택" showSearch optionFilterProp="children">
+                  {audits.map((audit) => (
+                    <Option key={audit.id} value={audit.id}>
+                      {audit.title}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+        )}
         <Row gutter={24}>
           <Col xs={24} md={12}>
             <Form.Item

@@ -4,7 +4,7 @@
 5.5 부적합 관리 API (FR-203)
 5.6 시정조치 API (FR-203)
 """
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
@@ -34,10 +34,11 @@ def list_non_conformities(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     audit_plan_id: Optional[int] = None,
-    status: Optional[str] = None,
+    status: Optional[List[str]] = Query(None),
     severity: Optional[str] = None,
     nc_type: Optional[str] = None,
     responsible_person_id: Optional[int] = None,
+    due_date_filter: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("audit:read")),
 ):
@@ -45,10 +46,11 @@ def list_non_conformities(
     부적합 목록 조회
 
     - **audit_plan_id**: 감사 계획 ID 필터
-    - **status**: 상태 필터 (open/in_progress/resolved/closed/reopened)
+    - **status**: 상태 필터, 복수 선택 가능 (open/in_progress/resolved/closed/reopened)
     - **severity**: 심각도 필터 (critical/high/medium/low)
     - **nc_type**: 유형 필터 (major/minor/observation)
     - **responsible_person_id**: 담당자 ID 필터
+    - **due_date_filter**: 기한 필터 (overdue: 기한 초과, upcoming: 7일 내 마감 예정)
     """
     service = AuditService(db)
     ncs, total = service.list_non_conformities(
@@ -59,6 +61,7 @@ def list_non_conformities(
         severity=severity,
         nc_type=nc_type,
         responsible_person_id=responsible_person_id,
+        due_date_filter=due_date_filter,
     )
 
     items = [_nc_to_response(nc) for nc in ncs]

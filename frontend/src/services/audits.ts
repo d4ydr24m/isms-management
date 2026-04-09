@@ -114,7 +114,7 @@ export const auditService = {
   },
 
   // 부적합 목록 조회
-  async getNonConformities(params?: PaginationParams & { auditPlanId?: number; status?: string }): Promise<PaginatedResponse<NonConformity>> {
+  async getNonConformities(params?: PaginationParams & { auditPlanId?: number; status?: string[]; ncType?: string; dueDateFilter?: string }): Promise<PaginatedResponse<NonConformity>> {
     try {
       const response = await apiClient.get<PaginatedResponse<NonConformity>>('/nonconformities', { params })
       return response.data

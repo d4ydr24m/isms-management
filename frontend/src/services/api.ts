@@ -30,6 +30,9 @@ export const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  paramsSerializer: {
+    indexes: null, // serialize arrays as status=a&status=b (not status[]=a)
+  },
 })
 
 // Request 인터셉터: camelCase → snake_case 변환
