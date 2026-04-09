@@ -31,8 +31,8 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { auditService } from '@/services/audits'
-import { userService } from '@/services/users'
 import { controlService } from '@/services/controls'
+import { apiClient } from '@/services/api'
 import {
   ncTypeLabels as sharedNcTypeLabels,
   severityColors as sharedSeverityColors,
@@ -48,13 +48,20 @@ import type {
   NonConformityType,
   CorrectiveActionStatus,
   CorrectiveAction,
-  UserListItem,
   NonConformityUpdate,
   NonConformityCreate,
   CorrectiveActionCreate,
   ControlItem,
   AuditPlan,
 } from '@/types'
+
+interface PersonnelItem {
+  id: number
+  name: string
+  email: string | null
+  position: string | null
+  departmentName: string | null
+}
 
 const { Title, Text, Paragraph } = Typography
 const { TextArea } = Input
@@ -77,10 +84,12 @@ const NonConformityDetail = () => {
   const referrer = (location.state as any)?.from || '/non-conformities'
   const [nonConformity, setNonConformity] = useState<NonConformity | null>(null)
   const [correctiveActions, setCorrectiveActions] = useState<CorrectiveAction[]>([])
-  const [users, setUsers] = useState<UserListItem[]>([])
+  const [users, setUsers] = useState<PersonnelItem[]>([])
+  const [controls, setControls] = useState<ControlItem[]>([])
   const [loading, setLoading] = useState(!isCreateMode)
   const [isEditing, setIsEditing] = useState(false)
   const [isAddingAction, setIsAddingAction] = useState(false)
+  const [editingCA, setEditingCA] = useState<CorrectiveAction | null>(null)
   const [statusModalVisible, setStatusModalVisible] = useState(false)
   const [form] = Form.useForm()
   const [actionForm] = Form.useForm()
@@ -90,13 +99,15 @@ const NonConformityDetail = () => {
 
     setLoading(true)
     try {
-      const [ncData, usersData, caData] = await Promise.all([
+      const [ncData, personnelRes, caData, controlsData] = await Promise.all([
         auditService.getNonConformity(Number(id)),
-        userService.getUsers({ size: 100 }),
+        apiClient.get<PersonnelItem[]>('/personnel/search', { params: { limit: 500 } }),
         auditService.getCorrectiveActions(Number(id)),
+        controlService.getControls({ pageSize: 200 }),
       ])
       setNonConformity(ncData)
-      setUsers(usersData.items || [])
+      setUsers(personnelRes.data || [])
+      setControls(controlsData.items || [])
       setCorrectiveActions(caData)
     } catch {
       message.error('부적합 사항을 불러오는데 실패했습니다')
@@ -109,11 +120,11 @@ const NonConformityDetail = () => {
     fetchData()
   }, [fetchData])
 
-  // Load users for create mode
+  // Load personnel for create mode
   useEffect(() => {
     if (isCreateMode) {
-      userService.getUsers({ size: 100 }).then((data) => {
-        setUsers(data.items || [])
+      apiClient.get<PersonnelItem[]>('/personnel/search', { params: { limit: 500 } }).then((res) => {
+        setUsers(res.data || [])
       }).catch(() => {})
     }
   }, [isCreateMode])
@@ -139,12 +150,13 @@ const NonConformityDetail = () => {
     if (isEditing && nonConformity) {
       form.setFieldsValue({
         title: nonConformity.title,
+        controlItemId: nonConformity.controlItemId,
         ncType: nonConformity.ncType,
         severity: nonConformity.severity,
         description: nonConformity.description,
         requirement: nonConformity.requirement,
         evidence: nonConformity.evidence,
-        responsiblePersonId: nonConformity.responsiblePersonId,
+        responsiblePersonIds: nonConformity.responsiblePersonIds,
         dueDate: nonConformity.dueDate ? dayjs(nonConformity.dueDate) : null,
       })
     }
@@ -160,12 +172,13 @@ const NonConformityDetail = () => {
       const values = await form.validateFields()
       const updateData: NonConformityUpdate = {
         title: values.title,
+        controlItemId: values.controlItemId,
         ncType: values.ncType,
         severity: values.severity,
         description: values.description,
         requirement: values.requirement,
         evidence: values.evidence,
-        responsiblePersonId: values.responsiblePersonId,
+        responsiblePersonIds: values.responsiblePersonIds,
         dueDate: values.dueDate?.format('YYYY-MM-DD'),
       }
 
@@ -205,7 +218,7 @@ const NonConformityDetail = () => {
         actionPlan: values.actionPlan,
         rootCause: values.rootCause || undefined,
         preventiveMeasures: values.preventiveMeasures || undefined,
-        responsiblePersonId: values.responsiblePersonId,
+        responsiblePersonIds: values.responsiblePersonIds,
         plannedCompletionDate: values.plannedCompletionDate.format('YYYY-MM-DD'),
       }
 
@@ -215,6 +228,37 @@ const NonConformityDetail = () => {
       fetchData()
     } catch {
       message.error('시정조치 등록에 실패했습니다')
+    }
+  }
+
+  const handleEditCA = (record: CorrectiveAction) => {
+    setEditingCA(record)
+    actionForm.setFieldsValue({
+      actionPlan: record.actionPlan,
+      rootCause: record.rootCause,
+      preventiveMeasures: record.preventiveMeasures,
+      responsiblePersonIds: record.responsiblePersonIds,
+      plannedCompletionDate: record.plannedCompletionDate ? dayjs(record.plannedCompletionDate) : null,
+    })
+  }
+
+  const handleUpdateCorrectiveAction = async () => {
+    if (!editingCA) return
+    try {
+      const values = await actionForm.validateFields()
+      await auditService.updateCorrectiveAction(Number(id), editingCA.id, {
+        actionPlan: values.actionPlan,
+        rootCause: values.rootCause || undefined,
+        preventiveMeasures: values.preventiveMeasures || undefined,
+        responsiblePersonIds: values.responsiblePersonIds,
+        plannedCompletionDate: values.plannedCompletionDate?.format('YYYY-MM-DD'),
+      })
+      message.success('시정조치가 수정되었습니다')
+      setEditingCA(null)
+      actionForm.resetFields()
+      fetchData()
+    } catch {
+      message.error('시정조치 수정에 실패했습니다')
     }
   }
 
@@ -265,6 +309,7 @@ const NonConformityDetail = () => {
       title: '조치',
       dataIndex: 'actionPlan',
       key: 'actionPlan',
+      ellipsis: true,
     },
     {
       title: '담당자',
@@ -291,44 +336,56 @@ const NonConformityDetail = () => {
     {
       title: '작업',
       key: 'actions',
-      width: 200,
-      render: (_, record) => {
-        return (
-          <Space size="small" wrap>
-            {record.verifiedAt ? (
-              <Text type="success">
-                <CheckCircleOutlined /> 검증 완료
-              </Text>
-            ) : (
-              <>
-                {record.status === 'planned' && (
-                  <Button size="small" onClick={() => handleCAStatusChange(record.id, 'in_progress')}>
-                    착수
+      width: 140,
+      render: (_, record) => (
+        <Space size="small" wrap>
+          {record.verifiedAt ? (
+            <Text type="success">
+              <CheckCircleOutlined /> 검증 완료
+            </Text>
+          ) : (
+            <>
+              {record.status === 'planned' && (
+                <Button size="small" onClick={() => handleCAStatusChange(record.id, 'in_progress')}>
+                  착수
+                </Button>
+              )}
+              {record.status === 'in_progress' && (
+                <Button size="small" type="primary" onClick={() => handleCAStatusChange(record.id, 'completed')}>
+                  완료
+                </Button>
+              )}
+              {record.status === 'completed' && (
+                <>
+                  <Button size="small" type="primary" onClick={() => handleCAVerify(record.id, true)}>
+                    승인
                   </Button>
-                )}
-                {record.status === 'in_progress' && (
-                  <Button size="small" type="primary" onClick={() => handleCAStatusChange(record.id, 'completed')}>
-                    완료
+                  <Button size="small" danger onClick={() => handleCAVerify(record.id, false)}>
+                    반려
                   </Button>
-                )}
-                {record.status === 'completed' && (
-                  <>
-                    <Button size="small" type="primary" onClick={() => handleCAVerify(record.id, true)}>
-                      승인
-                    </Button>
-                    <Button size="small" danger onClick={() => handleCAVerify(record.id, false)}>
-                      반려
-                    </Button>
-                  </>
-                )}
-              </>
-            )}
-            <Button size="small" danger type="text" onClick={() => handleCADelete(record.id)}>
-              삭제
+                </>
+              )}
+            </>
+          )}
+        </Space>
+      ),
+    },
+    {
+      title: '관리',
+      key: 'manage',
+      width: 160,
+      render: (_, record) => (
+        <Space size="small">
+          {!record.verifiedAt && (
+            <Button size="small" type="text" icon={<EditOutlined />} onClick={() => handleEditCA(record)}>
+              수정
             </Button>
-          </Space>
-        )
-      },
+          )}
+          <Button size="small" danger type="text" onClick={() => handleCADelete(record.id)}>
+            삭제
+          </Button>
+        </Space>
+      ),
     },
   ]
 
@@ -400,14 +457,32 @@ const NonConformityDetail = () => {
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
-                  <Form.Item name="responsiblePersonId" label="담당자">
-                    <Select placeholder="담당자 선택" allowClear>
-                      {users.map((user) => (
-                        <Option key={user.id} value={user.id}>
-                          {user.name} ({user.email})
+                  <Form.Item name="controlItemId" label="통제항목">
+                    <Select placeholder="통제항목 선택" showSearch optionFilterProp="children">
+                      {controls.map((c) => (
+                        <Option key={c.id} value={c.id}>
+                          {c.code} - {c.title}
                         </Option>
                       ))}
                     </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={24}>
+                <Col xs={24} md={12}>
+                  <Form.Item name="responsiblePersonIds" label="담당자">
+                    <Select placeholder="담당자 선택" mode="multiple" allowClear showSearch optionFilterProp="children" maxTagCount="responsive">
+                      {users.map((user) => (
+                        <Option key={user.id} value={user.id}>
+                          {user.name}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item name="dueDate" label="기한">
+                    <DatePicker style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
               </Row>
@@ -429,11 +504,6 @@ const NonConformityDetail = () => {
                       <Option value="medium">중간</Option>
                       <Option value="low">낮음</Option>
                     </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Form.Item name="dueDate" label="기한">
-                    <DatePicker style={{ width: '100%' }} />
                   </Form.Item>
                 </Col>
               </Row>
@@ -468,13 +538,13 @@ const NonConformityDetail = () => {
                 </a>
               </Descriptions.Item>
               <Descriptions.Item label="설명" span={3}>
-                <Paragraph>{nonConformity.description}</Paragraph>
+                <Paragraph style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{nonConformity.description}</Paragraph>
               </Descriptions.Item>
               <Descriptions.Item label="증적" span={3}>
-                <Paragraph>{nonConformity.evidence || '-'}</Paragraph>
+                <Paragraph style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{nonConformity.evidence || '-'}</Paragraph>
               </Descriptions.Item>
               <Descriptions.Item label="요구사항" span={3}>
-                <Paragraph>{nonConformity.requirement || '-'}</Paragraph>
+                <Paragraph style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{nonConformity.requirement || '-'}</Paragraph>
               </Descriptions.Item>
             </Descriptions>
           )}
@@ -604,13 +674,17 @@ const NonConformityDetail = () => {
           </div>
         </Modal>
 
-        {/* Add Corrective Action Modal */}
+        {/* Add/Edit Corrective Action Modal */}
         <Modal
-          title="시정조치 추가"
-          open={isAddingAction}
-          onCancel={() => setIsAddingAction(false)}
-          onOk={handleSaveCorrectiveAction}
-          okText="추가"
+          title={editingCA ? '시정조치 수정' : '시정조치 추가'}
+          open={isAddingAction || !!editingCA}
+          onCancel={() => {
+            setIsAddingAction(false)
+            setEditingCA(null)
+            actionForm.resetFields()
+          }}
+          onOk={editingCA ? handleUpdateCorrectiveAction : handleSaveCorrectiveAction}
+          okText={editingCA ? '저장' : '추가'}
         >
           <Form form={actionForm} layout="vertical">
             <Form.Item
@@ -633,14 +707,14 @@ const NonConformityDetail = () => {
               <TextArea rows={2} placeholder="재발 방지 대책" />
             </Form.Item>
             <Form.Item
-              name="responsiblePersonId"
+              name="responsiblePersonIds"
               label="담당자"
               rules={[{ required: true, message: '담당자를 선택해주세요' }]}
             >
-              <Select placeholder="담당자 선택">
+              <Select placeholder="담당자 선택" mode="multiple" showSearch optionFilterProp="children" maxTagCount="responsive">
                 {users.map((user) => (
                   <Option key={user.id} value={user.id}>
-                    {user.name} ({user.email})
+                    {user.name}
                   </Option>
                 ))}
               </Select>
@@ -666,7 +740,7 @@ const NonConformityCreateForm = ({
   navigate,
 }: {
   auditId?: string
-  users: UserListItem[]
+  users: PersonnelItem[]
   navigate: ReturnType<typeof useNavigate>
 }) => {
   const { message } = App.useApp()
@@ -709,7 +783,7 @@ const NonConformityCreateForm = ({
         description: values.description,
         requirement: values.requirement || values.description,
         evidence: values.evidence || undefined,
-        responsiblePersonId: values.responsiblePersonId,
+        responsiblePersonIds: values.responsiblePersonIds,
         dueDate: values.dueDate.format('YYYY-MM-DD'),
       }
       await auditService.createNonConformity(data)
@@ -821,14 +895,14 @@ const NonConformityCreateForm = ({
         <Row gutter={24}>
           <Col xs={24} md={12}>
             <Form.Item
-              name="responsiblePersonId"
-              label="조치 담당자"
+              name="responsiblePersonIds"
+              label="담당자"
               rules={[{ required: true, message: '담당자를 선택해주세요' }]}
             >
-              <Select placeholder="담당자 선택">
+              <Select placeholder="담당자 선택" mode="multiple" showSearch optionFilterProp="children" maxTagCount="responsive">
                 {users.map((user) => (
                   <Option key={user.id} value={user.id}>
-                    {user.name} ({user.email})
+                    {user.name}
                   </Option>
                 ))}
               </Select>

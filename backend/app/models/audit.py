@@ -8,11 +8,29 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Table,
     Text,
 )
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
+
+
+# 부적합-담당자 다대다 연결 테이블
+nc_assignees = Table(
+    "nc_assignees",
+    Base.metadata,
+    Column("non_conformity_id", Integer, ForeignKey("non_conformities.id", ondelete="CASCADE"), primary_key=True),
+    Column("personnel_id", Integer, ForeignKey("personnel.id", ondelete="CASCADE"), primary_key=True),
+)
+
+# 시정조치-담당자 다대다 연결 테이블
+ca_assignees = Table(
+    "ca_assignees",
+    Base.metadata,
+    Column("corrective_action_id", Integer, ForeignKey("corrective_actions.id", ondelete="CASCADE"), primary_key=True),
+    Column("personnel_id", Integer, ForeignKey("personnel.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class AuditPlan(Base):
@@ -160,9 +178,9 @@ class NonConformity(Base):
     requirement = Column(Text, nullable=False, comment="요구사항")
     evidence = Column(Text, nullable=True, comment="근거")
 
-    # 담당자
+    # 담당자 (하위 호환용, 향후 제거 가능)
     responsible_person_id = Column(
-        Integer, ForeignKey("users.id"), nullable=False, comment="조치 담당자 ID"
+        Integer, ForeignKey("personnel.id"), nullable=True, comment="주 담당자 ID (인력)"
     )
     department_id = Column(
         Integer, ForeignKey("departments.id"), nullable=True, comment="담당 부서 ID"
@@ -184,7 +202,8 @@ class NonConformity(Base):
     # 관계
     audit_plan = relationship("AuditPlan", back_populates="non_conformities")
     control_item = relationship("ControlItem", backref="non_conformities")
-    responsible_person = relationship("User", foreign_keys=[responsible_person_id], backref="assigned_non_conformities")
+    responsible_person = relationship("Personnel", foreign_keys=[responsible_person_id])
+    assignees = relationship("Personnel", secondary=nc_assignees, backref="assigned_non_conformities")
     department = relationship("Department", backref="non_conformities")
     corrective_actions = relationship("CorrectiveAction", back_populates="non_conformity", cascade="all, delete-orphan")
 
@@ -210,7 +229,7 @@ class CorrectiveAction(Base):
 
     # 담당자 및 일정
     responsible_person_id = Column(
-        Integer, ForeignKey("users.id"), nullable=False, comment="담당자 ID"
+        Integer, ForeignKey("personnel.id"), nullable=True, comment="주 담당자 ID (인력)"
     )
     planned_completion_date = Column(Date, nullable=False, comment="완료 예정일")
     actual_completion_date = Column(Date, nullable=True, comment="실제 완료일")
@@ -241,7 +260,8 @@ class CorrectiveAction(Base):
 
     # 관계
     non_conformity = relationship("NonConformity", back_populates="corrective_actions")
-    responsible_person = relationship("User", foreign_keys=[responsible_person_id], backref="responsible_actions")
+    responsible_person = relationship("Personnel", foreign_keys=[responsible_person_id])
+    assignees = relationship("Personnel", secondary=ca_assignees, backref="responsible_actions")
     verifier = relationship("User", foreign_keys=[verified_by], backref="verified_actions")
     result_evidence = relationship("Evidence", backref="corrective_actions")
 

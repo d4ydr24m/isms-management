@@ -11,7 +11,7 @@
 from datetime import date, datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.audit import (
@@ -20,8 +20,11 @@ from app.models.audit import (
     AuditChecklistResult,
     NonConformity,
     CorrectiveAction,
+    nc_assignees,
+    ca_assignees,
 )
 from app.models.control import ControlItem, ControlDomain
+from app.models.personnel import Personnel
 from app.models.user import User
 from app.schemas.audit import (
     AuditPlanCreate,
@@ -402,6 +405,11 @@ class AuditService:
         Returns:
             NonConformity: 생성된 부적합
         """
+        personnel_list = (
+            self.db.query(Personnel)
+            .filter(Personnel.id.in_(nc_data.responsible_person_ids))
+            .all()
+        )
         nc = NonConformity(
             audit_plan_id=nc_data.audit_plan_id,
             control_item_id=nc_data.control_item_id,
@@ -411,12 +419,13 @@ class AuditService:
             description=nc_data.description,
             requirement=nc_data.requirement,
             evidence=nc_data.evidence,
-            responsible_person_id=nc_data.responsible_person_id,
+            responsible_person_id=nc_data.responsible_person_ids[0],
             department_id=nc_data.department_id,
             detected_at=nc_data.detected_at,
             due_date=nc_data.due_date,
             status="open",
         )
+        nc.assignees = personnel_list
         self.db.add(nc)
         self.db.commit()
         self.db.refresh(nc)
@@ -438,6 +447,7 @@ class AuditService:
                 joinedload(NonConformity.audit_plan),
                 joinedload(NonConformity.control_item),
                 joinedload(NonConformity.responsible_person),
+                joinedload(NonConformity.assignees),
                 joinedload(NonConformity.corrective_actions),
             )
             .filter(NonConformity.id == nc_id)
@@ -462,11 +472,21 @@ class AuditService:
             return None
 
         update_dict = update_data.model_dump(exclude_unset=True)
+        person_ids = update_dict.pop("responsible_person_ids", None)
         for key, value in update_dict.items():
             if value is not None:
                 if hasattr(value, "value"):
                     value = value.value
                 setattr(nc, key, value)
+
+        if person_ids is not None:
+            personnel_list = (
+                self.db.query(Personnel)
+                .filter(Personnel.id.in_(person_ids))
+                .all()
+            )
+            nc.assignees = personnel_list
+            nc.responsible_person_id = person_ids[0] if person_ids else None
 
         self.db.commit()
         self.db.refresh(nc)
@@ -482,6 +502,7 @@ class AuditService:
         nc_type: Optional[str] = None,
         responsible_person_id: Optional[int] = None,
         due_date_filter: Optional[str] = None,
+        search: Optional[str] = None,
     ) -> Tuple[List[NonConformity], int]:
         """
         부적합 목록 조회
@@ -495,6 +516,7 @@ class AuditService:
             nc_type: 유형 필터
             responsible_person_id: 담당자 ID 필터
             due_date_filter: 기한 필터 (overdue: 기한 초과, upcoming: 7일 내 마감 예정)
+            search: 제목/통제항목 코드 검색
 
         Returns:
             Tuple[List[NonConformity], int]: 부적합 목록, 전체 개수
@@ -502,6 +524,7 @@ class AuditService:
         query = self.db.query(NonConformity).options(
             joinedload(NonConformity.control_item),
             joinedload(NonConformity.responsible_person),
+            joinedload(NonConformity.assignees),
         )
 
         # 필터 적용
@@ -533,11 +556,19 @@ class AuditService:
                     NonConformity.due_date <= today + timedelta(days=7),
                     NonConformity.status.in_(["open", "in_progress"]),
                 )
+        if search:
+            keyword = f"%{search}%"
+            query = query.filter(
+                or_(
+                    NonConformity.title.ilike(keyword),
+                    NonConformity.control_item.has(ControlItem.code.ilike(keyword)),
+                )
+            )
 
         total = query.count()
 
         ncs = (
-            query.order_by(desc(NonConformity.detected_at))
+            query.join(NonConformity.control_item).order_by(ControlItem.sort_order, ControlItem.code)
             .offset((page - 1) * size)
             .limit(size)
             .all()
@@ -641,15 +672,21 @@ class AuditService:
         Returns:
             CorrectiveAction: 생성된 시정조치
         """
+        personnel_list = (
+            self.db.query(Personnel)
+            .filter(Personnel.id.in_(ca_data.responsible_person_ids))
+            .all()
+        )
         ca = CorrectiveAction(
             non_conformity_id=nc_id,
             action_plan=ca_data.action_plan,
             root_cause=ca_data.root_cause,
             preventive_measures=ca_data.preventive_measures,
-            responsible_person_id=ca_data.responsible_person_id,
+            responsible_person_id=ca_data.responsible_person_ids[0],
             planned_completion_date=ca_data.planned_completion_date,
             status="planned",
         )
+        ca.assignees = personnel_list
         self.db.add(ca)
         self.db.commit()
         self.db.refresh(ca)
@@ -670,6 +707,7 @@ class AuditService:
             .options(
                 joinedload(CorrectiveAction.non_conformity),
                 joinedload(CorrectiveAction.responsible_person),
+                joinedload(CorrectiveAction.assignees),
                 joinedload(CorrectiveAction.verifier),
             )
             .filter(CorrectiveAction.id == ca_id)
@@ -694,11 +732,21 @@ class AuditService:
             return None
 
         update_dict = update_data.model_dump(exclude_unset=True)
+        person_ids = update_dict.pop("responsible_person_ids", None)
         for key, value in update_dict.items():
             if value is not None:
                 if hasattr(value, "value"):
                     value = value.value
                 setattr(ca, key, value)
+
+        if person_ids is not None:
+            personnel_list = (
+                self.db.query(Personnel)
+                .filter(Personnel.id.in_(person_ids))
+                .all()
+            )
+            ca.assignees = personnel_list
+            ca.responsible_person_id = person_ids[0] if person_ids else None
 
         self.db.commit()
         self.db.refresh(ca)
@@ -763,7 +811,8 @@ class AuditService:
             Tuple[List[CorrectiveAction], int]: 시정조치 목록, 전체 개수
         """
         query = self.db.query(CorrectiveAction).options(
-            joinedload(CorrectiveAction.responsible_person)
+            joinedload(CorrectiveAction.responsible_person),
+            joinedload(CorrectiveAction.assignees),
         )
 
         if nc_id:

@@ -5,8 +5,15 @@ import { PlusOutlined, SearchOutlined, EyeOutlined } from '@ant-design/icons'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import DataTable from '@/components/common/DataTable'
 import { auditService } from '@/services/audits'
+import { apiClient } from '@/services/api'
 import { formatDateTime } from '@/utils/format'
 import type { NonConformity, AuditPlan } from '@/types'
+
+interface PersonnelItem {
+  id: number
+  name: string
+  email: string | null
+}
 
 const { Option } = Select
 
@@ -16,6 +23,7 @@ interface FilterState {
   status?: string[]
   auditPlanId?: number
   dueDateFilter?: string
+  responsiblePersonId?: number
 }
 
 const ncTypeColors: Record<string, string> = {
@@ -53,6 +61,7 @@ const NonConformitiesPage = () => {
   const initialDueDateFilter = searchParams.get('dueDateFilter') || undefined
   const [nonConformities, setNonConformities] = useState<NonConformity[]>([])
   const [audits, setAudits] = useState<AuditPlan[]>([])
+  const [users, setUsers] = useState<PersonnelItem[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
     current: 1,
@@ -71,6 +80,9 @@ const NonConformitiesPage = () => {
     auditService.getAudits({ pageSize: 200 }).then((data) => {
       setAudits(data.items || [])
     }).catch(() => {})
+    apiClient.get<PersonnelItem[]>('/personnel/search', { params: { limit: 500 } }).then((res) => {
+      setUsers(res.data || [])
+    }).catch(() => {})
   }, [])
 
   const fetchNonConformities = useCallback(async () => {
@@ -83,6 +95,8 @@ const NonConformitiesPage = () => {
         ncType: filters.ncType,
         auditPlanId: filters.auditPlanId,
         dueDateFilter: filters.dueDateFilter,
+        search: filters.search || undefined,
+        responsiblePersonId: filters.responsiblePersonId,
       })
       setNonConformities(response.items || [])
       setPagination((prev) => ({
@@ -334,6 +348,26 @@ const NonConformitiesPage = () => {
               >
                 <Option value="overdue">기한 초과</Option>
                 <Option value="upcoming">7일 내 마감</Option>
+              </Select>
+            </Col>
+            <Col xs={24} sm={6} md={4}>
+              <Select
+                placeholder="담당자 필터"
+                style={{ width: '100%' }}
+                allowClear
+                showSearch
+                optionFilterProp="children"
+                onChange={(value: number | undefined) => {
+                  setFilters((prev) => ({ ...prev, responsiblePersonId: value }))
+                  setPagination((prev) => ({ ...prev, current: 1 }))
+                }}
+                value={filters.responsiblePersonId ?? undefined}
+              >
+                {users.map((user) => (
+                  <Option key={user.id} value={user.id}>
+                    {user.name}
+                  </Option>
+                ))}
               </Select>
             </Col>
             <Col xs={24} sm={12} md={8}>

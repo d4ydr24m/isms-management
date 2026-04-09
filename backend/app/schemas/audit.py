@@ -232,7 +232,7 @@ class NonConformityCreate(NonConformityBase):
     """부적합 생성 스키마"""
     audit_plan_id: int
     control_item_id: int
-    responsible_person_id: int
+    responsible_person_ids: List[int] = Field(..., min_length=1)
     department_id: Optional[int] = None
     detected_at: date = Field(default_factory=date.today)
 
@@ -240,12 +240,13 @@ class NonConformityCreate(NonConformityBase):
 class NonConformityUpdate(BaseModel):
     """부적합 수정 스키마"""
     title: Optional[str] = Field(None, min_length=1, max_length=255)
+    control_item_id: Optional[int] = None
     nc_type: Optional[NCType] = None
     severity: Optional[Severity] = None
     description: Optional[str] = None
     requirement: Optional[str] = None
     evidence: Optional[str] = None
-    responsible_person_id: Optional[int] = None
+    responsible_person_ids: Optional[List[int]] = None
     department_id: Optional[int] = None
     status: Optional[NCStatus] = None
     due_date: Optional[date] = None
@@ -265,8 +266,9 @@ class NonConformityResponse(BaseModel):
     description: str
     requirement: str
     evidence: Optional[str] = None
-    responsible_person_id: int
-    responsible_person_name: Optional[str] = None
+    responsible_person_ids: List[int] = []
+    responsible_person_names: List[str] = []
+    responsible_person_name: Optional[str] = None  # 첫 번째 담당자 (하위 호환)
     department_id: Optional[int] = None
     department_name: Optional[str] = None
     status: NCStatus
@@ -311,7 +313,7 @@ class CorrectiveActionBase(BaseModel):
 
 class CorrectiveActionCreate(CorrectiveActionBase):
     """시정조치 생성 스키마"""
-    responsible_person_id: int
+    responsible_person_ids: List[int] = Field(..., min_length=1)
 
 
 class CorrectiveActionUpdate(BaseModel):
@@ -319,7 +321,7 @@ class CorrectiveActionUpdate(BaseModel):
     action_plan: Optional[str] = None
     root_cause: Optional[str] = None
     preventive_measures: Optional[str] = None
-    responsible_person_id: Optional[int] = None
+    responsible_person_ids: Optional[List[int]] = None
     planned_completion_date: Optional[date] = None
     actual_completion_date: Optional[date] = None
     result_description: Optional[str] = None
@@ -340,8 +342,9 @@ class CorrectiveActionResponse(BaseModel):
     action_plan: str
     root_cause: Optional[str] = None
     preventive_measures: Optional[str] = None
-    responsible_person_id: int
-    responsible_person_name: Optional[str] = None
+    responsible_person_ids: List[int] = []
+    responsible_person_names: List[str] = []
+    responsible_person_name: Optional[str] = None  # 첫 번째 담당자 (하위 호환)
     planned_completion_date: date
     actual_completion_date: Optional[date] = None
     result_description: Optional[str] = None

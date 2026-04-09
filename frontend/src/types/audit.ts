@@ -88,7 +88,8 @@ export interface NonConformity {
   description: string
   requirement: string
   evidence: string | null
-  responsiblePersonId: number
+  responsiblePersonIds: number[]
+  responsiblePersonNames: string[]
   responsiblePersonName: string | null
   departmentId: number | null
   departmentName: string | null
@@ -110,19 +111,20 @@ export interface NonConformityCreate {
   description: string
   requirement: string
   evidence?: string
-  responsiblePersonId: number
+  responsiblePersonIds: number[]
   dueDate: string
   detectedAt?: string
 }
 
 export interface NonConformityUpdate {
   title?: string
+  controlItemId?: number
   ncType?: string
   severity?: string
   description?: string
   requirement?: string
   evidence?: string
-  responsiblePersonId?: number
+  responsiblePersonIds?: number[]
   departmentId?: number
   status?: string
   dueDate?: string
@@ -134,7 +136,8 @@ export interface CorrectiveAction {
   actionPlan: string
   rootCause: string | null
   preventiveMeasures: string | null
-  responsiblePersonId: number
+  responsiblePersonIds: number[]
+  responsiblePersonNames: string[]
   responsiblePersonName: string | null
   plannedCompletionDate: string
   actualCompletionDate: string | null
@@ -154,7 +157,7 @@ export interface CorrectiveActionCreate {
   actionPlan: string
   rootCause?: string
   preventiveMeasures?: string
-  responsiblePersonId: number
+  responsiblePersonIds: number[]
   plannedCompletionDate: string
 }
 
@@ -162,7 +165,7 @@ export interface CorrectiveActionUpdate {
   actionPlan?: string
   rootCause?: string
   preventiveMeasures?: string
-  responsiblePersonId?: number
+  responsiblePersonIds?: number[]
   plannedCompletionDate?: string
   actualCompletionDate?: string
   resultDescription?: string

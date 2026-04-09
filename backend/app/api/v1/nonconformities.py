@@ -39,6 +39,7 @@ def list_non_conformities(
     nc_type: Optional[str] = None,
     responsible_person_id: Optional[int] = None,
     due_date_filter: Optional[str] = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("audit:read")),
 ):
@@ -51,6 +52,7 @@ def list_non_conformities(
     - **nc_type**: 유형 필터 (major/minor/observation)
     - **responsible_person_id**: 담당자 ID 필터
     - **due_date_filter**: 기한 필터 (overdue: 기한 초과, upcoming: 7일 내 마감 예정)
+    - **search**: 제목/통제항목 코드 검색
     """
     service = AuditService(db)
     ncs, total = service.list_non_conformities(
@@ -62,6 +64,7 @@ def list_non_conformities(
         nc_type=nc_type,
         responsible_person_id=responsible_person_id,
         due_date_filter=due_date_filter,
+        search=search,
     )
 
     items = [_nc_to_response(nc) for nc in ncs]
@@ -296,8 +299,9 @@ def _nc_to_response(nc) -> NonConformityResponse:
         description=nc.description,
         requirement=nc.requirement,
         evidence=nc.evidence,
-        responsible_person_id=nc.responsible_person_id,
-        responsible_person_name=nc.responsible_person.name if nc.responsible_person else None,
+        responsible_person_ids=[p.id for p in nc.assignees] if nc.assignees else ([nc.responsible_person_id] if nc.responsible_person_id else []),
+        responsible_person_names=[p.name for p in nc.assignees] if nc.assignees else ([nc.responsible_person.name] if nc.responsible_person else []),
+        responsible_person_name=", ".join(p.name for p in nc.assignees) if nc.assignees else (nc.responsible_person.name if nc.responsible_person else None),
         department_id=nc.department_id,
         department_name=nc.department.name if nc.department else None,
         status=nc.status,
@@ -318,8 +322,9 @@ def _ca_to_response(ca) -> CorrectiveActionResponse:
         action_plan=ca.action_plan,
         root_cause=ca.root_cause,
         preventive_measures=ca.preventive_measures,
-        responsible_person_id=ca.responsible_person_id,
-        responsible_person_name=ca.responsible_person.name if ca.responsible_person else None,
+        responsible_person_ids=[p.id for p in ca.assignees] if ca.assignees else ([ca.responsible_person_id] if ca.responsible_person_id else []),
+        responsible_person_names=[p.name for p in ca.assignees] if ca.assignees else ([ca.responsible_person.name] if ca.responsible_person else []),
+        responsible_person_name=", ".join(p.name for p in ca.assignees) if ca.assignees else (ca.responsible_person.name if ca.responsible_person else None),
         planned_completion_date=ca.planned_completion_date,
         actual_completion_date=ca.actual_completion_date,
         result_description=ca.result_description,

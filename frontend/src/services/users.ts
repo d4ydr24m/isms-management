@@ -11,7 +11,7 @@ import type {
 
 export const userService = {
   // 사용자 목록 조회
-  async getUsers(params?: PaginationParams & { search?: string; departmentId?: number; isActive?: boolean }): Promise<PaginatedResponse<UserListItem>> {
+  async getUsers(params?: PaginationParams & { search?: string; departmentId?: number; isActive?: boolean; excludeSuperuser?: boolean }): Promise<PaginatedResponse<UserListItem>> {
     try {
       const response = await apiClient.get<PaginatedResponse<UserListItem>>('/users', { params })
       return response.data

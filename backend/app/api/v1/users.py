@@ -50,6 +50,7 @@ def get_users(
     search: Optional[str] = Query(None, description="검색어 (이름, 이메일)"),
     department_id: Optional[int] = Query(None, description="부서 ID"),
     is_active: Optional[bool] = Query(None, description="활성 상태"),
+    exclude_superuser: Optional[bool] = Query(None, description="슈퍼유저 제외"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("user:read")),
 ) -> UserList:
@@ -61,6 +62,7 @@ def get_users(
     - **search**: 이름 또는 이메일 검색
     - **department_id**: 부서 필터
     - **is_active**: 활성 상태 필터
+    - **exclude_superuser**: 슈퍼유저 제외 (true일 때 시스템 관리자 제외)
     """
     query = db.query(User)
 
@@ -77,6 +79,10 @@ def get_users(
     # 활성 상태 필터
     if is_active is not None:
         query = query.filter(User.is_active == is_active)
+
+    # 슈퍼유저 제외
+    if exclude_superuser:
+        query = query.filter(User.is_superuser == False)
 
     # 총 개수
     total = query.count()
