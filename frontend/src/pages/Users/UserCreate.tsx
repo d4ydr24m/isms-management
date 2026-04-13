@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Form, Input, Select, Button, Space, message } from 'antd'
+import { App, Card, Form, Input, Select, Button, Space } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { userService } from '@/services/users'
 import type { Role, UserCreate as UserCreateType } from '@/types'
 
 function UserCreate() {
+  const { message } = App.useApp()
   const navigate = useNavigate()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)

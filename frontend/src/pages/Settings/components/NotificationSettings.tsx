@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Card, Table, Switch, Select, Spin, message } from 'antd'
+import { App, Card, Table, Switch, Select, Spin } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { notificationService } from '@/services/notifications'
 import type { NotificationSetting, NotificationType } from '@/types'
 
 const NotificationSettings: React.FC = () => {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(true)
   const [settings, setSettings] = useState<NotificationSetting[]>([])
 

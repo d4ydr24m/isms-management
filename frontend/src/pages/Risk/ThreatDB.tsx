@@ -10,6 +10,7 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Card,
   Button,
   Space,
@@ -17,7 +18,6 @@ import {
   Input,
   Select,
   Checkbox,
-  message,
   Modal,
   Form,
   Tag,
@@ -54,6 +54,7 @@ interface ThreatFilterParams {
 }
 
 const ThreatDBPage = () => {
+  const { message, modal } = App.useApp()
   const [threats, setThreats] = useState<Threat[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
@@ -160,7 +161,7 @@ const ThreatDBPage = () => {
 
   // 위협 삭제 핸들러
   const handleDeleteClick = (threat: Threat) => {
-    Modal.confirm({
+    modal.confirm({
       title: '위협 삭제',
       icon: <ExclamationCircleOutlined />,
       content: '이 위협을 삭제하시겠습니까? 삭제된 위협은 복구할 수 없습니다.',

@@ -1,36 +1,38 @@
 #!/bin/bash
 # ============================================================================
-# ISMS-P macOS Vulnerability Check Script
-# Usage: Double-click or run in Terminal: bash isms_vuln_check_macos.sh
+# ISMS-P macOS Security Vulnerability Check Script
+# For CrowdStrike Falcon RTR / Terminal
+# ============================================================================
+# Version: 3.0
+# Description: macOS 보안 설정 확인 스크립트 (결과 파일 출력)
+# Usage (Terminal): sudo bash isms_vuln_check_macos.sh
+# Usage (RTR):      runscript -CloudFile="isms_vuln_check_macos"
 # Result file saved in the same directory as this script
 # ============================================================================
 
-# --- Admin check ---
-if [ "$EUID" -ne 0 ]; then
-    echo "Requesting administrator privileges..."
-    SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
-    osascript -e "do shell script \"bash '$SCRIPT_PATH'\" with administrator privileges"
-    exit 0
+# --- Pre-flight Check ---
+if [ "$(id -u)" -ne 0 ]; then
+    echo "ERROR: This script must be run as root (use sudo)."
+    exit 1
 fi
 
 # --- Setup ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
-
-# Prompt for user name
-echo ""
-printf "Enter your name: "
-read USER_NAME
-
-RESULT_FILE="${SCRIPT_DIR}/ISMS_VulnCheck_Result_${USER_NAME}_${TIMESTAMP}.txt"
-
+CURRENT_USER=$(stat -f %Su /dev/console)
 TOTAL_CHECKS=0
 VULN_COUNT=0
 WARN_COUNT=0
 PASS_COUNT=0
 INFO_COUNT=0
 
-# Helper functions
+# --- User name prompt ---
+echo ""
+printf "Enter your name: "
+read -r USER_NAME
+RESULT_FILE="${SCRIPT_DIR}/ISMS_VulnCheck_Result_${USER_NAME}_${TIMESTAMP}.txt"
+
+# --- Helper functions ---
 write_result() {
     echo "$1" >> "$RESULT_FILE"
 }
@@ -60,9 +62,6 @@ add_info() {
 # --- Header ---
 OS_VERSION=$(sw_vers -productVersion 2>/dev/null || echo "Unknown")
 OS_BUILD=$(sw_vers -buildVersion 2>/dev/null || echo "Unknown")
-OS_NAME=$(sw_vers -productName 2>/dev/null || echo "macOS")
-HOSTNAME=$(scutil --get ComputerName 2>/dev/null || hostname)
-CURRENT_USER=$(stat -f '%Su' /dev/console 2>/dev/null || echo "$USER")
 
 write_result "============================================================================"
 write_result " ISMS-P macOS Vulnerability Check Report"
@@ -70,9 +69,9 @@ write_result "==================================================================
 write_result ""
 write_result " Date: $(date '+%Y-%m-%d %H:%M:%S')"
 write_result " Inspector: $USER_NAME"
-write_result " Computer: $HOSTNAME"
-write_result " User: $CURRENT_USER"
-write_result " OS: $OS_NAME $OS_VERSION ($OS_BUILD)"
+write_result " Hostname: $(hostname)"
+write_result " Console User: $CURRENT_USER"
+write_result " OS: macOS $OS_VERSION ($OS_BUILD)"
 write_result ""
 write_result " Standard: ISMS-P Certification [Korea Information Security Management System]"
 write_result " Controls: 2.5[Auth], 2.6[Access], 2.9[Ops], 2.10[Security], 2.11[Incident]"
@@ -98,48 +97,52 @@ write_result ""
 # 1.1 Guest account
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
 write_result "--- [1.1] Guest Account Disabled [ISMS 2.5.1] ---"
-GUEST_STATUS=$(defaults read /Library/Preferences/com.apple.loginwindow GuestEnabled 2>/dev/null)
-if [ "$GUEST_STATUS" = "0" ] || [ -z "$GUEST_STATUS" ]; then
+guest_status=$(dscl . -read /Users/Guest AuthenticationAuthority 2>/dev/null)
+guest_shell=$(dscl . -read /Users/Guest UserShell 2>/dev/null | awk '{print $2}')
+if echo "$guest_status" | grep -qi "DisabledUser" || [ "$guest_shell" = "/usr/bin/false" ]; then
     add_pass "Guest account is disabled."
 else
-    add_vuln "Guest account is ENABLED." "System Settings > Users & Groups > Guest User > disable"
+    guest_enabled=$(defaults read /Library/Preferences/com.apple.loginwindow GuestEnabled 2>/dev/null)
+    if [ "$guest_enabled" = "0" ] || [ -z "$guest_enabled" ]; then
+        add_pass "Guest account is disabled."
+    else
+        add_vuln "Guest account is ENABLED." "Disable Guest in System Preferences - Users & Groups"
+    fi
 fi
 write_result ""
 
-# 1.2 Local accounts list
+# 1.2 Auto Login
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [1.2] Local Account List [ISMS 2.5.1] ---"
+write_result "--- [1.2] Auto Login Disabled [ISMS 2.5.1] ---"
+login_user=$(defaults read /Library/Preferences/com.apple.loginwindow autoLoginUser 2>/dev/null)
+if [ -z "$login_user" ]; then
+    add_pass "Auto Login is disabled."
+else
+    add_vuln "Auto Login is ENABLED for user: $login_user" "Disable in System Preferences - Users & Groups - Login Options"
+fi
+write_result ""
+
+# 1.3 Login Window Display
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+write_result "--- [1.3] Login Window Shows Name and Password [ISMS 2.5.3] ---"
+show_fullname=$(defaults read /Library/Preferences/com.apple.loginwindow SHOWFULLNAME 2>/dev/null)
+if [ "$show_fullname" = "1" ]; then
+    add_pass "Login window shows name and password fields."
+else
+    add_warn "Login window shows user list (Value: ${show_fullname:-not set})" "Set to Name and Password in System Preferences - Users & Groups - Login Options"
+fi
+write_result ""
+
+# 1.4 Local accounts list
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+write_result "--- [1.4] Local Account List [ISMS 2.5.1] ---"
 add_info "Registered local accounts [review for unnecessary ones]:"
-dscl . list /Users | grep -v '^_' | grep -v '^daemon$' | grep -v '^nobody$' | while read -r acct; do
-    ADMIN_CHECK=$(dsmemberutil checkmembership -U "$acct" -G admin 2>/dev/null)
-    if echo "$ADMIN_CHECK" | grep -q "is a member"; then
-        write_result "  $acct [Admin]"
-    else
-        write_result "  $acct [Standard]"
+for user in $(dscl . -list /Users | grep -v '^_'); do
+    uid=$(dscl . -read "/Users/$user" UniqueID 2>/dev/null | awk '{print $2}')
+    if [ -n "$uid" ] && [ "$uid" -ge 200 ] 2>/dev/null; then
+        write_result "  $user [UID=$uid]"
     fi
 done
-write_result ""
-
-# 1.3 Auto-login disabled
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [1.3] Auto-Login Disabled [ISMS 2.5.3] ---"
-AUTO_LOGIN=$(defaults read /Library/Preferences/com.apple.loginwindow autoLoginUser 2>/dev/null)
-if [ -z "$AUTO_LOGIN" ]; then
-    add_pass "Auto-login is disabled."
-else
-    add_vuln "Auto-login is enabled for: $AUTO_LOGIN" "System Settings > Users & Groups > Login Options > disable auto-login"
-fi
-write_result ""
-
-# 1.4 Login window shows name and password fields
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [1.4] Login Window Shows Name and Password [ISMS 2.5.3] ---"
-LOGIN_DISPLAY=$(defaults read /Library/Preferences/com.apple.loginwindow SHOWFULLNAME 2>/dev/null)
-if [ "$LOGIN_DISPLAY" = "1" ]; then
-    add_pass "Login window shows name and password fields [no user list]."
-else
-    add_warn "Login window shows user list." "System Settings > Lock Screen > Login window shows: Name and password"
-fi
 write_result ""
 
 # ============================================================================
@@ -151,62 +154,38 @@ write_result " [2] Password Policy [ISMS 2.5.4]"
 write_result "============================================================================"
 write_result ""
 
-# Get password policy
-PWPOLICY=$(pwpolicy -getaccountpolicies 2>/dev/null)
-
-# 2.1 Password length
+# 2.1 Password policy settings
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [2.1] Minimum Password Length ---"
-MIN_LEN=$(echo "$PWPOLICY" | grep -o 'policyAttributePassword matches .*(.\{[0-9]*,\})' | grep -o '[0-9]*' | head -1)
-if [ -z "$MIN_LEN" ]; then
-    # Try alternative method
-    MIN_LEN=$(pwpolicy -getglobalpolicy 2>/dev/null | grep -o 'minChars=[0-9]*' | cut -d= -f2)
-fi
-if [ -n "$MIN_LEN" ] && [ "$MIN_LEN" -ge 8 ] 2>/dev/null; then
-    add_pass "Min password length: $MIN_LEN chars [8+ OK]"
-else
-    add_warn "Min password length policy not detected or below 8." "Set via Configuration Profile or pwpolicy"
-fi
-write_result ""
+write_result "--- [2.1] Password Policy Configuration ---"
+policy=$(pwpolicy -getglobalpolicy 2>/dev/null)
+if [ -n "$policy" ]; then
+    min_chars=$(echo "$policy" | grep -oE "minChars=[0-9]+" | cut -d= -f2)
+    req_alpha=$(echo "$policy" | grep -oE "requiresAlpha=[0-9]+" | cut -d= -f2)
+    req_num=$(echo "$policy" | grep -oE "requiresNumeric=[0-9]+" | cut -d= -f2)
+    use_history=$(echo "$policy" | grep -oE "usingHistory=[0-9]+" | cut -d= -f2)
+    max_age=$(echo "$policy" | grep -oE "maxMinutesUntilChangePassword=[0-9]+" | cut -d= -f2)
+    max_failed=$(echo "$policy" | grep -oE "maxFailedLoginAttempts=[0-9]+" | cut -d= -f2)
 
-# 2.2 Password complexity
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [2.2] Password Complexity ---"
-if echo "$PWPOLICY" | grep -qi "requiresAlpha\|requiresNumeric\|requiresMixedCase\|policyAttributePassword matches"; then
-    add_pass "Password complexity policy is configured."
-else
-    add_warn "Password complexity policy not detected." "Configure via Configuration Profile or MDM"
-fi
-write_result ""
+    write_result "  minChars: ${min_chars:-not set} (Target: >= 8)"
+    write_result "  requiresAlpha: ${req_alpha:-not set} (Target: 1)"
+    write_result "  requiresNumeric: ${req_num:-not set} (Target: 1)"
+    write_result "  usingHistory: ${use_history:-not set} (Target: >= 12)"
+    write_result "  maxMinutesUntilChangePassword: ${max_age:-not set} (Target: <= 129600 = 90 days)"
+    write_result "  maxFailedLoginAttempts: ${max_failed:-not set} (Target: <= 5)"
 
-# 2.3 Max password age
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [2.3] Maximum Password Age ---"
-MAX_AGE=$(echo "$PWPOLICY" | grep -o 'maxPwdAge=[0-9]*' | cut -d= -f2 2>/dev/null)
-if [ -z "$MAX_AGE" ]; then
-    MAX_AGE_DAYS=$(echo "$PWPOLICY" | grep -o 'policyAttributeCurrentTime.*policyAttributeLastPasswordChangeTime.*[0-9]*' | grep -o '[0-9]*$' | head -1)
-    if [ -n "$MAX_AGE_DAYS" ]; then
-        MAX_AGE=$((MAX_AGE_DAYS / 86400))
+    pw_pass=true
+    [ "${min_chars:-0}" -lt 8 ] && pw_pass=false && write_result "  -> [VULN] minChars < 8"
+    [ "${req_alpha:-0}" -ne 1 ] && pw_pass=false && write_result "  -> [VULN] requiresAlpha != 1"
+    [ "${req_num:-0}" -ne 1 ] && pw_pass=false && write_result "  -> [VULN] requiresNumeric != 1"
+    [ -z "$max_age" ] && pw_pass=false && write_result "  -> [VULN] maxMinutesUntilChangePassword not set"
+
+    if $pw_pass; then
+        add_pass "Password policy is correctly configured."
+    else
+        add_vuln "Password policy has issues (see above)." "Configure via pwpolicy or MDM profile"
     fi
-fi
-if [ -n "$MAX_AGE" ] && [ "$MAX_AGE" -gt 0 ] && [ "$MAX_AGE" -le 90 ] 2>/dev/null; then
-    add_pass "Max password age: $MAX_AGE days [90 or less OK]"
 else
-    add_warn "Max password age policy not detected or unlimited." "Configure password expiration via Configuration Profile"
-fi
-write_result ""
-
-# 2.4 Account lockout
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [2.4] Account Lockout ---"
-MAX_FAILED=$(echo "$PWPOLICY" | grep -o 'maxFailedLoginAttempts=[0-9]*' | cut -d= -f2 2>/dev/null)
-if [ -z "$MAX_FAILED" ]; then
-    MAX_FAILED=$(echo "$PWPOLICY" | grep -o 'policyAttributeFailedAuthentications.*[<>].*[0-9]*' | grep -o '[0-9]*$' | head -1)
-fi
-if [ -n "$MAX_FAILED" ] && [ "$MAX_FAILED" -ge 1 ] && [ "$MAX_FAILED" -le 10 ] 2>/dev/null; then
-    add_pass "Account lockout: $MAX_FAILED attempts"
-else
-    add_warn "Account lockout policy not detected." "Configure via Configuration Profile or pwpolicy"
+    add_vuln "Unable to retrieve password policy (not configured)." "Configure password policy via pwpolicy or MDM profile"
 fi
 write_result ""
 
@@ -219,54 +198,58 @@ write_result " [3] Services and Network [ISMS 2.6, 2.10]"
 write_result "============================================================================"
 write_result ""
 
-# 3.1 Remote Login (SSH)
+# 3.1 SSH (Remote Login)
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [3.1] Remote Login / SSH [ISMS 2.6.6] ---"
-SSH_STATUS=$(systemsetup -getremotelogin 2>/dev/null | grep -i "on")
-if [ -z "$SSH_STATUS" ]; then
-    add_pass "Remote Login (SSH) is disabled."
+write_result "--- [3.1] SSH / Remote Login [ISMS 2.6.6] ---"
+ssh_status=$(sudo systemsetup -getremotelogin 2>/dev/null)
+if echo "$ssh_status" | grep -qi "off"; then
+    add_pass "SSH (Remote Login) is Off."
 else
-    add_warn "Remote Login (SSH) is enabled." "System Settings > General > Sharing > disable Remote Login"
+    add_warn "SSH (Remote Login) is On." "Disable in System Preferences - Sharing, or: sudo systemsetup -setremotelogin off"
 fi
 write_result ""
 
-# 3.2 Screen Sharing / VNC
+# 3.2 ARD (Apple Remote Desktop)
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [3.2] Screen Sharing [ISMS 2.6.6] ---"
-SCREEN_SHARING=$(launchctl list 2>/dev/null | grep -c "com.apple.screensharing")
-if [ "$SCREEN_SHARING" -eq 0 ]; then
-    add_pass "Screen Sharing is disabled."
+write_result "--- [3.2] Apple Remote Desktop [ISMS 2.6.6] ---"
+ard_process=$(ps aux | grep ARDAgent | grep -v grep)
+if [ -z "$ard_process" ]; then
+    add_pass "ARDAgent is not running."
 else
-    add_warn "Screen Sharing is enabled." "System Settings > General > Sharing > disable Screen Sharing"
+    add_warn "ARDAgent is running." "Disable in System Preferences - Sharing - Remote Management"
 fi
 write_result ""
 
-# 3.3 File Sharing (SMB/AFP)
+# 3.3 Firewall
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [3.3] File Sharing [ISMS 2.6.1] ---"
-FILE_SHARING=$(launchctl list 2>/dev/null | grep -c "com.apple.smbd")
-if [ "$FILE_SHARING" -eq 0 ]; then
-    add_pass "File Sharing (SMB) is disabled."
+write_result "--- [3.3] Application Firewall [ISMS 2.6.1] ---"
+fw_state=$(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null)
+if echo "$fw_state" | grep -q "enabled"; then
+    add_pass "Application Firewall is enabled."
 else
-    add_warn "File Sharing (SMB) is enabled." "System Settings > General > Sharing > disable File Sharing"
+    add_vuln "Application Firewall is DISABLED." "Enable in System Preferences - Security & Privacy - Firewall"
 fi
 write_result ""
 
-# 3.4 Firewall
+# 3.4 Stealth Mode
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [3.4] macOS Firewall [ISMS 2.6.1] ---"
-FW_STATUS=$(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null)
-if echo "$FW_STATUS" | grep -qi "enabled"; then
-    add_pass "macOS Firewall is enabled."
-    # Check stealth mode
-    STEALTH=$(/usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode 2>/dev/null)
-    if echo "$STEALTH" | grep -qi "enabled"; then
-        write_result "  [INFO] Stealth mode is enabled."
-    else
-        write_result "  [INFO] Stealth mode is disabled. Consider enabling for extra protection."
-    fi
+write_result "--- [3.4] Firewall Stealth Mode [ISMS 2.6.1] ---"
+stealth_state=$(/usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode 2>/dev/null)
+if echo "$stealth_state" | grep -q "enabled"; then
+    add_pass "Stealth Mode is enabled."
 else
-    add_vuln "macOS Firewall is DISABLED." "System Settings > Network > Firewall > enable"
+    add_warn "Stealth Mode is disabled." "Enable: /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on"
+fi
+write_result ""
+
+# 3.5 AirDrop
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+write_result "--- [3.5] AirDrop Disabled [ISMS 2.10.7] ---"
+airdrop_disabled=$(sudo -u "$CURRENT_USER" defaults read com.apple.NetworkBrowser DisableAirDrop 2>/dev/null)
+if [ "$airdrop_disabled" = "1" ]; then
+    add_pass "AirDrop is disabled."
+else
+    add_warn "AirDrop is not disabled (Value: ${airdrop_disabled:-not set})." "Disable AirDrop or set to Contacts Only"
 fi
 write_result ""
 
@@ -279,32 +262,36 @@ write_result " [4] Patch Management [ISMS 2.10.8, 2.10.9]"
 write_result "============================================================================"
 write_result ""
 
-# 4.1 Software updates
+# 4.1 Software Update Settings
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [4.1] Available Software Updates ---"
-add_info "Checking for available updates..."
-UPDATES=$(softwareupdate -l 2>&1)
-if echo "$UPDATES" | grep -qi "No new software available"; then
-    write_result "  No pending updates."
+write_result "--- [4.1] Software Update Settings ---"
+auto_check=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckEnabled 2>/dev/null)
+auto_download=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticDownload 2>/dev/null)
+critical_update=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate CriticalUpdateInstall 2>/dev/null)
+
+write_result "  AutomaticCheckEnabled: ${auto_check:-not set} (Target: 1)"
+write_result "  AutomaticDownload: ${auto_download:-not set} (Target: 1)"
+write_result "  CriticalUpdateInstall: ${critical_update:-not set} (Target: 1)"
+
+su_pass=true
+[ "${auto_check:-0}" != "1" ] && su_pass=false && write_result "  -> [VULN] AutomaticCheckEnabled != 1"
+[ "${auto_download:-0}" != "1" ] && su_pass=false && write_result "  -> [WARN] AutomaticDownload != 1"
+[ "${critical_update:-0}" != "1" ] && su_pass=false && write_result "  -> [VULN] CriticalUpdateInstall != 1"
+
+if $su_pass; then
+    add_pass "Software Update settings are correctly configured."
 else
-    write_result "  Available updates:"
-    echo "$UPDATES" | grep -E '^\s+\*|Label:' | head -10 | while read -r line; do
-        write_result "  $line"
-    done
+    add_vuln "Software Update settings need attention (see above)." "Enable in System Preferences - Software Update"
 fi
 write_result ""
 
-# 4.2 Auto-update
+# 4.2 Last update check
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [4.2] Automatic Update Setting ---"
-AUTO_CHECK=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckEnabled 2>/dev/null)
-AUTO_DOWNLOAD=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticDownload 2>/dev/null)
-AUTO_INSTALL=$(defaults read /Library/Preferences/com.apple.commerce AutoUpdate 2>/dev/null)
-if [ "$AUTO_CHECK" = "1" ]; then
-    add_pass "Automatic update checking is enabled."
-else
-    add_warn "Automatic update checking is disabled." "System Settings > General > Software Update > enable automatic checks"
-fi
+write_result "--- [4.2] Recent Software Updates ---"
+add_info "Last 10 installed updates:"
+softwareupdate --history 2>/dev/null | head -12 | while IFS= read -r line; do
+    write_result "  $line"
+done
 write_result ""
 
 # ============================================================================
@@ -316,27 +303,53 @@ write_result " [5] Audit and Logging [ISMS 2.9.4, 2.9.5]"
 write_result "============================================================================"
 write_result ""
 
-# 5.1 Audit status
+# 5.1 OpenBSM audit
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [5.1] Audit / Logging Status ---"
-AUDIT_RUNNING=$(launchctl list 2>/dev/null | grep -c "com.apple.auditd")
-if [ "$AUDIT_RUNNING" -gt 0 ]; then
+write_result "--- [5.1] OpenBSM Audit Service ---"
+audit_running=$(launchctl list 2>/dev/null | grep auditd)
+if [ -n "$audit_running" ]; then
     add_pass "OpenBSM audit daemon (auditd) is running."
-    add_info "Audit flags:"
-    AUDIT_FLAGS=$(grep "^flags:" /etc/security/audit_control 2>/dev/null)
-    write_result "  $AUDIT_FLAGS"
 else
-    add_warn "OpenBSM audit daemon is not running." "Enable with: sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.auditd.plist"
+    add_vuln "OpenBSM audit daemon (auditd) is NOT running." "Enable: sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.auditd.plist"
 fi
 write_result ""
 
-# 5.2 Install.log / system log
+# 5.2 Audit flags
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [5.2] System Logging ---"
-if [ -f /var/log/install.log ] && [ -f /var/log/system.log ] 2>/dev/null || log show --last 1m >/dev/null 2>&1; then
-    add_pass "Unified logging system is active."
+write_result "--- [5.2] Audit Flags Configuration ---"
+if [ -f /etc/security/audit_control ]; then
+    flags=$(grep "^flags:" /etc/security/audit_control 2>/dev/null | cut -d: -f2)
+    write_result "  Audit flags: ${flags:-not set}"
+    if echo "$flags" | grep -q "lo"; then
+        add_pass "Login/logout auditing is configured."
+    else
+        add_warn "Login/logout auditing may not be configured." "Add 'lo' to flags in /etc/security/audit_control"
+    fi
 else
-    add_warn "System logging may not be properly configured."
+    add_warn "Audit control file not found." "Check /etc/security/audit_control"
+fi
+write_result ""
+
+# 5.3 Install.log and system.log
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+write_result "--- [5.3] System Log Availability ---"
+log_pass=true
+if [ -f /var/log/install.log ]; then
+    write_result "  install.log: exists"
+else
+    write_result "  install.log: NOT found"
+    log_pass=false
+fi
+if [ -d /var/log ]; then
+    write_result "  /var/log directory: exists"
+else
+    write_result "  /var/log directory: NOT found"
+    log_pass=false
+fi
+if $log_pass; then
+    add_pass "System logs are available."
+else
+    add_warn "Some system logs are missing." "Verify log rotation and storage"
 fi
 write_result ""
 
@@ -349,100 +362,89 @@ write_result " [6] Security Settings [ISMS 2.7, 2.10, 2.11]"
 write_result "============================================================================"
 write_result ""
 
-# 6.1 Screen saver / screen lock
+# 6.1 Screensaver Lock
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [6.1] Screen Lock ---"
-SCREEN_LOCK_DELAY=$(sysadminctl -screenLock status 2>/dev/null | grep -o '[0-9]*' | head -1)
-ASK_FOR_PW=$(defaults read com.apple.screensaver askForPassword 2>/dev/null)
-ASK_FOR_PW_DELAY=$(defaults read com.apple.screensaver askForPasswordDelay 2>/dev/null)
+write_result "--- [6.1] Screen Saver Lock ---"
+idle_time=$(sudo -u "$CURRENT_USER" defaults -currentHost read com.apple.screensaver idleTime 2>/dev/null)
+ask_pass=$(sudo -u "$CURRENT_USER" defaults -currentHost read com.apple.screensaver askForPassword 2>/dev/null)
+ask_delay=$(sudo -u "$CURRENT_USER" defaults -currentHost read com.apple.screensaver askForPasswordDelay 2>/dev/null)
 
-if [ "$ASK_FOR_PW" = "1" ]; then
-    DELAY_SEC=${ASK_FOR_PW_DELAY:-0}
-    DELAY_MIN=$((DELAY_SEC / 60))
-    if [ "$DELAY_SEC" -le 300 ]; then
-        add_pass "Screen lock requires password [delay: ${DELAY_SEC}s]"
-    else
-        add_warn "Screen lock password delay: ${DELAY_MIN}min [over 5 min]" "System Settings > Lock Screen > Require password: immediately or short delay"
-    fi
+write_result "  Idle Time (Seconds): ${idle_time:-not set} (Target: <= 600)"
+write_result "  Ask Password: ${ask_pass:-not set} (Target: 1)"
+write_result "  Ask Password Delay: ${ask_delay:-not set} (Target: 0)"
+
+ss_pass=true
+if [ -z "$idle_time" ]; then
+    ss_pass=false
+    write_result "  -> [VULN] idleTime not set"
+elif [ "$idle_time" -gt 600 ] 2>/dev/null; then
+    ss_pass=false
+    write_result "  -> [WARN] idleTime > 600 seconds"
+fi
+if [ "${ask_pass:-0}" != "1" ]; then
+    ss_pass=false
+    write_result "  -> [VULN] askForPassword != 1"
+fi
+
+if $ss_pass; then
+    add_pass "Screensaver lock is correctly configured."
 else
-    add_vuln "Screen lock does NOT require password." "System Settings > Lock Screen > Require password after screen saver begins"
+    add_vuln "Screensaver settings need attention (see above)." "Set in System Preferences - Desktop & Screen Saver / Security & Privacy"
 fi
 write_result ""
 
-# 6.2 FileVault (disk encryption)
+# 6.2 Display Sleep
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [6.2] FileVault Disk Encryption [ISMS 2.7.1] ---"
-FV_STATUS=$(fdesetup status 2>/dev/null)
-if echo "$FV_STATUS" | grep -qi "on"; then
-    add_pass "FileVault disk encryption is enabled."
-else
-    add_warn "FileVault is NOT enabled." "System Settings > Privacy & Security > FileVault > Turn On"
-fi
-write_result ""
-
-# 6.3 Antivirus / XProtect
-TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [6.3] Antivirus / Malware Protection [ISMS 2.10.9] ---"
-AV_FOUND=false
-
-# Check for 3rd-party AV
-for av_name in "CrowdStrike" "Falcon" "Symantec" "McAfee" "Sophos" "ESET" "Kaspersky" "Bitdefender" "SentinelOne" "Carbon Black"; do
-    if pgrep -fi "$av_name" >/dev/null 2>&1 || find /Applications -maxdepth 2 -name "*${av_name}*" 2>/dev/null | grep -q .; then
-        add_pass "3rd-party AV detected: $av_name"
-        AV_FOUND=true
-        break
-    fi
+write_result "--- [6.2] Display Sleep Settings ---"
+add_info "Power management display sleep settings:"
+pmset -g custom 2>/dev/null | grep -E "Battery Power|AC Power|displaysleep" | while IFS= read -r line; do
+    write_result "  $line"
 done
+write_result ""
 
-if [ "$AV_FOUND" = false ]; then
-    # Check XProtect
-    XPROTECT_VER=$(system_profiler SPInstallHistoryDataType 2>/dev/null | grep -A1 "XProtect" | grep "Version" | tail -1 | awk '{print $NF}')
-    GATEKEEPER=$(spctl --status 2>/dev/null)
-    MRT_EXISTS=$(ls /Library/Apple/System/Library/CoreServices/MRT.app 2>/dev/null)
-
-    if echo "$GATEKEEPER" | grep -qi "enabled"; then
-        add_pass "Gatekeeper is enabled. XProtect is active."
-        AV_FOUND=true
-    fi
-fi
-
-if [ "$AV_FOUND" = false ]; then
-    add_vuln "No active antivirus or Gatekeeper detected." "Enable Gatekeeper or install antivirus"
+# 6.3 FileVault (Disk Encryption)
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+write_result "--- [6.3] FileVault Encryption [ISMS 2.7.1] ---"
+fv_status=$(fdesetup status 2>/dev/null)
+if echo "$fv_status" | grep -q "On"; then
+    add_pass "FileVault is enabled. ($fv_status)"
+else
+    add_vuln "FileVault is NOT enabled. ($fv_status)" "Enable FileVault in System Preferences - Security & Privacy"
 fi
 write_result ""
 
 # 6.4 SIP (System Integrity Protection)
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [6.4] System Integrity Protection [ISMS 2.10] ---"
-SIP_STATUS=$(csrutil status 2>/dev/null)
-if echo "$SIP_STATUS" | grep -qi "enabled"; then
-    add_pass "SIP (System Integrity Protection) is enabled."
+write_result "--- [6.4] System Integrity Protection (SIP) ---"
+sip_status=$(csrutil status 2>/dev/null)
+if echo "$sip_status" | grep -q "enabled"; then
+    add_pass "SIP is enabled. ($sip_status)"
 else
-    add_vuln "SIP is DISABLED." "Restart in Recovery Mode and run: csrutil enable"
+    add_vuln "SIP is DISABLED. ($sip_status)" "Boot to Recovery Mode and run: csrutil enable"
 fi
 write_result ""
 
 # 6.5 Gatekeeper
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [6.5] Gatekeeper ---"
-GK_STATUS=$(spctl --status 2>/dev/null)
-if echo "$GK_STATUS" | grep -qi "enabled"; then
+write_result "--- [6.5] Gatekeeper [ISMS 2.10.9] ---"
+gk_status=$(spctl --status 2>/dev/null)
+if echo "$gk_status" | grep -q "enabled"; then
     add_pass "Gatekeeper is enabled."
 else
-    add_vuln "Gatekeeper is DISABLED." "sudo spctl --master-enable"
+    add_vuln "Gatekeeper is DISABLED." "Enable: sudo spctl --master-enable"
 fi
 write_result ""
 
-# 6.6 AirDrop
+# 6.6 XProtect (Antivirus)
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [6.6] AirDrop [ISMS 2.10.7] ---"
-AIRDROP=$(defaults read com.apple.sharingd DiscoverableMode 2>/dev/null)
-if [ "$AIRDROP" = "Off" ] || [ -z "$AIRDROP" ]; then
-    add_pass "AirDrop is disabled or contacts-only."
-elif [ "$AIRDROP" = "Contacts Only" ]; then
-    add_pass "AirDrop is set to Contacts Only."
+write_result "--- [6.6] XProtect / Malware Removal Tool [ISMS 2.10.9] ---"
+xprotect_meta=$(system_profiler SPInstallHistoryDataType 2>/dev/null | grep -A1 "XProtect" | tail -1 | xargs)
+mrt_meta=$(system_profiler SPInstallHistoryDataType 2>/dev/null | grep -A1 "MRTConfigData" | tail -1 | xargs)
+if [ -d "/Library/Apple/System/Library/CoreServices/XProtect.bundle" ]; then
+    add_pass "XProtect bundle is present."
+    [ -n "$xprotect_meta" ] && write_result "  Last XProtect update: $xprotect_meta"
 else
-    add_warn "AirDrop is set to Everyone." "System Settings > General > AirDrop > set to Contacts Only or Off"
+    add_warn "XProtect bundle not found." "Ensure macOS security updates are installed"
 fi
 write_result ""
 
@@ -455,78 +457,88 @@ write_result " [7] Additional Security [ISMS 2.9, 2.11]"
 write_result "============================================================================"
 write_result ""
 
-# 7.1 Remote Apple Events
+# 7.1 Bluetooth sharing
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [7.1] Remote Apple Events ---"
-RAE=$(systemsetup -getremoteappleevents 2>/dev/null)
-if echo "$RAE" | grep -qi "off"; then
-    add_pass "Remote Apple Events are disabled."
+write_result "--- [7.1] Bluetooth Sharing [ISMS 2.10.7] ---"
+bt_sharing=$(defaults read /Library/Preferences/com.apple.Bluetooth PrefKeyServicesEnabled 2>/dev/null)
+if [ "$bt_sharing" = "0" ] || [ -z "$bt_sharing" ]; then
+    add_pass "Bluetooth sharing is disabled."
 else
-    add_warn "Remote Apple Events are enabled." "systemsetup -setremoteappleevents off"
+    add_warn "Bluetooth sharing is enabled." "Disable in System Preferences - Sharing"
 fi
 write_result ""
 
-# 7.2 NTP
+# 7.2 Internet Sharing
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [7.2] Time Synchronization / NTP [ISMS 2.9.6] ---"
-NTP_ENABLED=$(systemsetup -getusingnetworktime 2>/dev/null)
-if echo "$NTP_ENABLED" | grep -qi "on"; then
-    NTP_SERVER=$(systemsetup -getnetworktimeserver 2>/dev/null | awk '{print $NF}')
-    add_pass "NTP is enabled [Server: $NTP_SERVER]"
+write_result "--- [7.2] Internet Sharing ---"
+internet_sharing=$(defaults read /Library/Preferences/SystemConfiguration/com.apple.nat NAT 2>/dev/null | grep -c "Enabled = 1")
+if [ "$internet_sharing" = "0" ] || [ -z "$internet_sharing" ]; then
+    add_pass "Internet Sharing is disabled."
 else
-    add_warn "NTP is disabled." "systemsetup -setusingnetworktime on"
+    add_warn "Internet Sharing is enabled." "Disable in System Preferences - Sharing"
 fi
 write_result ""
 
-# 7.3 Bluetooth
+# 7.3 NTP (Time Synchronization)
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [7.3] Bluetooth ---"
-BT_POWER=$(defaults read /Library/Preferences/com.apple.Bluetooth ControllerPowerState 2>/dev/null)
-if [ "$BT_POWER" = "0" ]; then
-    add_pass "Bluetooth is disabled."
+write_result "--- [7.3] Time Synchronization / NTP [ISMS 2.9.6] ---"
+ntp_enabled=$(sudo systemsetup -getusingnetworktime 2>/dev/null)
+if echo "$ntp_enabled" | grep -qi "on"; then
+    add_pass "Network Time synchronization is enabled."
 else
-    add_info "Bluetooth is enabled."
-    write_result "  Note: Disable Bluetooth if not in use per security policy"
+    add_warn "Network Time synchronization is OFF." "Enable: sudo systemsetup -setusingnetworktime on"
 fi
 write_result ""
 
-# 7.4 Find My Mac
+# 7.4 Remote Apple Events
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [7.4] Find My Mac ---"
-FMM=$(nvram -x -p 2>/dev/null | grep -c "fmm-mobileme-token")
-if [ "$FMM" -gt 0 ]; then
-    add_pass "Find My Mac is enabled."
+write_result "--- [7.4] Remote Apple Events [ISMS 2.6.6] ---"
+rae_status=$(sudo systemsetup -getremoteappleevents 2>/dev/null)
+if echo "$rae_status" | grep -qi "off"; then
+    add_pass "Remote Apple Events is Off."
 else
-    add_info "Find My Mac does not appear to be enabled."
-    write_result "  Note: Enable via System Settings > Apple ID > iCloud > Find My Mac"
+    add_warn "Remote Apple Events is On." "Disable: sudo systemsetup -setremoteappleevents off"
 fi
 write_result ""
 
-# 7.5 Hosts file
+# 7.5 Firmware Password (Intel) / Secure Boot (Apple Silicon)
 TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
-write_result "--- [7.5] Hosts File Integrity ---"
-SUSPICIOUS=0
+write_result "--- [7.5] Boot Security ---"
+arch=$(uname -m)
+if [ "$arch" = "arm64" ]; then
+    # Apple Silicon - check Secure Boot via bputil (may require authentication)
+    add_info "Apple Silicon detected. Secure Boot is enforced by default."
+    write_result "  Architecture: Apple Silicon ($arch)"
+else
+    # Intel - check firmware password
+    fw_pass=$(firmwarepasswd -check 2>/dev/null)
+    if echo "$fw_pass" | grep -qi "Yes"; then
+        add_pass "Firmware password is set."
+    else
+        add_warn "Firmware password is NOT set." "Set via: sudo firmwarepasswd -setpasswd"
+    fi
+fi
+write_result ""
+
+# 7.6 Hosts file integrity
+TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
+write_result "--- [7.6] Hosts File Integrity ---"
+SAFE_PATTERNS="localhost|broadcasthost|docker\.internal|kubernetes\.docker\.internal|host\.docker\.internal"
+suspicious_found=false
 while IFS= read -r line; do
-    trimmed=$(echo "$line" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
+    trimmed=$(echo "$line" | sed 's/^[[:space:]]*//')
     [ -z "$trimmed" ] && continue
-    echo "$trimmed" | grep -q '^#' && continue
-    echo "$trimmed" | grep -qi 'localhost\|broadcasthost\|docker.internal\|kubernetes.docker.internal\|gateway.docker.internal\|host.docker.internal' && continue
-    SUSPICIOUS=1
-    break
-done < /etc/hosts
+    echo "$trimmed" | grep -q "^#" && continue
+    if ! echo "$trimmed" | grep -qE "$SAFE_PATTERNS"; then
+        write_result "  [!] $trimmed"
+        suspicious_found=true
+    fi
+done < /etc/hosts 2>/dev/null
 
-if [ "$SUSPICIOUS" -eq 0 ]; then
-    add_pass "No suspicious entries in hosts file."
-else
+if $suspicious_found; then
     add_warn "Unexpected entries in hosts file." "Review /etc/hosts"
-    add_info "Non-standard hosts entries:"
-    while IFS= read -r line; do
-        trimmed=$(echo "$line" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
-        [ -z "$trimmed" ] && continue
-        echo "$trimmed" | grep -q '^#' && continue
-        echo "$trimmed" | grep -qi 'localhost\|broadcasthost\|docker.internal\|kubernetes.docker.internal' && continue
-        write_result "  $trimmed"
-    done < /etc/hosts
+else
+    add_pass "No suspicious entries in hosts file."
 fi
 write_result ""
 
@@ -534,7 +546,7 @@ write_result ""
 # SUMMARY
 # ============================================================================
 if [ "$TOTAL_CHECKS" -gt 0 ]; then
-    TOTAL_SCORE=$((PASS_COUNT * 100 / TOTAL_CHECKS))
+    TOTAL_SCORE=$(( PASS_COUNT * 100 / TOTAL_CHECKS ))
 else
     TOTAL_SCORE=0
 fi
@@ -566,16 +578,17 @@ write_result " ISMS-P Control Mapping"
 write_result "============================================================================"
 write_result ""
 write_result " 2.5.1 User Account Mgmt       - Checks 1.1~1.4"
-write_result " 2.5.3 User Authentication     - Checks 1.3, 1.4"
-write_result " 2.5.4 Password Management     - Checks 2.1~2.4"
+write_result " 2.5.3 User Authentication     - Check 1.3"
+write_result " 2.5.4 Password Management     - Check 2.1"
 write_result " 2.6.1 Network Access Control  - Checks 3.3, 3.4"
-write_result " 2.6.6 Remote Access Control   - Checks 3.1, 3.2"
-write_result " 2.7.1 Encryption Policy       - Check 6.2"
-write_result " 2.9.4 Log Management          - Checks 5.1, 5.2"
-write_result " 2.9.6 Time Synchronization    - Check 7.2"
-write_result " 2.10.7 Removable Media        - Check 6.6"
+write_result " 2.6.6 Remote Access Control   - Checks 3.1, 3.2, 7.4"
+write_result " 2.7.1 Encryption Policy       - Check 6.3"
+write_result " 2.9.4 Log Management          - Checks 5.1~5.3"
+write_result " 2.9.5 Log Review              - Check 5.2"
+write_result " 2.9.6 Time Synchronization    - Check 7.3"
+write_result " 2.10.7 Removable Media        - Checks 3.5, 7.1"
 write_result " 2.10.8 Patch Management       - Checks 4.1, 4.2"
-write_result " 2.10.9 Malware Control        - Check 6.3"
+write_result " 2.10.9 Malware Control        - Checks 6.5, 6.6"
 write_result " 2.11.2 Vulnerability Check    - This entire script"
 write_result ""
 write_result "============================================================================"

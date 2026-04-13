@@ -289,6 +289,9 @@ class RiskAssessmentCreate(RiskAssessmentBase):
 
 class RiskAssessmentUpdate(BaseModel):
     """위험 평가 수정 스키마"""
+    asset_id: Optional[int] = None
+    threat_id: Optional[int] = None
+    vulnerability_id: Optional[int] = None
     asset_value: Optional[int] = Field(None, ge=1, le=5)
     threat_level: Optional[int] = Field(None, ge=1, le=5)
     vulnerability_level: Optional[int] = Field(None, ge=1, le=5)
@@ -617,9 +620,18 @@ class RiskDistribution(BaseModel):
     total: int
 
 
+class CellRiskLevel(BaseModel):
+    """셀별 위험등급 분포"""
+    high: int = 0
+    medium: int = 0
+    low: int = 0
+
+
 class RiskMatrixData(BaseModel):
     """위험 매트릭스 데이터 스키마"""
     matrix: List[List[int]]
+    cell_risk_levels: Optional[List[List[CellRiskLevel]]] = None
+    cell_asset_values: Optional[List[List[List[int]]]] = None
     labels: Dict[str, List[str]]
 
 

@@ -3,7 +3,7 @@
  * 계층 구조(대분류/중분류/소분류) CRUD
  */
 import { useState, useEffect, useCallback } from 'react'
-import { Card, Tree, Button, Space, Modal, Form, Input, InputNumber, Select, message, Popconfirm, Tag, Empty, Spin, Breadcrumb } from 'antd'
+import { App, Card, Tree, Button, Space, Modal, Form, Input, InputNumber, Select, Popconfirm, Tag, Empty, Spin, Breadcrumb } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined, FolderOutlined, FolderOpenOutlined, FileOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { assetService } from '@/services/assets'
@@ -25,6 +25,7 @@ const levelColors: Record<number, string> = {
 }
 
 const AssetCategoriesPage = () => {
+  const { message } = App.useApp()
   const [categories, setCategories] = useState<AssetCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [modalVisible, setModalVisible] = useState(false)

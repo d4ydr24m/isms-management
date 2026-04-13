@@ -10,13 +10,13 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Card,
   Button,
   Space,
   Table,
   Input,
   Select,
-  message,
   Modal,
   Form,
   Tag,
@@ -74,6 +74,7 @@ const STATUS_OPTIONS: Array<{ value: RiskScenarioStatus; label: string; color: s
 ]
 
 const RiskIndexPage = () => {
+  const { message, modal } = App.useApp()
   const navigate = useNavigate()
   const [scenarios, setScenarios] = useState<RiskScenario[]>([])
   const [loading, setLoading] = useState(false)
@@ -168,7 +169,7 @@ const RiskIndexPage = () => {
 
   // 시나리오 삭제 핸들러
   const handleDeleteClick = (scenario: RiskScenario) => {
-    Modal.confirm({
+    modal.confirm({
       title: '시나리오 삭제',
       icon: <ExclamationCircleOutlined />,
       content: '이 시나리오를 삭제하시겠습니까? 삭제된 시나리오는 복구할 수 없습니다.',

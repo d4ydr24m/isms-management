@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
+  App,
   Card,
   Button,
   Space,
   Descriptions,
   Tag,
-  message,
   Row,
   Col,
   Spin,
@@ -49,6 +49,7 @@ const formatFileSize = (bytes: number): string => {
 }
 
 const EvidenceDetail = () => {
+  const { message } = App.useApp()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [evidence, setEvidence] = useState<Evidence | null>(null)

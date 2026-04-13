@@ -12,7 +12,7 @@ import type { Asset, AssetType, AssetStatus, AssetFilterParams } from '@/types'
 import type { TableProps } from 'antd'
 
 const AssetListPage = () => {
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const [assets, setAssets] = useState<Asset[]>([])
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([])
   const [loading, setLoading] = useState(false)
@@ -114,7 +114,7 @@ const AssetListPage = () => {
 
   // 삭제 핸들러
   const handleDelete = (id: number) => {
-    Modal.confirm({
+    modal.confirm({
       title: '자산 삭제',
       icon: <ExclamationCircleOutlined />,
       content: '이 자산을 삭제하시겠습니까? 삭제된 자산은 복구할 수 없습니다.',

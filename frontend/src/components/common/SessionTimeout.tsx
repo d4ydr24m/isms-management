@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
-import { Modal } from 'antd'
+import { App } from 'antd'
 import { ExclamationCircleOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '@/services/api'
@@ -10,12 +10,13 @@ const WARNING_BEFORE_MINUTES = 1
 const CHECK_INTERVAL_MS = 10_000 // check every 10 seconds
 
 const SessionTimeout: React.FC = () => {
+  const { modal } = App.useApp()
   const navigate = useNavigate()
   const { isAuthenticated, logout } = useAuthStore()
   const lastActivityRef = useRef<number>(Date.now())
   const timeoutMinutesRef = useRef<number>(DEFAULT_TIMEOUT_MINUTES)
   const warningShownRef = useRef<boolean>(false)
-  const modalRef = useRef<ReturnType<typeof Modal.confirm> | null>(null)
+  const modalRef = useRef<ReturnType<typeof modal.confirm> | null>(null)
   const checkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const autoLogoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -65,7 +66,7 @@ const SessionTimeout: React.FC = () => {
       performLogout()
     }, remainingMs)
 
-    modalRef.current = Modal.confirm({
+    modalRef.current = modal.confirm({
       title: '세션 만료 경고',
       icon: <ExclamationCircleOutlined />,
       content: `세션이 곧 만료됩니다. ${WARNING_BEFORE_MINUTES}분 후 자동으로 로그아웃됩니다.`,

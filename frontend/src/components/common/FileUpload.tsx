@@ -1,4 +1,4 @@
-import { Upload, message } from 'antd'
+import { App, Upload } from 'antd'
 import { InboxOutlined } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 
@@ -27,6 +27,7 @@ const FileUpload = ({
   hintText = '단일 또는 다수 파일 업로드를 지원합니다.',
   showUploadList = true,
 }: FileUploadProps) => {
+  const { message } = App.useApp()
   const handleBeforeUpload: UploadProps['beforeUpload'] = (file, _fileList) => {
     // Validate file size
     if (maxSize && file.size > maxSize * 1024 * 1024) {

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Card, Form, Input, Button, Spin, message } from 'antd'
+import { App, Card, Form, Input, Button, Spin } from 'antd'
 import { authService } from '@/services/auth'
 import { settingsService } from '@/services/settings'
 import type { CurrentUser, ProfileUpdateRequest } from '@/types'
 
 const ProfileSettings: React.FC = () => {
+  const { message } = App.useApp()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import {
+  App,
   Button,
   Space,
   Tag,
-  message,
   Modal,
   Form,
   Input,
@@ -19,7 +19,6 @@ import SearchInput from '@/components/common/SearchInput'
 import { auditorAccountService } from '@/services/auditorAccounts'
 import type { AuditorAccount, AuditorAccountCreate, AuditorAccountUpdate } from '@/types'
 
-const { confirm } = Modal
 const { RangePicker } = DatePicker
 
 const scopeOptions = [
@@ -30,6 +29,7 @@ const scopeOptions = [
 ]
 
 function AuditorAccounts() {
+  const { message, modal } = App.useApp()
   const [accounts, setAccounts] = useState<AuditorAccount[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -121,7 +121,7 @@ function AuditorAccounts() {
   }
 
   const handleDelete = (accountId: number) => {
-    confirm({
+    modal.confirm({
       title: '심사원 계정을 만료시키겠습니까?',
       icon: <ExclamationCircleOutlined />,
       content: '만료된 계정은 더 이상 시스템에 접근할 수 없습니다.',

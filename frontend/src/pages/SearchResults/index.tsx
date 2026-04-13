@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { Input, Tabs, List, Card, Typography, Empty, Spin, Tag, message } from 'antd'
+import { App, Input, Tabs, List, Card, Typography, Empty, Spin, Tag } from 'antd'
 import { SearchOutlined, FileTextOutlined, FolderOutlined, UserOutlined, LaptopOutlined } from '@ant-design/icons'
 import { searchService } from '@/services/search'
 import type { SearchResponse, SearchCategory } from '@/types'
@@ -8,6 +8,7 @@ import type { SearchResponse, SearchCategory } from '@/types'
 const { Text, Title } = Typography
 
 const SearchResults = () => {
+  const { message } = App.useApp()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '')

@@ -1000,9 +1000,18 @@ class RiskService:
             .all()
         )
 
-        # 3x3 매트릭스 (자산가치 x (위협x취약점의 평균))
-        # 간단히 위협 등급 x 취약점 등급 매트릭스
+        # 3x3 매트릭스: 위협등급(행) × 취약점등급(열)
         matrix = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+        # 셀별 실제 위험등급(risk_level) 분포
+        cell_risk_levels = [
+            [{"high": 0, "medium": 0, "low": 0} for _ in range(3)]
+            for _ in range(3)
+        ]
+        # 셀별 자산가치 목록 (툴팁 표시용)
+        cell_asset_values: list = [
+            [[] for _ in range(3)]
+            for _ in range(3)
+        ]
 
         for a in assessments:
             if a.threat_level and a.vulnerability_level:
@@ -1010,12 +1019,19 @@ class RiskService:
                 col = a.vulnerability_level - 1
                 if 0 <= row < 3 and 0 <= col < 3:
                     matrix[row][col] += 1
+                    level = a.risk_level or "low"
+                    if level in cell_risk_levels[row][col]:
+                        cell_risk_levels[row][col][level] += 1
+                    if a.asset_value is not None:
+                        cell_asset_values[row][col].append(a.asset_value)
 
         return {
             "matrix": matrix,
+            "cell_risk_levels": cell_risk_levels,
+            "cell_asset_values": cell_asset_values,
             "labels": {
-                "impact": ["하", "중", "상"],
-                "likelihood": ["하", "중", "상"],
+                "x": ["하", "중", "상"],
+                "y": ["하", "중", "상"],
             },
         }
 

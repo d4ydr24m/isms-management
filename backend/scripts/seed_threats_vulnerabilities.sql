@@ -152,3 +152,22 @@ INSERT INTO vulnerabilities (code, name, description, category_id, vulnerability
 ('V-CLD-005', '클라우드 로깅 미활성화', 'CloudTrail, 활동 로그 등 감사 로깅이 비활성화됨', (SELECT id FROM vulnerability_categories WHERE code='VC-CLD'), 3, false, true, NOW(), NOW()),
 ('V-CLD-006', '암호화 키 관리 미흡', '클라우드 KMS 미사용, 키 로테이션 미적용', (SELECT id FROM vulnerability_categories WHERE code='VC-CLD'), 4, false, true, NOW(), NOW()),
 ('V-CLD-007', '다중 인증 미적용', '클라우드 콘솔 관리자 계정에 MFA 미적용', (SELECT id FROM vulnerability_categories WHERE code='VC-CLD'), 5, false, true, NOW(), NOW());
+
+-- =====================================================
+-- 온프레미스 서버/장비 취약점 카테고리
+-- =====================================================
+INSERT INTO vulnerability_categories (code, name, description, sort_order, is_active, created_at, updated_at) VALUES
+('VC-HW', '온프레미스 서버/장비 취약점', '온프레미스 서버 및 하드웨어 장비의 가용성·유지보수 관련 취약점', 7, true, NOW(), NOW());
+
+-- 온프레미스 서버/장비 취약점
+INSERT INTO vulnerabilities (code, name, description, category_id, vulnerability_level, is_custom, is_active, created_at, updated_at) VALUES
+('V-HW-001', '노후 서버 장비 사용', '제조사 지원(EOS/EOL)이 종료된 서버 또는 하드웨어를 계속 운용하여 장애 및 보안 위협 증가', (SELECT id FROM vulnerability_categories WHERE code='VC-HW'), 4, false, true, NOW(), NOW()),
+('V-HW-002', '하드웨어 이중화 미구성', '전원, 디스크, 네트워크 인터페이스 등 주요 구성요소의 이중화가 적용되지 않아 단일 장애점(SPOF) 존재', (SELECT id FROM vulnerability_categories WHERE code='VC-HW'), 4, false, true, NOW(), NOW()),
+('V-HW-003', '전원 공급 장애 대비 미흡', 'UPS 미설치 또는 용량 부족, 이중 전원 미연결 등으로 정전 시 시스템 다운 위험', (SELECT id FROM vulnerability_categories WHERE code='VC-HW'), 4, false, true, NOW(), NOW()),
+('V-HW-004', '예방 정비 미수행', '서버 및 네트워크 장비에 대한 정기 점검·펌웨어 업데이트·부품 교체 등 예방 정비가 수행되지 않음', (SELECT id FROM vulnerability_categories WHERE code='VC-HW'), 3, false, true, NOW(), NOW()),
+('V-HW-005', '냉각/공조 시스템 미흡', '서버실 온습도 관리가 부족하여 장비 과열·고장 위험 증가', (SELECT id FROM vulnerability_categories WHERE code='VC-HW'), 3, false, true, NOW(), NOW()),
+('V-HW-006', '디스크/스토리지 장애 대비 미흡', 'RAID 미구성 또는 디스크 상태 모니터링 미적용으로 데이터 손실 위험', (SELECT id FROM vulnerability_categories WHERE code='VC-HW'), 4, false, true, NOW(), NOW()),
+('V-HW-007', '여유 부품(스페어) 미확보', '교체용 부품(디스크, 전원, 메모리 등)이 확보되지 않아 장애 시 복구 지연', (SELECT id FROM vulnerability_categories WHERE code='VC-HW'), 3, false, true, NOW(), NOW()),
+('V-HW-008', '하드웨어 모니터링 미적용', 'CPU, 메모리, 디스크, 온도 등 하드웨어 상태에 대한 실시간 모니터링 및 알림 체계가 없음', (SELECT id FROM vulnerability_categories WHERE code='VC-HW'), 3, false, true, NOW(), NOW()),
+('V-HW-009', '네트워크 회선 이중화 미구성', '단일 ISP 또는 단일 회선 사용으로 회선 장애 시 서비스 중단', (SELECT id FROM vulnerability_categories WHERE code='VC-HW'), 3, false, true, NOW(), NOW()),
+('V-HW-010', '장비 자산 관리 미흡', '서버·네트워크 장비의 시리얼번호, 보증기간, 설치위치 등 자산정보가 관리되지 않음', (SELECT id FROM vulnerability_categories WHERE code='VC-HW'), 2, false, true, NOW(), NOW());

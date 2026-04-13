@@ -13,13 +13,13 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Card,
   Button,
   Space,
   Table,
   Select,
   Checkbox,
-  message,
   Modal,
   Form,
   Tag,
@@ -81,6 +81,7 @@ interface RiskAssessmentFilterParams {
 }
 
 const RiskAssessmentPage = () => {
+  const { message, modal } = App.useApp()
   const { scenarioId } = useParams<{ scenarioId: string }>()
   // 상태 관리
   const [scenario, setScenario] = useState<RiskScenario | null>(null)
@@ -256,7 +257,7 @@ const RiskAssessmentPage = () => {
 
   // 평가 삭제 핸들러
   const handleDeleteClick = (assessment: RiskAssessment) => {
-    Modal.confirm({
+    modal.confirm({
       title: '평가 삭제',
       icon: <ExclamationCircleOutlined />,
       content: '이 평가를 삭제하시겠습니까? 삭제된 평가는 복구할 수 없습니다.',
@@ -297,6 +298,9 @@ const RiskAssessmentPage = () => {
         message.success('평가가 추가되었습니다')
       } else if (editingAssessment) {
         const data: RiskAssessmentUpdate = {
+          assetId: values.assetId,
+          threatId: values.threatId,
+          vulnerabilityId: values.vulnerabilityId,
           assetValue: values.assetValue,
           threatLevel: values.threatLevel,
           vulnerabilityLevel: values.vulnerabilityLevel,
@@ -639,51 +643,47 @@ const RiskAssessmentPage = () => {
         width={600}
       >
         <Form form={form} layout="vertical">
-          {modalMode === 'create' && (
-            <>
-              <Form.Item
-                name="assetId"
-                label="자산"
-                rules={[{ required: true, message: '자산을 선택해주세요' }]}
-              >
-                <Select placeholder="자산 선택" showSearch optionFilterProp="children">
-                  {assets.map((asset) => (
-                    <Option key={asset.id} value={asset.id}>
-                      {asset.name} ({asset.assetCode})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
+          <Form.Item
+            name="assetId"
+            label="자산"
+            rules={[{ required: true, message: '자산을 선택해주세요' }]}
+          >
+            <Select placeholder="자산 선택" showSearch optionFilterProp="children">
+              {assets.map((asset) => (
+                <Option key={asset.id} value={asset.id}>
+                  {asset.name} ({asset.assetCode})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
 
-              <Form.Item
-                name="threatId"
-                label="위협"
-                rules={[{ required: true, message: '위협을 선택해주세요' }]}
-              >
-                <Select placeholder="위협 선택" showSearch optionFilterProp="children">
-                  {threats.map((threat) => (
-                    <Option key={threat.id} value={threat.id}>
-                      {threat.name} ({threat.code})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
+          <Form.Item
+            name="threatId"
+            label="위협"
+            rules={[{ required: true, message: '위협을 선택해주세요' }]}
+          >
+            <Select placeholder="위협 선택" showSearch optionFilterProp="children">
+              {threats.map((threat) => (
+                <Option key={threat.id} value={threat.id}>
+                  {threat.name} ({threat.code})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
 
-              <Form.Item
-                name="vulnerabilityId"
-                label="취약점"
-                rules={[{ required: true, message: '취약점을 선택해주세요' }]}
-              >
-                <Select placeholder="취약점 선택" showSearch optionFilterProp="children">
-                  {vulnerabilities.map((vuln) => (
-                    <Option key={vuln.id} value={vuln.id}>
-                      {vuln.name} ({vuln.code})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </>
-          )}
+          <Form.Item
+            name="vulnerabilityId"
+            label="취약점"
+            rules={[{ required: true, message: '취약점을 선택해주세요' }]}
+          >
+            <Select placeholder="취약점 선택" showSearch optionFilterProp="children">
+              {vulnerabilities.map((vuln) => (
+                <Option key={vuln.id} value={vuln.id}>
+                  {vuln.name} ({vuln.code})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
 
           <Row gutter={16}>
             <Col span={8}>

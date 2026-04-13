@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
+  App,
   Card,
   Form,
   Input,
@@ -8,7 +9,6 @@ import {
   DatePicker,
   Select,
   Space,
-  message,
   Upload,
   Progress,
 } from 'antd'
@@ -21,6 +21,7 @@ const { TextArea } = Input
 const { Dragger } = Upload
 
 const EvidenceCreate = () => {
+  const { message } = App.useApp()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [form] = Form.useForm()

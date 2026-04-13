@@ -11,12 +11,12 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Card,
   Button,
   Space,
   Table,
   Select,
-  message,
   Modal,
   Form,
   Tag,
@@ -79,6 +79,7 @@ interface TreatmentFilters {
 }
 
 const RiskTreatmentPage = () => {
+  const { message } = App.useApp()
   // 목록 상태
   const [plans, setPlans] = useState<RiskTreatmentPlan[]>([])
   const [loading, setLoading] = useState(false)

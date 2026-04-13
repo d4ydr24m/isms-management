@@ -22,6 +22,7 @@ from app.schemas.risk import (
     RiskScenarioList,
     # 위험 평가
     RiskAssessmentCreate,
+    RiskAssessmentBulkCreate,
     RiskAssessmentUpdate,
     RiskAssessmentResponse,
     RiskAssessmentList,
@@ -401,6 +402,31 @@ def create_risk_assessment(
     return assessment_to_response(assessment, service)
 
 
+@router.post("/scenarios/{scenario_id}/assessments/bulk", status_code=status.HTTP_201_CREATED)
+def bulk_create_risk_assessments(
+    scenario_id: int,
+    data: RiskAssessmentBulkCreate,
+    service: RiskService = Depends(get_risk_service),
+    current_user: User = Depends(require_permission("risk:create")),
+):
+    """위험 평가 대량 생성"""
+    created = []
+    for item in data.assessments:
+        assessment = service.create_risk_assessment(
+            scenario_id=scenario_id,
+            asset_id=item.asset_id,
+            threat_id=item.threat_id,
+            vulnerability_id=item.vulnerability_id,
+            asset_value=item.asset_value,
+            threat_level=item.threat_level,
+            vulnerability_level=item.vulnerability_level,
+            user_id=current_user.id,
+            remarks=item.remarks,
+        )
+        created.append(assessment)
+    return {"count": len(created)}
+
+
 @router.post("/scenarios/{scenario_id}/calculate")
 def recalculate_scenario_risks(
     scenario_id: int,
@@ -448,6 +474,17 @@ def get_risk_matrix(
     """위험 매트릭스 데이터 조회"""
     result = service.get_risk_matrix_data(scenario_id)
     return RiskMatrixData(**result)
+
+
+@router.get("/scenarios/{scenario_id}/risk-distribution")
+def get_risk_distribution(
+    scenario_id: int,
+    service: RiskService = Depends(get_risk_service),
+    current_user: User = Depends(require_permission("risk:read")),
+) -> RiskDistribution:
+    """위험 분포 데이터 조회"""
+    result = service.get_risk_distribution(scenario_id)
+    return RiskDistribution(**result)
 
 
 @router.put("/assessments/{assessment_id}", response_model=RiskAssessmentResponse)

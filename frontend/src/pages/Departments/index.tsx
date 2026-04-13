@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Card,
   Checkbox,
   Tree,
@@ -10,7 +11,6 @@ import {
   Button,
   Space,
   Tag,
-  message,
   Popconfirm,
   Typography,
   Badge,
@@ -70,6 +70,7 @@ interface BulkUploadResult {
 }
 
 function DepartmentsPage() {
+  const { message } = App.useApp()
   const [treeData, setTreeData] = useState<DepartmentTreeNode[]>([])
   const [flatDepartments, setFlatDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(false)

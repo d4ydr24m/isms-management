@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
+  App,
   Card,
   Descriptions,
   Tag,
@@ -10,7 +11,6 @@ import {
   Form,
   Input,
   Select,
-  message,
   Spin,
   Switch,
   Alert,
@@ -21,9 +21,8 @@ import { userService } from '@/services/users'
 import { apiClient } from '@/services/api'
 import type { User, Role } from '@/types'
 
-const { confirm } = Modal
-
 function UserDetail() {
+  const { message, modal } = App.useApp()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [user, setUser] = useState<User | null>(null)
@@ -108,7 +107,7 @@ function UserDetail() {
 
   const handleRemoveRole = (roleId: number) => {
     if (!id || !user) return
-    confirm({
+    modal.confirm({
       title: '역할을 제거하시겠습니까?',
       onOk: async () => {
         try {
@@ -127,7 +126,7 @@ function UserDetail() {
   const handleToggleActive = () => {
     if (!id || !user) return
     const action = user.isActive ? '비활성화' : '활성화'
-    confirm({
+    modal.confirm({
       title: `사용자를 ${action}하시겠습니까?`,
       onOk: async () => {
         try {

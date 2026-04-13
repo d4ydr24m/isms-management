@@ -5,12 +5,12 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
+  App,
   Card,
   Checkbox,
   Steps,
   Button,
   Upload,
-  message,
   Table,
   Alert,
   Space,
@@ -38,6 +38,7 @@ const { Text, Title } = Typography
 type ImportStep = 'upload' | 'preview' | 'result'
 
 const AssetImportPage = () => {
+  const { message } = App.useApp()
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState<ImportStep>('upload')
   const [fileList, setFileList] = useState<UploadFile[]>([])

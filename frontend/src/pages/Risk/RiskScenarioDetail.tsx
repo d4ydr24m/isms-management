@@ -12,6 +12,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
+  App,
   Card,
   Descriptions,
   Tag,
@@ -19,7 +20,6 @@ import {
   Space,
   Row,
   Col,
-  message,
   Modal,
   Breadcrumb,
   Statistic,
@@ -124,6 +124,7 @@ const TREATMENT_STATUS_COLOR: Record<TreatmentStatus, string> = {
 }
 
 const RiskScenarioDetailPage = () => {
+  const { message, modal } = App.useApp()
   const { scenarioId } = useParams<{ scenarioId: string }>()
   const navigate = useNavigate()
   const id = Number(scenarioId)
@@ -282,7 +283,7 @@ const RiskScenarioDetailPage = () => {
     const config = labels[newStatus]
     if (!config) return
 
-    Modal.confirm({
+    modal.confirm({
       title: config.title,
       icon: <ExclamationCircleOutlined />,
       content: config.content,
@@ -303,7 +304,7 @@ const RiskScenarioDetailPage = () => {
 
   // 삭제 핸들러
   const handleDelete = () => {
-    Modal.confirm({
+    modal.confirm({
       title: '시나리오 삭제',
       icon: <ExclamationCircleOutlined />,
       content: '이 시나리오를 삭제하시겠습니까? 관련된 모든 평가 데이터도 삭제됩니다.',

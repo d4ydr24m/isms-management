@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Button,
   Checkbox,
   Space,
   Tag,
-  message,
   Modal,
   Select,
   Form,
@@ -29,7 +29,6 @@ import DataTable from '@/components/common/DataTable'
 import SearchInput from '@/components/common/SearchInput'
 import { apiClient } from '@/services/api'
 
-const { confirm } = Modal
 const { Dragger } = Upload
 const { Text } = Typography
 
@@ -78,6 +77,7 @@ interface BulkUploadResult {
 }
 
 function PersonnelPage() {
+  const { message, modal } = App.useApp()
   const [personnel, setPersonnel] = useState<Personnel[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -172,7 +172,7 @@ function PersonnelPage() {
   }
 
   const handleDelete = (id: number) => {
-    confirm({
+    modal.confirm({
       title: '담당자를 삭제하시겠습니까?',
       icon: <ExclamationCircleOutlined />,
       content: '삭제된 담당자는 복구할 수 없습니다.',

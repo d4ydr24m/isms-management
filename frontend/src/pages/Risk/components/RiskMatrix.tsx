@@ -3,7 +3,7 @@
  * 3×3 그리드로 위협등급(Y축) × 취약점등급(X축) 별 위험 건수를 시각화
  */
 import { Card, Tooltip, Empty, Spin } from 'antd'
-import type { RiskMatrixData } from '@/types'
+import type { RiskMatrixData, CellRiskLevel } from '@/types'
 
 interface RiskMatrixProps {
   data: RiskMatrixData | null
@@ -12,28 +12,41 @@ interface RiskMatrixProps {
   onCellClick?: (threatLevel: number, vulnLevel: number) => void
 }
 
-// 셀 색상: 위험 점수 기반 (자산가치 평균 2 가정 시 대략적 색상)
-const getCellColor = (count: number, rowIdx: number, colIdx: number): string => {
+/**
+ * 셀의 실제 위험등급에 따른 색상 결정
+ * cell_risk_levels가 있으면 실제 저장된 risk_level 기반,
+ * 없으면 기존 근사값 fallback
+ */
+const getCellColor = (
+  count: number,
+  cellRisk?: CellRiskLevel,
+): string => {
   if (count === 0) return '#fafafa'
 
-  // 위협등급(row: 0=하,1=중,2=상) × 취약점등급(col: 0=하,1=중,2=상) 기반 위험도
-  const riskFactor = (rowIdx + 1) * (colIdx + 1)
+  if (cellRisk) {
+    if (cellRisk.high > 0) return '#ff4d4f'
+    if (cellRisk.medium > 0) return '#faad14'
+    return '#52c41a'
+  }
 
-  if (riskFactor >= 6) return '#ff4d4f' // 높음 (빨강)
-  if (riskFactor >= 3) return '#faad14' // 중간 (노랑)
-  return '#52c41a' // 낮음 (초록)
+  return '#d9d9d9'
 }
 
-const getCellTextColor = (rowIdx: number, colIdx: number): string => {
-  const riskFactor = (rowIdx + 1) * (colIdx + 1)
-  if (riskFactor >= 6) return '#fff'
+const getCellTextColor = (
+  count: number,
+  cellRisk?: CellRiskLevel,
+): string => {
+  if (count === 0) return '#d9d9d9'
+  if (cellRisk && cellRisk.high > 0) return '#fff'
   return '#000'
 }
 
-const getRiskLabel = (rowIdx: number, colIdx: number): string => {
-  const riskFactor = (rowIdx + 1) * (colIdx + 1)
-  if (riskFactor >= 6) return '고위험'
-  if (riskFactor >= 3) return '중위험'
+const getRiskLabel = (
+  cellRisk?: CellRiskLevel,
+): string => {
+  if (!cellRisk) return ''
+  if (cellRisk.high > 0) return '고위험'
+  if (cellRisk.medium > 0) return '중위험'
   return '저위험'
 }
 
@@ -59,6 +72,8 @@ const RiskMatrix = ({ data, loading = false, doaThreshold, onCellClick }: RiskMa
   }
 
   const matrix = data.matrix
+  const cellRiskLevels = data.cellRiskLevels
+  const cellAssetValues = data.cellAssetValues
   const xLabels = data.labels?.x || AXIS_LABELS
   const yLabels = data.labels?.y || AXIS_LABELS
 
@@ -87,19 +102,19 @@ const RiskMatrix = ({ data, loading = false, doaThreshold, onCellClick }: RiskMa
             justifyContent: 'center',
             alignItems: 'center',
             marginRight: 8,
+            gap: 4,
           }}
         >
+          <div style={{ fontSize: 12, color: '#595959' }}>↑</div>
           <div
             style={{
               writingMode: 'vertical-rl',
-              transform: 'rotate(180deg)',
               fontSize: 12,
               fontWeight: 'bold',
               color: '#595959',
-              marginBottom: 8,
             }}
           >
-            위협등급 →
+            위협등급
           </div>
         </div>
 
@@ -134,14 +149,28 @@ const RiskMatrix = ({ data, loading = false, doaThreshold, onCellClick }: RiskMa
                 // 데이터 셀
                 ...xLabels.map((_, colIdx) => {
                   const count = matrix[rowIdx]?.[colIdx] ?? 0
-                  const bgColor = getCellColor(count, rowIdx, colIdx)
-                  const textColor = getCellTextColor(rowIdx, colIdx)
-                  const riskLabel = getRiskLabel(rowIdx, colIdx)
+                  const cellRisk = cellRiskLevels?.[rowIdx]?.[colIdx]
+                  const assetValues = cellAssetValues?.[rowIdx]?.[colIdx]
+                  const bgColor = getCellColor(count, cellRisk)
+                  const textColor = getCellTextColor(count, cellRisk)
+                  const riskLabel = getRiskLabel(cellRisk)
+
+                  // 툴팁: 자산가치 요약 포함
+                  let tooltipText = `위협 ${yLabels[rowIdx]} × 취약점 ${xLabels[colIdx]}: ${count}건`
+                  if (riskLabel) tooltipText += ` (${riskLabel})`
+                  if (assetValues && assetValues.length > 0) {
+                    const avg = (assetValues.reduce((s, v) => s + v, 0) / assetValues.length).toFixed(1)
+                    const min = Math.min(...assetValues)
+                    const max = Math.max(...assetValues)
+                    tooltipText += min === max
+                      ? ` | 자산가치: ${min}`
+                      : ` | 자산가치: ${min}~${max} (평균 ${avg})`
+                  }
 
                   return (
                     <Tooltip
                       key={`cell-${rowIdx}-${colIdx}`}
-                      title={`위협 ${yLabels[rowIdx]} × 취약점 ${xLabels[colIdx]}: ${count}건 (${riskLabel})`}
+                      title={tooltipText}
                     >
                       <div
                         style={{
@@ -176,15 +205,17 @@ const RiskMatrix = ({ data, loading = false, doaThreshold, onCellClick }: RiskMa
                         >
                           {count}
                         </span>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            color: count > 0 ? textColor : '#d9d9d9',
-                            opacity: 0.8,
-                          }}
-                        >
-                          {riskLabel}
-                        </span>
+                        {riskLabel && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: count > 0 ? textColor : '#d9d9d9',
+                              opacity: 0.8,
+                            }}
+                          >
+                            {riskLabel}
+                          </span>
+                        )}
                       </div>
                     </Tooltip>
                   )

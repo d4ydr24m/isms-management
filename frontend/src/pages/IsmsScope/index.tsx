@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Button,
   Card,
   Col,
   Input,
-  Modal,
   Pagination,
   Row,
   Select,
@@ -15,7 +15,6 @@ import {
   Tabs,
   Tag,
   Typography,
-  message,
 } from 'antd'
 import {
   CheckCircleOutlined,
@@ -36,7 +35,6 @@ import {
 } from '@/services/ismsScope'
 import { apiClient } from '@/services/api'
 
-const { confirm } = Modal
 const { Text, Title } = Typography
 
 interface Department {
@@ -45,6 +43,7 @@ interface Department {
 }
 
 function IsmsScopePage() {
+  const { message, modal } = App.useApp()
   const [activeTab, setActiveTab] = useState('assets')
   const [stats, setStats] = useState<ScopeSummary | null>(null)
   const [departments, setDepartments] = useState<Department[]>([])
@@ -230,7 +229,7 @@ function IsmsScopePage() {
     const newScope = !record.inIsmsScope
     const label = newScope ? '범위 포함' : '범위 제외'
 
-    confirm({
+    modal.confirm({
       title: `자산 "${record.name}"을(를) 인증 ${label}하시겠습니까?`,
       icon: <ExclamationCircleOutlined />,
       content: (
@@ -262,7 +261,7 @@ function IsmsScopePage() {
     const newScope = !record.inIsmsScope
     const label = newScope ? '범위 포함' : '범위 제외'
 
-    confirm({
+    modal.confirm({
       title: `담당자 "${record.name}"을(를) 인증 ${label}하시겠습니까?`,
       icon: <ExclamationCircleOutlined />,
       content: (
@@ -294,7 +293,7 @@ function IsmsScopePage() {
     const newScope = !record.inIsmsScope
     const label = newScope ? '범위 포함' : '범위 제외'
 
-    confirm({
+    modal.confirm({
       title: `부서 "${record.name}"을(를) 인증 ${label}하시겠습니까?`,
       icon: <ExclamationCircleOutlined />,
       content: (
@@ -329,7 +328,7 @@ function IsmsScopePage() {
       return
     }
     const label = inScope ? '범위 포함' : '범위 제외'
-    confirm({
+    modal.confirm({
       title: `선택한 ${selectedAssetKeys.length}개 자산을 인증 ${label}하시겠습니까?`,
       icon: <ExclamationCircleOutlined />,
       content: (
@@ -366,7 +365,7 @@ function IsmsScopePage() {
       return
     }
     const label = inScope ? '범위 포함' : '범위 제외'
-    confirm({
+    modal.confirm({
       title: `선택한 ${selectedPersonnelKeys.length}명의 담당자를 인증 ${label}하시겠습니까?`,
       icon: <ExclamationCircleOutlined />,
       content: (
@@ -403,7 +402,7 @@ function IsmsScopePage() {
       return
     }
     const label = inScope ? '범위 포함' : '범위 제외'
-    confirm({
+    modal.confirm({
       title: `선택한 ${selectedDeptKeys.length}개 부서를 인증 ${label}하시겠습니까?`,
       icon: <ExclamationCircleOutlined />,
       content: (

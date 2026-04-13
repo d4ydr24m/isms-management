@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
+  App,
   Card,
   Descriptions,
   Tag,
@@ -12,7 +13,6 @@ import {
   Space,
   Row,
   Col,
-  message,
   Modal,
   Breadcrumb,
   Tabs,
@@ -62,6 +62,7 @@ const statusLabelMap: Record<AssetStatus, string> = {
 }
 
 const AssetDetailPage = () => {
+  const { message, modal } = App.useApp()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const assetId = Number(id)
@@ -180,7 +181,7 @@ const AssetDetailPage = () => {
 
   // 삭제 핸들러
   const handleDelete = () => {
-    Modal.confirm({
+    modal.confirm({
       title: '자산 삭제',
       icon: <ExclamationCircleOutlined />,
       content: '이 자산을 삭제하시겠습니까? 삭제된 자산은 복구할 수 없습니다.',

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Card,
   Row,
   Col,
@@ -16,7 +17,6 @@ import {
   Progress,
   Descriptions,
   List,
-  message,
 } from 'antd'
 import {
   WarningOutlined,
@@ -59,6 +59,7 @@ import RiskDistributionChart from './components/RiskDistributionChart'
 const { Title, Text } = Typography
 
 const RiskReportPage = () => {
+  const { message } = App.useApp()
   const [scenarios, setScenarios] = useState<RiskScenario[]>([])
   const [selectedScenarioId, setSelectedScenarioId] = useState<number | null>(null)
   const [scenarioLoading, setScenarioLoading] = useState(false)

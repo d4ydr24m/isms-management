@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Card, Button, Space, Select, Input, message, Modal, Row, Col } from 'antd'
+import { App, Card, Button, Space, Select, Input, Row, Col } from 'antd'
 import { PlusOutlined, SearchOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { EvidenceTable } from './components'
 import { evidenceService } from '@/services/evidences'
@@ -10,6 +10,7 @@ import type { TableProps } from 'antd'
 const { Option } = Select
 
 const EvidenceListPage = () => {
+  const { message, modal } = App.useApp()
   const [evidences, setEvidences] = useState<EvidenceListItem[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
@@ -69,7 +70,7 @@ const EvidenceListPage = () => {
   }
 
   const handleDelete = (id: number) => {
-    Modal.confirm({
+    modal.confirm({
       title: '증적 삭제',
       icon: <ExclamationCircleOutlined />,
       content: '이 증적을 삭제하시겠습니까? 삭제된 증적은 복구할 수 없습니다.',
@@ -90,7 +91,7 @@ const EvidenceListPage = () => {
   }
 
   const handleArchive = (id: number) => {
-    Modal.confirm({
+    modal.confirm({
       title: '증적 보관',
       icon: <ExclamationCircleOutlined />,
       content: '이 증적을 보관 처리하시겠습니까? 보관된 증적은 증적 확보 현황에서 제외됩니다.',

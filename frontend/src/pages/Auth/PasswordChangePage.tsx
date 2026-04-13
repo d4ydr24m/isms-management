@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Form, Input, Button, Alert, message } from 'antd'
+import { App, Form, Input, Button, Alert } from 'antd'
 import { LockOutlined } from '@ant-design/icons'
 import { authService } from '@/services'
 
@@ -11,6 +11,7 @@ interface PasswordChangeForm {
 }
 
 const PasswordChangePage = () => {
+  const { message } = App.useApp()
   const navigate = useNavigate()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)

@@ -2,7 +2,7 @@
  * CIA 평가 컴포넌트
  * 기밀성, 무결성, 가용성 시각적 게이지 표시
  */
-import { Card, Row, Col, Progress, Typography, Tag, Button, Modal, Form, Select, Input, message } from 'antd'
+import { App, Card, Row, Col, Progress, Typography, Tag, Button, Modal, Form, Select, Input } from 'antd'
 import { EditOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import type { AssetValuation, AssetValuationCreate } from '@/types'
@@ -45,6 +45,7 @@ const calculateImportance = (c: number, i: number, a: number): number => {
 }
 
 const CIAEvaluation = ({ valuation, assetId: _assetId, onUpdate, readonly = false }: CIAEvaluationProps) => {
+  const { message } = App.useApp()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [form] = Form.useForm()
   const [submitting, setSubmitting] = useState(false)

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Checkbox, Space, Tag, message, Modal, Select, Upload, Table, Typography, Alert } from 'antd'
+import { App, Button, Checkbox, Space, Tag, Modal, Select, Upload, Table, Typography, Alert } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { UploadFile } from 'antd/es/upload/interface'
@@ -10,7 +10,6 @@ import { userService } from '@/services/users'
 import { apiClient } from '@/services/api'
 import type { UserListItem } from '@/types'
 
-const { confirm } = Modal
 const { Dragger } = Upload
 const { Text } = Typography
 
@@ -23,6 +22,7 @@ interface BulkUploadResult {
 }
 
 function UserList() {
+  const { message, modal } = App.useApp()
   const navigate = useNavigate()
   const [users, setUsers] = useState<UserListItem[]>([])
   const [loading, setLoading] = useState(false)
@@ -66,7 +66,7 @@ function UserList() {
   }
 
   const handleDelete = (userId: number) => {
-    confirm({
+    modal.confirm({
       title: '사용자를 비활성화하시겠습니까?',
       icon: <ExclamationCircleOutlined />,
       content: '비활성화된 사용자는 시스템에 접근할 수 없습니다.',

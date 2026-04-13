@@ -259,6 +259,9 @@ export interface RiskAssessmentCreate {
 }
 
 export interface RiskAssessmentUpdate {
+  assetId?: number
+  threatId?: number
+  vulnerabilityId?: number
   assetValue?: 1 | 2 | 3
   threatLevel?: 1 | 2 | 3
   vulnerabilityLevel?: 1 | 2 | 3
@@ -462,8 +465,16 @@ export interface RiskDistribution {
   total: number
 }
 
+export interface CellRiskLevel {
+  high: number
+  medium: number
+  low: number
+}
+
 export interface RiskMatrixData {
   matrix: number[][]
+  cellRiskLevels?: CellRiskLevel[][]
+  cellAssetValues?: number[][][]
   labels: {
     x: string[]
     y: string[]

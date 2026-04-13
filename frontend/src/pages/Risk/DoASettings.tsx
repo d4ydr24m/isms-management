@@ -10,11 +10,11 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import {
+  App,
   Card,
   Button,
   Space,
   Table,
-  message,
   Modal,
   Form,
   Tag,
@@ -80,6 +80,7 @@ const sliderMarks: Record<number, { style: React.CSSProperties; label: string }>
 }
 
 const DoASettingsPage = () => {
+  const { message } = App.useApp()
   // 상태 관리
   const [currentDoA, setCurrentDoA] = useState<DoAConfig | null>(null)
   const [history, setHistory] = useState<DoAHistory[]>([])

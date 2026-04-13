@@ -3,7 +3,7 @@
  * 유형별, 부서별, 중요도별 자산 분포 차트
  */
 import { useState, useEffect, useCallback } from 'react'
-import { Card, Row, Col, Statistic, Spin, message } from 'antd'
+import { App, Card, Row, Col, Statistic, Spin } from 'antd'
 import {
   DesktopOutlined,
   SafetyOutlined,
@@ -57,6 +57,7 @@ const AssetStatsWidgets = ({
   showImportanceChart = true,
   showLifecycleChart = true,
 }: AssetStatsWidgetsProps) => {
+  const { message } = App.useApp()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<AssetStats | null>(null)
   const [byType, setByType] = useState<AssetByTypeStats[]>([])
