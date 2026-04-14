@@ -507,6 +507,7 @@ class AssetService:
         status: Optional[str] = None,
         is_active: Optional[bool] = True,
         importance_level: Optional[int] = None,
+        eol_status: Optional[str] = None,
         page: int = 1,
         size: int = 20,
     ) -> Dict:
@@ -556,6 +557,27 @@ class AssetService:
                 .join(AssetValuation, AssetValuation.id == subquery.c.max_id)
                 .filter(AssetValuation.importance_level == importance_level)
             )
+
+        # EoL 상태 필터
+        if eol_status:
+            from datetime import date, timedelta
+            today = date.today()
+            if eol_status == "expired":
+                # EoL이 이미 지난 자산
+                query = query.filter(
+                    Asset.eol_date.isnot(None),
+                    Asset.eol_date < today,
+                )
+            elif eol_status == "soon":
+                # 90일 이내 EoL 예정
+                query = query.filter(
+                    Asset.eol_date.isnot(None),
+                    Asset.eol_date >= today,
+                    Asset.eol_date <= today + timedelta(days=90),
+                )
+            elif eol_status == "none":
+                # EoL 미설정
+                query = query.filter(Asset.eol_date.is_(None))
 
         # 전체 개수
         total = query.count()
@@ -1230,12 +1252,13 @@ class AssetService:
             ("호스트명", False),      # J(10)
             ("제조사", False),        # K(11)
             ("모델", False),          # L(12)
-            ("버전", False),          # M(13)
-            ("상태", False),          # N(14)
-            ("중요도", False),        # O(15)
-            ("취득일", False),        # P(16)
-            ("취득비용", False),      # Q(17)
-            ("EoL 만료일", False),    # R(18)
+            ("OS 버전", False),       # M(13)
+            ("서비스 버전", False),   # N(14)
+            ("상태", False),          # O(15)
+            ("중요도", False),        # P(16)
+            ("취득일", False),        # Q(17)
+            ("취득비용", False),      # R(18)
+            ("EoL 만료일", False),    # S(19)
         ]
         for col, (header, required) in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
@@ -1304,7 +1327,7 @@ class AssetService:
 
         # 담당자 (H열) - 쉼표 구분 이름 입력 (자산 할당 동기화)
 
-        # 상태 (N열)
+        # 상태 (O열)
         dv_status = DataValidation(
             type="list",
             formula1=f"참조데이터!$E$2:$E$5",
@@ -1315,9 +1338,9 @@ class AssetService:
         dv_status.prompt = "상태를 선택하세요"
         dv_status.promptTitle = "상태"
         ws.add_data_validation(dv_status)
-        dv_status.add(f"N2:N{max_data_row}")
+        dv_status.add(f"O2:O{max_data_row}")
 
-        # 중요도 (O열)
+        # 중요도 (P열)
         dv_importance = DataValidation(
             type="list",
             formula1=f"참조데이터!$F$2:$F$6",
@@ -1328,7 +1351,7 @@ class AssetService:
         dv_importance.prompt = "중요도를 선택하세요 (1~5)"
         dv_importance.promptTitle = "중요도"
         ws.add_data_validation(dv_importance)
-        dv_importance.add(f"O2:O{max_data_row}")
+        dv_importance.add(f"P2:P{max_data_row}")
 
         # ── 예시 행 (빈 템플릿일 때만) ──
         data_start_row = 2
@@ -1355,12 +1378,13 @@ class AssetService:
                 "web-server-01",                             # J: 호스트명
                 "Dell",                                      # K: 제조사
                 "PowerEdge R740",                            # L: 모델
-                "2.1.0",                                     # M: 버전
-                "운영",                                      # N: 상태
-                "3",                                         # O: 중요도
-                "2025-01-15",                                # P: 취득일
-                "5000000",                                   # Q: 취득비용
-                "2028-01-10",                                # R: EoL 만료일
+                "Ubuntu 22.04",                              # M: OS 버전
+                "Apache 2.4",                                # N: 서비스 버전
+                "운영",                                      # O: 상태
+                "3",                                         # P: 중요도
+                "2025-01-15",                                # Q: 취득일
+                "5000000",                                   # R: 취득비용
+                "2028-01-10",                                # S: EoL 만료일
             ]
             for col, val in enumerate(example_data, 1):
                 cell = ws.cell(row=2, column=col, value=val)
@@ -1394,15 +1418,16 @@ class AssetService:
             ws.cell(row=row, column=10, value=asset.hostname or "")
             ws.cell(row=row, column=11, value=asset.manufacturer or "")
             ws.cell(row=row, column=12, value=asset.model or "")
-            ws.cell(row=row, column=13, value=asset.service_version or "")
-            ws.cell(row=row, column=14, value=asset.status)
-            ws.cell(row=row, column=15, value=str(valuation.importance_level) if valuation and valuation.importance_level else "")
-            ws.cell(row=row, column=16, value=str(asset.acquisition_date) if asset.acquisition_date else "")
-            ws.cell(row=row, column=17, value=asset.acquisition_cost or "")
-            ws.cell(row=row, column=18, value=str(asset.eol_date) if asset.eol_date else "")
+            ws.cell(row=row, column=13, value=asset.os_version or "")
+            ws.cell(row=row, column=14, value=asset.service_version or "")
+            ws.cell(row=row, column=15, value=asset.status)
+            ws.cell(row=row, column=16, value=str(valuation.importance_level) if valuation and valuation.importance_level else "")
+            ws.cell(row=row, column=17, value=str(asset.acquisition_date) if asset.acquisition_date else "")
+            ws.cell(row=row, column=18, value=asset.acquisition_cost or "")
+            ws.cell(row=row, column=19, value=str(asset.eol_date) if asset.eol_date else "")
 
         # 열 너비 조정
-        column_widths = [22, 18, 22, 22, 15, 22, 22, 18, 18, 18, 12, 12, 12, 10, 10, 12, 12, 14]
+        column_widths = [22, 18, 22, 22, 15, 22, 22, 18, 18, 18, 12, 12, 15, 15, 10, 10, 12, 12, 14]
         for col, width in enumerate(column_widths, 1):
             ws.column_dimensions[get_column_letter(col)].width = width
 
@@ -1566,8 +1591,8 @@ class AssetService:
                 # 컬럼 매핑 (export_assets 헤더 순서와 일치)
                 # 1:자산코드, 2:자산명, 3:자산유형, 4:분류, 5:위치, 6:부서,
                 # 7:소유자(Personnel), 8:담당자(쉼표구분), 9:IP주소, 10:호스트명,
-                # 11:제조사, 12:모델, 13:버전, 14:상태, 15:중요도, 16:취득일, 17:취득비용,
-                # 18:EoL 만료일
+                # 11:제조사, 12:모델, 13:OS버전, 14:서비스버전, 15:상태,
+                # 16:중요도, 17:취득일, 18:취득비용, 19:EoL 만료일
                 location_val = ws.cell(row=row_num, column=5).value
                 owner_raw = ws.cell(row=row_num, column=7).value
                 assignee_raw = ws.cell(row=row_num, column=8).value
@@ -1575,11 +1600,12 @@ class AssetService:
                 hostname_val = ws.cell(row=row_num, column=10).value
                 manufacturer_val = ws.cell(row=row_num, column=11).value
                 model_val = ws.cell(row=row_num, column=12).value
-                version_val = ws.cell(row=row_num, column=13).value
-                status_val = ws.cell(row=row_num, column=14).value
-                acquisition_date_val = ws.cell(row=row_num, column=16).value
-                acquisition_cost_val = ws.cell(row=row_num, column=17).value
-                eol_date_val = ws.cell(row=row_num, column=18).value
+                os_version_val = ws.cell(row=row_num, column=13).value
+                service_version_val = ws.cell(row=row_num, column=14).value
+                status_val = ws.cell(row=row_num, column=15).value
+                acquisition_date_val = ws.cell(row=row_num, column=17).value
+                acquisition_cost_val = ws.cell(row=row_num, column=18).value
+                eol_date_val = ws.cell(row=row_num, column=19).value
 
                 # 소유자 조회 ("name (dept)" 형식에서 name 추출)
                 personnel_owner_id = None
@@ -1674,7 +1700,8 @@ class AssetService:
                         existing.hostname = str(hostname_val) if hostname_val else None
                         existing.manufacturer = str(manufacturer_val) if manufacturer_val else None
                         existing.model = str(model_val) if model_val else None
-                        existing.service_version = str(version_val) if version_val else None
+                        existing.os_version = str(os_version_val) if os_version_val else None
+                        existing.service_version = str(service_version_val) if service_version_val else None
                         if status_val:
                             existing.status = str(status_val).strip()
                         existing.acquisition_date = acquisition_date
@@ -1703,7 +1730,8 @@ class AssetService:
                     "hostname": str(hostname_val) if hostname_val else None,
                     "manufacturer": str(manufacturer_val) if manufacturer_val else None,
                     "model": str(model_val) if model_val else None,
-                    "service_version": str(version_val) if version_val else None,
+                    "os_version": str(os_version_val) if os_version_val else None,
+                    "service_version": str(service_version_val) if service_version_val else None,
                 }
                 if personnel_owner_id:
                     create_kwargs["personnel_owner_id"] = personnel_owner_id

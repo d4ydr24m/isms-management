@@ -40,8 +40,9 @@ class CycleInfo(BaseModel):
     release_date: Optional[str] = None
     eol: Any = None  # str (date) or bool
     latest: Optional[str] = None
-    lts: Any = None  # bool or str
+    lts: Any = None  # bool or str (date)
     support: Any = None  # str (date) or bool
+    extended_support: Any = None  # str (date) or bool (LTS/extended)
 
 
 class ProductCyclesResponse(BaseModel):
@@ -111,6 +112,7 @@ def get_product_cycles(
                 latest=c.get("latest"),
                 lts=c.get("lts"),
                 support=c.get("support"),
+                extended_support=c.get("extendedSupport"),
             ))
         return ProductCyclesResponse(product=product, cycles=cycles)
     except Exception as e:

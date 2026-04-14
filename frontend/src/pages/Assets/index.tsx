@@ -100,6 +100,12 @@ const AssetListPage = () => {
     setPagination((prev) => ({ ...prev, current: 1 }))
   }
 
+  // EoL 상태 필터 변경 핸들러
+  const handleEolStatusChange = (value?: 'expired' | 'soon' | 'none') => {
+    setFilters((prev) => ({ ...prev, eolStatus: value }))
+    setPagination((prev) => ({ ...prev, current: 1 }))
+  }
+
   // 상태 변경 핸들러 (테이블 인라인)
   const handleAssetStatusChange = async (id: number, status: string) => {
     try {
@@ -173,6 +179,7 @@ const AssetListPage = () => {
             onAssetTypeChange={handleAssetTypeChange}
             onStatusChange={handleStatusChange}
             onImportanceChange={handleImportanceChange}
+            onEolStatusChange={handleEolStatusChange}
           />
 
           <AssetTable

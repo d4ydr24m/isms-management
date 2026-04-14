@@ -15,6 +15,7 @@ interface AssetFilterProps {
   onAssetTypeChange: (value?: number) => void
   onStatusChange: (value?: AssetStatus) => void
   onImportanceChange: (value?: number) => void
+  onEolStatusChange?: (value?: 'expired' | 'soon' | 'none') => void
 }
 
 /** 자산 상태 옵션 */
@@ -32,6 +33,13 @@ const importanceOptions = [
   { value: 1, label: '하' },
 ]
 
+/** EoL 상태 옵션 */
+const eolStatusOptions: Array<{ value: 'expired' | 'soon' | 'none'; label: string }> = [
+  { value: 'expired', label: 'EoL 만료' },
+  { value: 'soon', label: 'EoL 임박 (90일)' },
+  { value: 'none', label: 'EoL 미설정' },
+]
+
 const AssetFilter = ({
   filters,
   assetTypes,
@@ -39,6 +47,7 @@ const AssetFilter = ({
   onAssetTypeChange,
   onStatusChange,
   onImportanceChange,
+  onEolStatusChange,
 }: AssetFilterProps) => {
   return (
     <Row gutter={[16, 16]}>
@@ -96,6 +105,23 @@ const AssetFilter = ({
           ))}
         </Select>
       </Col>
+      {onEolStatusChange && (
+        <Col xs={24} sm={12} md={6} lg={4}>
+          <Select
+            placeholder="EoL 상태"
+            style={{ width: '100%' }}
+            allowClear
+            onChange={onEolStatusChange}
+            value={filters.eolStatus ?? undefined}
+          >
+            {eolStatusOptions.map((opt) => (
+              <Option key={opt.value} value={opt.value}>
+                {opt.label}
+              </Option>
+            ))}
+          </Select>
+        </Col>
+      )}
     </Row>
   )
 }

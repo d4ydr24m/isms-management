@@ -332,6 +332,7 @@ def get_assets(
     status: Optional[str] = Query(None, description="상태"),
     is_active: Optional[bool] = Query(True, description="활성 상태"),
     importance_level: Optional[int] = Query(None, ge=1, le=3, description="중요도"),
+    eol_status: Optional[str] = Query(None, description="EoL 상태 (expired/soon/none)"),
     service: AssetService = Depends(get_asset_service),
     current_user: User = Depends(require_permission("asset:read")),
 ) -> AssetList:
@@ -343,6 +344,7 @@ def get_assets(
     - **department_id**: 부서 필터
     - **status**: 상태 필터 (도입/운영/변경/폐기)
     - **importance_level**: 중요도 필터 (1: 하, 2: 중, 3: 상)
+    - **eol_status**: EoL 상태 필터 (expired: 만료, soon: 90일 이내, none: 미설정)
     """
     result = service.search_assets(
         search=search,
@@ -352,6 +354,7 @@ def get_assets(
         status=status,
         is_active=is_active,
         importance_level=importance_level,
+        eol_status=eol_status,
         page=page,
         size=size,
     )

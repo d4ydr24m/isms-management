@@ -8,6 +8,7 @@ export interface CycleInfo {
   latest: string | null
   lts: boolean | string | null
   support: string | boolean | null
+  extendedSupport: string | boolean | null
 }
 
 export interface ProductCyclesResponse {

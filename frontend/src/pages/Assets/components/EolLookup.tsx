@@ -45,6 +45,11 @@ const EolLookup = ({ open, onClose, onSelect, initialQuery }: EolLookupProps) =>
   const [cycles, setCycles] = useState<CycleInfo[]>([])
   const [cyclesLoading, setCyclesLoading] = useState(false)
 
+  // Date pick dialog (when multiple dates available)
+  const [datePickOpen, setDatePickOpen] = useState(false)
+  const [dateOptions, setDateOptions] = useState<{ label: string; date: string }[]>([])
+  const [datePickCycle, setDatePickCycle] = useState<CycleInfo | null>(null)
+
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return
     setSearchLoading(true)
@@ -77,13 +82,23 @@ const EolLookup = ({ open, onClose, onSelect, initialQuery }: EolLookupProps) =>
   }, [message])
 
   const handleSelectCycle = (cycle: CycleInfo) => {
-    if (typeof cycle.eol === 'string') {
-      onSelect(cycle.eol, selectedProduct || '', cycle.cycle)
-      handleReset()
-    } else if (typeof cycle.support === 'string') {
-      onSelect(cycle.support, selectedProduct || '', cycle.cycle)
-      handleReset()
-    } else {
+    const eolDate = typeof cycle.eol === 'string' ? cycle.eol : null
+    const ltsDate = typeof cycle.extendedSupport === 'string'
+      ? cycle.extendedSupport
+      : typeof cycle.lts === 'string'
+        ? cycle.lts
+        : null
+    const supportDate = typeof cycle.support === 'string' ? cycle.support : null
+
+    // Collect all available dates
+    const options: { label: string; date: string }[] = []
+    if (eolDate) options.push({ label: `EoL: ${eolDate}`, date: eolDate })
+    if (ltsDate && ltsDate !== eolDate) options.push({ label: `LTS / 연장지원: ${ltsDate}`, date: ltsDate })
+    if (supportDate && supportDate !== eolDate && supportDate !== ltsDate) {
+      options.push({ label: `기본 지원: ${supportDate}`, date: supportDate })
+    }
+
+    if (options.length === 0) {
       modal.confirm({
         title: 'EoL 날짜 미지정',
         content: `${cycle.releaseLabel || cycle.cycle} 버전은 현재 지원 중이며 EoL 날짜가 지정되지 않았습니다. EoL 없이 닫으시겠습니까?`,
@@ -91,7 +106,19 @@ const EolLookup = ({ open, onClose, onSelect, initialQuery }: EolLookupProps) =>
         cancelText: '취소',
         onOk: () => handleReset(),
       })
+      return
     }
+
+    if (options.length === 1) {
+      onSelect(options[0].date, selectedProduct || '', cycle.cycle)
+      handleReset()
+      return
+    }
+
+    // Multiple dates available — let user choose
+    setDateOptions(options)
+    setDatePickCycle(cycle)
+    setDatePickOpen(true)
   }
 
   const handleReset = () => {
@@ -142,11 +169,26 @@ const EolLookup = ({ open, onClose, onSelect, initialQuery }: EolLookupProps) =>
       },
     },
     {
-      title: 'LTS',
+      title: 'LTS / 연장지원',
       key: 'lts',
-      width: 60,
-      align: 'center',
-      render: (_, record) => record.lts ? <CheckCircleOutlined style={{ color: '#52c41a' }} /> : '-',
+      width: 140,
+      render: (_, record) => {
+        // extendedSupport가 날짜이면 LTS 종료일로 표시
+        if (typeof record.extendedSupport === 'string') {
+          const s = getEolStatus(record.extendedSupport)
+          return <Tag color={s.color}>{s.text}</Tag>
+        }
+        // lts가 날짜이면 LTS 종료일로 표시
+        if (typeof record.lts === 'string') {
+          const s = getEolStatus(record.lts)
+          return <Tag color={s.color}>{s.text}</Tag>
+        }
+        // lts가 boolean true이면 LTS 표시
+        if (record.lts === true) {
+          return <CheckCircleOutlined style={{ color: '#52c41a' }} />
+        }
+        return '-'
+      },
     },
     {
       title: '',
@@ -167,6 +209,7 @@ const EolLookup = ({ open, onClose, onSelect, initialQuery }: EolLookupProps) =>
   ]
 
   return (
+    <>
     <Modal
       title="EoL 조회 (endoflife.date)"
       open={open}
@@ -246,6 +289,34 @@ const EolLookup = ({ open, onClose, onSelect, initialQuery }: EolLookupProps) =>
         )}
       </Space>
     </Modal>
+
+      {/* Date selection sub-modal */}
+      <Modal
+        title={`날짜 선택 — ${datePickCycle?.releaseLabel || datePickCycle?.cycle || ''}`}
+        open={datePickOpen}
+        onCancel={() => setDatePickOpen(false)}
+        footer={null}
+        width={400}
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <Text type="secondary">적용할 날짜를 선택하세요:</Text>
+          {dateOptions.map((opt) => (
+            <Button
+              key={opt.date}
+              block
+              size="large"
+              onClick={() => {
+                onSelect(opt.date, selectedProduct || '', datePickCycle?.cycle || '')
+                setDatePickOpen(false)
+                handleReset()
+              }}
+            >
+              {opt.label}
+            </Button>
+          ))}
+        </Space>
+      </Modal>
+    </>
   )
 }
 

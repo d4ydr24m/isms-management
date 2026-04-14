@@ -458,5 +458,6 @@ export interface AssetFilterParams {
   ownerId?: number
   status?: AssetStatus
   importanceLevel?: number
+  eolStatus?: 'expired' | 'soon' | 'none'
   isActive?: boolean
 }
