@@ -185,9 +185,10 @@ export const assetService = {
   /**
    * 현재 자산 가치 평가 조회
    */
-  async getAssetValuation(assetId: number): Promise<AssetValuation> {
+  async getAssetValuation(assetId: number): Promise<AssetValuation | null> {
     try {
       const response = await apiClient.get<AssetValuation>(`/assets/${assetId}/valuation`)
+      if (response.status === 204) return null
       return response.data
     } catch (error) {
       return handleApiError(error)

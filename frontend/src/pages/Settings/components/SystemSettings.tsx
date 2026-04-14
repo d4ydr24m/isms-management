@@ -56,7 +56,7 @@ const defaultSettings: SettingsState = {
   certificationType: 'ISMS-P',
   maxLoginAttempts: 5,
   accountLockoutDurationMinutes: 30,
-  sessionTimeoutMinutes: 30,
+  sessionTimeoutMinutes: 60,
   passwordMinLength: 8,
   passwordRequireUppercase: true,
   passwordRequireLowercase: true,

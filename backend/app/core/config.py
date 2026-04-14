@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Database
@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     MAX_LOGIN_ATTEMPTS: int = 5
     ACCOUNT_LOCKOUT_DURATION: int = 30  # minutes
     ACCOUNT_LOCKOUT_DURATION_MINUTES: int = 30
-    SESSION_TIMEOUT_MINUTES: int = 30
+    SESSION_TIMEOUT_MINUTES: int = 60
 
     # MFA / TOTP
     TOTP_VALID_WINDOW: int = 1  # ±1 time step (±30초). 0=현재만, 1=±30초

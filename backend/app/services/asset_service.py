@@ -18,6 +18,7 @@ from app.models.asset import (
 )
 from app.models.user import User
 from app.models.department import Department
+from app.models.personnel import Personnel
 from app.schemas.notification import NotificationType, NotificationPriority
 
 
@@ -443,7 +444,7 @@ class AssetService:
         """자산 소유자 변경 시 담당자 탭의 소유자 역할 자동 동기화"""
         from app.models.personnel import Personnel
 
-        # 기존 소유자 역할 비활성화
+        # 이미 동일 인물이 소유자 역할로 활성 할당되어 있으면 스킵
         existing_owners = (
             self.db.query(AssetAssignment)
             .filter(
@@ -453,6 +454,14 @@ class AssetService:
             )
             .all()
         )
+
+        already_assigned = any(
+            o.personnel_id == personnel_id for o in existing_owners
+        )
+        if already_assigned:
+            return
+
+        # 기존 소유자 역할 비활성화
         for owner in existing_owners:
             owner.is_active = False
 
@@ -1191,6 +1200,16 @@ class AssetService:
         for i, v in enumerate(["1", "2", "3", "4", "5"], 2):
             ref_ws.cell(row=i, column=6, value=v)
 
+        # 소유자(담당자/Personnel) 목록
+        personnel_list = self.db.query(Personnel).filter(Personnel.is_active == True).order_by(Personnel.name).all()
+        ref_ws.cell(row=1, column=7, value="소유자")
+        for i, p in enumerate(personnel_list, 2):
+            label = p.name
+            if p.department:
+                label = f"{p.name} ({p.department.name})"
+            ref_ws.cell(row=i, column=7, value=label)
+        personnel_last_row = len(personnel_list) + 1
+
         ref_ws.sheet_state = "hidden"
 
         # ── 메인 시트: 헤더 ──
@@ -1199,20 +1218,22 @@ class AssetService:
         required_fill = PatternFill(start_color="FF6B6B", end_color="FF6B6B", fill_type="solid")
 
         headers = [
-            ("자산코드", False),
-            ("자산명 ★", True),
-            ("자산유형 ★", True),
-            ("분류", False),
-            ("위치", False),
-            ("부서", False),
-            ("IP주소", False),
-            ("호스트명", False),
-            ("제조사", False),
-            ("모델", False),
-            ("상태", False),
-            ("중요도", False),
-            ("취득일", False),
-            ("취득비용", False),
+            ("자산코드", False),     # A(1)
+            ("자산명 ★", True),      # B(2)
+            ("자산유형 ★", True),    # C(3)
+            ("분류", False),          # D(4)
+            ("위치", False),          # E(5)
+            ("부서", False),          # F(6)
+            ("소유자", False),        # G(7)
+            ("담당자", False),        # H(8)
+            ("IP주소", False),        # I(9)
+            ("호스트명", False),      # J(10)
+            ("제조사", False),        # K(11)
+            ("모델", False),          # L(12)
+            ("상태", False),          # M(13)
+            ("중요도", False),        # N(14)
+            ("취득일", False),        # O(15)
+            ("취득비용", False),      # P(16)
         ]
         for col, (header, required) in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
@@ -1265,7 +1286,23 @@ class AssetService:
             ws.add_data_validation(dv_dept)
             dv_dept.add(f"F2:F{max_data_row}")
 
-        # 상태 (K열)
+        # 소유자 (G열) - 참조시트 G열 (Personnel 목록)
+        if personnel_last_row > 1:
+            dv_owner = DataValidation(
+                type="list",
+                formula1=f"참조데이터!$G$2:$G${personnel_last_row}",
+                allow_blank=True,
+            )
+            dv_owner.error = "목록에서 소유자를 선택하세요."
+            dv_owner.errorTitle = "소유자 오류"
+            dv_owner.prompt = "소유자를 선택하세요"
+            dv_owner.promptTitle = "소유자"
+            ws.add_data_validation(dv_owner)
+            dv_owner.add(f"G2:G{max_data_row}")
+
+        # 담당자 (H열) - 쉼표 구분 이름 입력 (자산 할당 동기화)
+
+        # 상태 (M열)
         dv_status = DataValidation(
             type="list",
             formula1=f"참조데이터!$E$2:$E$5",
@@ -1276,9 +1313,9 @@ class AssetService:
         dv_status.prompt = "상태를 선택하세요"
         dv_status.promptTitle = "상태"
         ws.add_data_validation(dv_status)
-        dv_status.add(f"K2:K{max_data_row}")
+        dv_status.add(f"M2:M{max_data_row}")
 
-        # 중요도 (L열)
+        # 중요도 (N열)
         dv_importance = DataValidation(
             type="list",
             formula1=f"참조데이터!$F$2:$F$6",
@@ -1289,10 +1326,46 @@ class AssetService:
         dv_importance.prompt = "중요도를 선택하세요 (1~5)"
         dv_importance.promptTitle = "중요도"
         ws.add_data_validation(dv_importance)
-        dv_importance.add(f"L2:L{max_data_row}")
+        dv_importance.add(f"N2:N{max_data_row}")
+
+        # ── 예시 행 (빈 템플릿일 때만) ──
+        data_start_row = 2
+        if not include_data:
+            example_font = Font(italic=True, color="888888")
+            example_fill = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
+            example_type = type_code_list[0] if type_code_list else "SRV (서버)"
+            example_cat = cat_list[0] if cat_list else ""
+            example_dept = dept_list[0] if dept_list else ""
+            example_owner = ""
+            if personnel_list:
+                p = personnel_list[0]
+                example_owner = f"{p.name} ({p.department.name})" if p.department else p.name
+            example_data = [
+                "",                                          # A: 자산코드 (자동생성)
+                "예시) 웹서버-01",                           # B: 자산명
+                example_type,                                # C: 자산유형
+                example_cat,                                 # D: 분류
+                "서울 본사 3층",                              # E: 위치
+                example_dept,                                # F: 부서
+                example_owner,                               # G: 소유자
+                "홍길동 (관리자), 김철수 (사용자)",           # H: 담당자
+                "192.168.1.100",                             # I: IP주소
+                "web-server-01",                             # J: 호스트명
+                "Dell",                                      # K: 제조사
+                "PowerEdge R740",                            # L: 모델
+                "운영",                                      # M: 상태
+                "3",                                         # N: 중요도
+                "2025-01-15",                                # O: 취득일
+                "5000000",                                   # P: 취득비용
+            ]
+            for col, val in enumerate(example_data, 1):
+                cell = ws.cell(row=2, column=col, value=val)
+                cell.font = example_font
+                cell.fill = example_fill
+            data_start_row = 3
 
         # ── 데이터 (코드 형식으로 기록) ──
-        for row, asset in enumerate(assets, 2):
+        for row, asset in enumerate(assets, data_start_row):
             valuation = self.get_current_valuation(asset.id)
             ws.cell(row=row, column=1, value=asset.asset_code)
             ws.cell(row=row, column=2, value=asset.name)
@@ -1300,17 +1373,30 @@ class AssetService:
             ws.cell(row=row, column=4, value=", ".join(f"{c.code} ({c.name})" for c in asset.categories) if asset.categories else "")
             ws.cell(row=row, column=5, value=asset.location or "")
             ws.cell(row=row, column=6, value=f"{asset.department.code} ({asset.department.name})" if asset.department else "")
-            ws.cell(row=row, column=7, value=asset.ip_address or "")
-            ws.cell(row=row, column=8, value=asset.hostname or "")
-            ws.cell(row=row, column=9, value=asset.manufacturer or "")
-            ws.cell(row=row, column=10, value=asset.model or "")
-            ws.cell(row=row, column=11, value=asset.status)
-            ws.cell(row=row, column=12, value=str(valuation.importance_level) if valuation and valuation.importance_level else "")
-            ws.cell(row=row, column=13, value=str(asset.acquisition_date) if asset.acquisition_date else "")
-            ws.cell(row=row, column=14, value=asset.acquisition_cost or "")
+            ws.cell(row=row, column=7, value=f"{asset.personnel_owner.name} ({asset.personnel_owner.department.name})" if asset.personnel_owner and asset.personnel_owner.department else (asset.personnel_owner.name if asset.personnel_owner else ""))
+            # 담당자: 소유자(owner) 역할 제외한 할당 목록 (이름 (역할) 형식)
+            role_label_map = {"manager": "관리자", "user": "사용자"}
+            assignments = self.get_assignments(asset.id)
+            assignee_entries = []
+            for a in assignments:
+                if a.role == AssetAssignmentRole.OWNER.value:
+                    continue
+                aname = (a.user.name if a.user else None) or (a.personnel.name if a.personnel else None)
+                if aname:
+                    role_label = role_label_map.get(a.role, "사용자")
+                    assignee_entries.append(f"{aname} ({role_label})")
+            ws.cell(row=row, column=8, value=", ".join(assignee_entries) if assignee_entries else "")
+            ws.cell(row=row, column=9, value=asset.ip_address or "")
+            ws.cell(row=row, column=10, value=asset.hostname or "")
+            ws.cell(row=row, column=11, value=asset.manufacturer or "")
+            ws.cell(row=row, column=12, value=asset.model or "")
+            ws.cell(row=row, column=13, value=asset.status)
+            ws.cell(row=row, column=14, value=str(valuation.importance_level) if valuation and valuation.importance_level else "")
+            ws.cell(row=row, column=15, value=str(asset.acquisition_date) if asset.acquisition_date else "")
+            ws.cell(row=row, column=16, value=asset.acquisition_cost or "")
 
         # 열 너비 조정
-        column_widths = [22, 18, 22, 22, 15, 22, 18, 18, 12, 12, 10, 10, 12, 12]
+        column_widths = [22, 18, 22, 22, 15, 22, 22, 18, 18, 18, 12, 12, 10, 10, 12, 12]
         for col, width in enumerate(column_widths, 1):
             ws.column_dimensions[get_column_letter(col)].width = width
 
@@ -1332,6 +1418,49 @@ class AssetService:
         if " (" in s:
             return s.split(" (")[0].strip()
         return s
+
+    def _sync_assignments_from_import(
+        self,
+        asset_id: int,
+        assignee_list: List[Tuple[int, str]],
+        assigned_by: int,
+    ) -> None:
+        """엑셀 임포트 시 담당자 할당 동기화 (추가 및 역할 업데이트)"""
+        existing_assignments = self.get_assignments(asset_id)
+        # personnel_id → assignment 매핑
+        existing_map: Dict[int, AssetAssignment] = {}
+        for a in existing_assignments:
+            pid = a.personnel_id
+            if not pid and a.user_id:
+                p = self.db.query(Personnel).filter(
+                    Personnel.user_id == a.user_id
+                ).first()
+                if p:
+                    pid = p.id
+            if pid:
+                existing_map[pid] = a
+
+        for pid, role in assignee_list:
+            if pid in existing_map:
+                # 역할이 다르면 업데이트
+                existing_a = existing_map[pid]
+                if existing_a.role != role:
+                    existing_a.role = role
+                continue
+            personnel = self.db.query(Personnel).filter(Personnel.id == pid).first()
+            if not personnel:
+                continue
+            assignment = AssetAssignment(
+                asset_id=asset_id,
+                user_id=personnel.user_id,
+                personnel_id=pid,
+                role=role,
+                assigned_by=assigned_by,
+                assigned_at=utc_now(),
+                is_active=True,
+            )
+            self.db.add(assignment)
+        self.db.commit()
 
     def import_assets(
         self,
@@ -1428,6 +1557,79 @@ class AssetService:
                             if cat:
                                 category_ids.append(cat.id)
 
+                # 컬럼 매핑 (export_assets 헤더 순서와 일치)
+                # 1:자산코드, 2:자산명, 3:자산유형, 4:분류, 5:위치, 6:부서,
+                # 7:소유자(Personnel), 8:담당자(쉼표구분), 9:IP주소, 10:호스트명,
+                # 11:제조사, 12:모델, 13:상태, 14:중요도, 15:취득일, 16:취득비용
+                location_val = ws.cell(row=row_num, column=5).value
+                owner_raw = ws.cell(row=row_num, column=7).value
+                assignee_raw = ws.cell(row=row_num, column=8).value
+                ip_address_val = ws.cell(row=row_num, column=9).value
+                hostname_val = ws.cell(row=row_num, column=10).value
+                manufacturer_val = ws.cell(row=row_num, column=11).value
+                model_val = ws.cell(row=row_num, column=12).value
+                status_val = ws.cell(row=row_num, column=13).value
+                acquisition_date_val = ws.cell(row=row_num, column=15).value
+                acquisition_cost_val = ws.cell(row=row_num, column=16).value
+
+                # 소유자 조회 ("name (dept)" 형식에서 name 추출)
+                personnel_owner_id = None
+                if owner_raw:
+                    owner_name = self._extract_code(owner_raw)
+                    personnel = self.db.query(Personnel).filter(
+                        Personnel.name == owner_name,
+                        Personnel.is_active == True,
+                    ).first()
+                    if personnel:
+                        personnel_owner_id = personnel.id
+
+                # 담당자 목록 파싱 ("이름 (역할)" 쉼표 구분)
+                role_value_map = {"소유자": "owner", "관리자": "manager", "사용자": "user"}
+                assignee_list: List[Tuple[int, str]] = []  # (personnel_id, role)
+                if assignee_raw:
+                    for entry in str(assignee_raw).split(","):
+                        entry = entry.strip()
+                        if not entry:
+                            continue
+                        # "이름 (역할)" 형식 파싱
+                        role = AssetAssignmentRole.USER.value
+                        aname = entry
+                        if " (" in entry and entry.endswith(")"):
+                            aname = entry[:entry.rfind(" (")].strip()
+                            role_kr = entry[entry.rfind(" (") + 2:-1].strip()
+                            role = role_value_map.get(role_kr, AssetAssignmentRole.USER.value)
+                        p = self.db.query(Personnel).filter(
+                            Personnel.name == aname,
+                            Personnel.is_active == True,
+                        ).first()
+                        if p:
+                            # 소유자 역할은 personnel_owner_id로 처리
+                            if role == AssetAssignmentRole.OWNER.value:
+                                if not personnel_owner_id:
+                                    personnel_owner_id = p.id
+                            else:
+                                assignee_list.append((p.id, role))
+
+                # 취득일 파싱
+                acquisition_date = None
+                if acquisition_date_val:
+                    from datetime import date as date_type, datetime as datetime_type
+                    if isinstance(acquisition_date_val, (date_type, datetime_type)):
+                        acquisition_date = acquisition_date_val if isinstance(acquisition_date_val, date_type) else acquisition_date_val.date()
+                    else:
+                        try:
+                            acquisition_date = datetime_type.strptime(str(acquisition_date_val).strip(), "%Y-%m-%d").date()
+                        except ValueError:
+                            pass
+
+                # 취득비용 파싱
+                acquisition_cost = None
+                if acquisition_cost_val:
+                    try:
+                        acquisition_cost = int(float(str(acquisition_cost_val).strip().replace(",", "")))
+                    except (ValueError, TypeError):
+                        pass
+
                 # 자산코드가 있으면 기존 자산 업데이트 시도
                 if asset_code:
                     existing = self.db.query(Asset).filter(Asset.asset_code == str(asset_code).strip()).first()
@@ -1439,38 +1641,62 @@ class AssetService:
                                 c for cid in category_ids
                                 if (c := self.get_asset_category_by_id(cid))
                             ]
-                        if ws.cell(row=row_num, column=5).value:
-                            existing.location = str(ws.cell(row=row_num, column=5).value)
+                        existing.location = str(location_val) if location_val else None
                         if department_id:
                             existing.department_id = department_id
-                        if ws.cell(row=row_num, column=7).value:
-                            existing.ip_address = str(ws.cell(row=row_num, column=7).value)
-                        if ws.cell(row=row_num, column=8).value:
-                            existing.hostname = str(ws.cell(row=row_num, column=8).value)
-                        if ws.cell(row=row_num, column=9).value:
-                            existing.serial_number = str(ws.cell(row=row_num, column=9).value)
-                        if ws.cell(row=row_num, column=10).value:
-                            existing.manufacturer = str(ws.cell(row=row_num, column=10).value)
-                        if ws.cell(row=row_num, column=11).value:
-                            existing.model = str(ws.cell(row=row_num, column=11).value)
+                        # 소유자 설정 시 담당자 탭 owner 역할 동기화
+                        existing.personnel_owner_id = personnel_owner_id
+                        if personnel_owner_id:
+                            self._sync_owner_assignment(existing.id, personnel_owner_id, user_id)
+
+                        existing.ip_address = str(ip_address_val) if ip_address_val else None
+                        existing.hostname = str(hostname_val) if hostname_val else None
+                        existing.manufacturer = str(manufacturer_val) if manufacturer_val else None
+                        existing.model = str(model_val) if model_val else None
+                        if status_val:
+                            existing.status = str(status_val).strip()
+                        existing.acquisition_date = acquisition_date
+                        existing.acquisition_cost = acquisition_cost
                         self.db.commit()
+
+                        # 담당자 할당 동기화 (소유자 제외한 나머지)
+                        if assignee_raw is not None:
+                            self._sync_assignments_from_import(
+                                existing.id, assignee_list, user_id
+                            )
+
                         results["success"] += 1
                         continue
 
                 # 자산 생성 (자산코드 자동 생성)
-                self.create_asset(
-                    name=str(name),
-                    asset_type_id=asset_type.id,
-                    user_id=user_id,
-                    category_ids=category_ids or None,
-                    location=ws.cell(row=row_num, column=5).value,
-                    department_id=department_id,
-                    ip_address=ws.cell(row=row_num, column=7).value,
-                    hostname=ws.cell(row=row_num, column=8).value,
-                    serial_number=ws.cell(row=row_num, column=9).value,
-                    manufacturer=ws.cell(row=row_num, column=10).value,
-                    model=ws.cell(row=row_num, column=11).value,
-                )
+                create_kwargs: Dict[str, Any] = {
+                    "name": str(name),
+                    "asset_type_id": asset_type.id,
+                    "user_id": user_id,
+                    "category_ids": category_ids or None,
+                    "location": str(location_val) if location_val else None,
+                    "department_id": department_id,
+                    "ip_address": str(ip_address_val) if ip_address_val else None,
+                    "hostname": str(hostname_val) if hostname_val else None,
+                    "manufacturer": str(manufacturer_val) if manufacturer_val else None,
+                    "model": str(model_val) if model_val else None,
+                }
+                if personnel_owner_id:
+                    create_kwargs["personnel_owner_id"] = personnel_owner_id
+                if status_val:
+                    create_kwargs["status"] = str(status_val).strip()
+                if acquisition_date:
+                    create_kwargs["acquisition_date"] = acquisition_date
+                if acquisition_cost is not None:
+                    create_kwargs["acquisition_cost"] = acquisition_cost
+                new_asset = self.create_asset(**create_kwargs)
+
+                # 담당자 할당
+                if assignee_list:
+                    self._sync_assignments_from_import(
+                        new_asset.id, assignee_list, user_id
+                    )
+
                 results["success"] += 1
 
             except Exception as e:

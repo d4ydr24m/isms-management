@@ -19,7 +19,7 @@ DEFAULTS = {
     # Security settings
     "max_login_attempts": "5",
     "account_lockout_duration_minutes": "30",
-    "session_timeout_minutes": "30",
+    "session_timeout_minutes": "60",
     "password_min_length": "8",
     "password_require_uppercase": "true",
     "password_require_lowercase": "true",

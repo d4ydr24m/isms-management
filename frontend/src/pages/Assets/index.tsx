@@ -44,7 +44,7 @@ const AssetListPage = () => {
     try {
       const response = await assetService.getAssets({
         page: pagination.current,
-        limit: pagination.pageSize,
+        size: pagination.pageSize,
         ...filters,
       })
       setAssets(response.items)

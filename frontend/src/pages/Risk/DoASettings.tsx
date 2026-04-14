@@ -86,6 +86,8 @@ const DoASettingsPage = () => {
   const [history, setHistory] = useState<DoAHistory[]>([])
   const [exceedingRisks, setExceedingRisks] = useState<RiskAssessment[]>([])
   const [exceedingTotal, setExceedingTotal] = useState(0)
+  const [exceedingPage, setExceedingPage] = useState(1)
+  const [exceedingPageSize, setExceedingPageSize] = useState(10)
   const [loading, setLoading] = useState(false)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [exceedingLoading, setExceedingLoading] = useState(false)
@@ -124,10 +126,10 @@ const DoASettingsPage = () => {
   }, [])
 
   // DoA 초과 위험 조회
-  const fetchExceedingRisks = useCallback(async () => {
+  const fetchExceedingRisks = useCallback(async (page: number, size: number) => {
     setExceedingLoading(true)
     try {
-      const data = await getRisksExceedingDoA({ page: 1, size: 10 })
+      const data = await getRisksExceedingDoA({ page, size })
       setExceedingRisks(data.items)
       setExceedingTotal(data.total)
     } catch {
@@ -140,8 +142,11 @@ const DoASettingsPage = () => {
   useEffect(() => {
     fetchCurrentDoA()
     fetchHistory()
-    fetchExceedingRisks()
-  }, [fetchCurrentDoA, fetchHistory, fetchExceedingRisks])
+  }, [fetchCurrentDoA, fetchHistory])
+
+  useEffect(() => {
+    fetchExceedingRisks(exceedingPage, exceedingPageSize)
+  }, [fetchExceedingRisks, exceedingPage, exceedingPageSize])
 
   // DoA 설정 변경 모달 열기
   const handleOpenModal = () => {
@@ -176,7 +181,8 @@ const DoASettingsPage = () => {
       // 데이터 갱신
       fetchCurrentDoA()
       fetchHistory()
-      fetchExceedingRisks()
+      setExceedingPage(1)
+      fetchExceedingRisks(1, exceedingPageSize)
     } catch {
       // 폼 검증 에러는 자동 표시
     } finally {
@@ -447,9 +453,14 @@ const DoASettingsPage = () => {
               rowKey="id"
               size="small"
               pagination={{
+                current: exceedingPage,
                 total: exceedingTotal,
-                pageSize: 10,
+                pageSize: exceedingPageSize,
                 showTotal: (total) => `총 ${total}건`,
+                onChange: (page, pageSize) => {
+                  setExceedingPage(page)
+                  setExceedingPageSize(pageSize)
+                },
               }}
             />
           </Card>

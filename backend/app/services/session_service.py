@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 import redis
+from sqlalchemy import text
 
 from app.core.config import settings
 
@@ -19,6 +20,26 @@ class SessionService:
     def __init__(self, redis_url: Optional[str] = None):
         self.redis_url = redis_url or settings.REDIS_URL
         self._client: Optional[redis.Redis] = None
+
+    def _get_session_timeout_seconds(self) -> int:
+        """DB system_settings에서 세션 타임아웃 조회. 실패 시 config 기본값 사용."""
+        try:
+            from app.db.session import SessionLocal
+            db = SessionLocal()
+            try:
+                row = db.execute(
+                    text("SELECT value FROM system_settings WHERE key = :k"),
+                    {"k": "session_timeout_minutes"},
+                ).fetchone()
+                if row:
+                    val = int(row[0])
+                    if val > 0:
+                        return val * 60
+            finally:
+                db.close()
+        except Exception:
+            pass
+        return settings.SESSION_TIMEOUT_MINUTES * 60
 
     @property
     def client(self) -> redis.Redis:
@@ -60,7 +81,7 @@ class SessionService:
 
         self.client.setex(
             session_key,
-            settings.SESSION_TIMEOUT_MINUTES * 60,
+            self._get_session_timeout_seconds(),
             json.dumps(session_data),
         )
 
@@ -100,7 +121,7 @@ class SessionService:
 
         self.client.setex(
             session_key,
-            settings.SESSION_TIMEOUT_MINUTES * 60,
+            self._get_session_timeout_seconds(),
             json.dumps(session_data),
         )
 

@@ -6,8 +6,8 @@ Phase 2: FR-501 ~ FR-505
 from datetime import date
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from io import BytesIO
 
@@ -501,7 +501,7 @@ def export_assets(
 
 @router.post("/import", response_model=AssetImportResult)
 async def import_assets(
-    file: bytes,
+    file: UploadFile = File(...),
     service: AssetService = Depends(get_asset_service),
     current_user: User = Depends(require_permission("asset:create")),
 ) -> AssetImportResult:
@@ -511,7 +511,8 @@ async def import_assets(
     엑셀 파일을 업로드하여 자산을 일괄 등록합니다.
     """
     try:
-        result = service.import_assets(file, current_user.id)
+        file_content = await file.read()
+        result = service.import_assets(file_content, current_user.id)
         return AssetImportResult(**result)
     except ImportError as e:
         raise HTTPException(
@@ -583,7 +584,7 @@ def delete_asset(
 # FR-503: 자산 가치 평가 API
 # =============================================================================
 
-@router.get("/{asset_id}/valuation", response_model=AssetValuationResponse)
+@router.get("/{asset_id}/valuation", response_model=Optional[AssetValuationResponse])
 def get_current_valuation(
     asset_id: int,
     service: AssetService = Depends(get_asset_service),
@@ -600,10 +601,7 @@ def get_current_valuation(
 
     valuation = service.get_current_valuation(asset_id)
     if not valuation:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="가치 평가 정보가 없습니다.",
-        )
+        return JSONResponse(content=None, status_code=status.HTTP_204_NO_CONTENT)
 
     response = AssetValuationResponse.model_validate(valuation)
     if valuation.evaluator:

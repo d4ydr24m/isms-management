@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { apiClient } from '@/services/api'
 import { useAuthStore } from '@/stores/authStore'
 
-const DEFAULT_TIMEOUT_MINUTES = 30
+const DEFAULT_TIMEOUT_MINUTES = 60
 const WARNING_BEFORE_MINUTES = 1
 const CHECK_INTERVAL_MS = 10_000 // check every 10 seconds
 

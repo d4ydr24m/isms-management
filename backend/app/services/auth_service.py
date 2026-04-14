@@ -27,6 +27,7 @@ from app.core.security import (
     verify_backup_code,
 )
 from app.models.user import User
+from app.models.system_setting import SystemSetting
 
 
 class AuthService:
@@ -34,6 +35,22 @@ class AuthService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _get_session_timeout_minutes(self) -> int:
+        """DB 시스템 설정에서 세션 타임아웃(분) 조회. 없으면 config 기본값 사용."""
+        setting = (
+            self.db.query(SystemSetting)
+            .filter(SystemSetting.key == "session_timeout_minutes")
+            .first()
+        )
+        if setting:
+            try:
+                val = int(setting.value)
+                if val > 0:
+                    return val
+            except (ValueError, TypeError):
+                pass
+        return settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
     def authenticate(
         self,
@@ -93,9 +110,12 @@ class AuthService:
         # 로그인 성공 처리
         self._handle_successful_login(user, client_ip)
 
-        # 토큰 생성
+        # 토큰 생성 — DB 세션 타임아웃 설정에 맞춰 access token 수명 결정
+        timeout_minutes = self._get_session_timeout_minutes()
         token_data = {"sub": user.email, "user_id": user.id}
-        access_token = create_access_token(token_data)
+        access_token = create_access_token(
+            token_data, expires_delta=timedelta(minutes=timeout_minutes)
+        )
         refresh_token = create_refresh_token(token_data)
 
         return {
@@ -103,7 +123,7 @@ class AuthService:
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            "expires_in": timeout_minutes * 60,
         }
 
     def _handle_failed_login(self, user: User) -> None:
@@ -199,9 +219,12 @@ class AuthService:
         if not user or not user.is_active:
             return {"success": False, "error": "사용자를 찾을 수 없습니다."}
 
-        # 새 토큰 생성
+        # 새 토큰 생성 — DB 세션 타임아웃 설정에 맞춰 access token 수명 결정
+        timeout_minutes = self._get_session_timeout_minutes()
         token_data = {"sub": user.email, "user_id": user.id}
-        new_access_token = create_access_token(token_data)
+        new_access_token = create_access_token(
+            token_data, expires_delta=timedelta(minutes=timeout_minutes)
+        )
         new_refresh_token = create_refresh_token(token_data)
 
         return {
@@ -209,7 +232,7 @@ class AuthService:
             "access_token": new_access_token,
             "refresh_token": new_refresh_token,
             "token_type": "bearer",
-            "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            "expires_in": timeout_minutes * 60,
         }
 
     def setup_mfa(self, user: User) -> Dict[str, Any]:
