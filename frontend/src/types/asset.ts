@@ -138,6 +138,7 @@ export interface AssetBase {
   acquisitionDate?: string
   acquisitionCost?: number
   warrantyEndDate?: string
+  eolDate?: string
 }
 
 /** 자산 생성 요청 */
@@ -165,6 +166,7 @@ export interface AssetUpdate {
   acquisitionDate?: string
   acquisitionCost?: number
   warrantyEndDate?: string
+  eolDate?: string
   status?: AssetStatus
 }
 

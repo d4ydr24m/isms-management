@@ -9,15 +9,15 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: isms_db
-      POSTGRES_USER: isms_user
-      POSTGRES_PASSWORD: isms_password
+      POSTGRES_DB: ${POSTGRES_DB:-isms_db}
+      POSTGRES_USER: ${POSTGRES_USER:-isms_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme-in-production}
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     networks:
       - isms_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U isms_user -d isms_db"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,16 +41,18 @@ services:
       retries: 5
 
   # MinIO Object Storage
+  # NOTE: GHSA-9c4q-hq6p-c237 - 오픈소스 minio/minio에는 패치 미제공 (AIStor에서만 수정)
+  # 완화 조치: 포트 localhost 바인딩, 기본 자격 증명 제거, 외부 프록시 미노출
   minio:
     image: minio/minio:latest
     container_name: isms_minio
     restart: unless-stopped
     ports:
-      - "9000:9000"  # API
-      - "9001:9001"  # Console
+      - "127.0.0.1:9000:9000"  # API - localhost only
+      - "127.0.0.1:9001:9001"  # Console - localhost only
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changeme-in-production}
     volumes:
       - ./data/minio:/data
     command: server /data --console-address ":9001"
@@ -72,11 +74,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://isms_user:isms_password@postgres:5432/isms_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-isms_user}:${POSTGRES_PASSWORD:-changeme-in-production}@postgres:5432/${POSTGRES_DB:-isms_db}
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin123
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-changeme-in-production}
       SECRET_KEY: your-secret-key-change-in-production
       ENVIRONMENT: development
     volumes:
@@ -102,11 +104,11 @@ services:
     container_name: isms_celery_worker
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://isms_user:isms_password@postgres:5432/isms_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-isms_user}:${POSTGRES_PASSWORD:-changeme-in-production}@postgres:5432/${POSTGRES_DB:-isms_db}
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin123
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-changeme-in-production}
       SECRET_KEY: your-secret-key-change-in-production
       ENVIRONMENT: development
     volumes:
@@ -128,11 +130,11 @@ services:
     container_name: isms_celery_beat
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://isms_user:isms_password@postgres:5432/isms_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-isms_user}:${POSTGRES_PASSWORD:-changeme-in-production}@postgres:5432/${POSTGRES_DB:-isms_db}
       REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin123
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-changeme-in-production}
       SECRET_KEY: your-secret-key-change-in-production
       ENVIRONMENT: development
     volumes:

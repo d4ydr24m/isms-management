@@ -125,6 +125,7 @@ class AssetBase(BaseModel):
     acquisition_date: Optional[date] = Field(None, description="취득일")
     acquisition_cost: Optional[int] = Field(None, ge=0, le=9999999999, description="취득 비용 (최대 99억)")
     warranty_end_date: Optional[date] = Field(None, description="보증 만료일")
+    eol_date: Optional[date] = Field(None, description="EoL (End of Life) 만료일")
     status: Optional[str] = Field(None, description="상태 (도입/운영/변경/폐기)")
 
     @field_validator("status")
@@ -166,6 +167,7 @@ class AssetUpdate(BaseModel):
     acquisition_date: Optional[date] = None
     acquisition_cost: Optional[int] = None
     warranty_end_date: Optional[date] = None
+    eol_date: Optional[date] = None
     status: Optional[str] = Field(None, description="상태 (도입/운영/변경/폐기)")
 
     @field_validator("status")
@@ -211,6 +213,7 @@ class AssetResponse(BaseModel):
     acquisition_date: Optional[date] = None
     acquisition_cost: Optional[int] = None
     warranty_end_date: Optional[date] = None
+    eol_date: Optional[date] = None
     disposal_date: Optional[date] = None
     status: str
     is_active: bool

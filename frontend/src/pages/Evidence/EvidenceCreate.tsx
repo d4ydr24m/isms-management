@@ -162,6 +162,8 @@ const EvidenceCreate = () => {
           <Form.Item
             name="file"
             label="파일"
+            valuePropName="fileList"
+            getValueFromEvent={(e: any) => (Array.isArray(e) ? e : e?.fileList)}
             rules={[{ required: true, message: '파일을 업로드해 주세요' }]}
           >
             <Dragger

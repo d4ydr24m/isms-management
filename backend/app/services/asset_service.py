@@ -1230,10 +1230,12 @@ class AssetService:
             ("호스트명", False),      # J(10)
             ("제조사", False),        # K(11)
             ("모델", False),          # L(12)
-            ("상태", False),          # M(13)
-            ("중요도", False),        # N(14)
-            ("취득일", False),        # O(15)
-            ("취득비용", False),      # P(16)
+            ("버전", False),          # M(13)
+            ("상태", False),          # N(14)
+            ("중요도", False),        # O(15)
+            ("취득일", False),        # P(16)
+            ("취득비용", False),      # Q(17)
+            ("EoL 만료일", False),    # R(18)
         ]
         for col, (header, required) in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
@@ -1302,7 +1304,7 @@ class AssetService:
 
         # 담당자 (H열) - 쉼표 구분 이름 입력 (자산 할당 동기화)
 
-        # 상태 (M열)
+        # 상태 (N열)
         dv_status = DataValidation(
             type="list",
             formula1=f"참조데이터!$E$2:$E$5",
@@ -1313,9 +1315,9 @@ class AssetService:
         dv_status.prompt = "상태를 선택하세요"
         dv_status.promptTitle = "상태"
         ws.add_data_validation(dv_status)
-        dv_status.add(f"M2:M{max_data_row}")
+        dv_status.add(f"N2:N{max_data_row}")
 
-        # 중요도 (N열)
+        # 중요도 (O열)
         dv_importance = DataValidation(
             type="list",
             formula1=f"참조데이터!$F$2:$F$6",
@@ -1326,7 +1328,7 @@ class AssetService:
         dv_importance.prompt = "중요도를 선택하세요 (1~5)"
         dv_importance.promptTitle = "중요도"
         ws.add_data_validation(dv_importance)
-        dv_importance.add(f"N2:N{max_data_row}")
+        dv_importance.add(f"O2:O{max_data_row}")
 
         # ── 예시 행 (빈 템플릿일 때만) ──
         data_start_row = 2
@@ -1353,10 +1355,12 @@ class AssetService:
                 "web-server-01",                             # J: 호스트명
                 "Dell",                                      # K: 제조사
                 "PowerEdge R740",                            # L: 모델
-                "운영",                                      # M: 상태
-                "3",                                         # N: 중요도
-                "2025-01-15",                                # O: 취득일
-                "5000000",                                   # P: 취득비용
+                "2.1.0",                                     # M: 버전
+                "운영",                                      # N: 상태
+                "3",                                         # O: 중요도
+                "2025-01-15",                                # P: 취득일
+                "5000000",                                   # Q: 취득비용
+                "2028-01-10",                                # R: EoL 만료일
             ]
             for col, val in enumerate(example_data, 1):
                 cell = ws.cell(row=2, column=col, value=val)
@@ -1390,13 +1394,15 @@ class AssetService:
             ws.cell(row=row, column=10, value=asset.hostname or "")
             ws.cell(row=row, column=11, value=asset.manufacturer or "")
             ws.cell(row=row, column=12, value=asset.model or "")
-            ws.cell(row=row, column=13, value=asset.status)
-            ws.cell(row=row, column=14, value=str(valuation.importance_level) if valuation and valuation.importance_level else "")
-            ws.cell(row=row, column=15, value=str(asset.acquisition_date) if asset.acquisition_date else "")
-            ws.cell(row=row, column=16, value=asset.acquisition_cost or "")
+            ws.cell(row=row, column=13, value=asset.service_version or "")
+            ws.cell(row=row, column=14, value=asset.status)
+            ws.cell(row=row, column=15, value=str(valuation.importance_level) if valuation and valuation.importance_level else "")
+            ws.cell(row=row, column=16, value=str(asset.acquisition_date) if asset.acquisition_date else "")
+            ws.cell(row=row, column=17, value=asset.acquisition_cost or "")
+            ws.cell(row=row, column=18, value=str(asset.eol_date) if asset.eol_date else "")
 
         # 열 너비 조정
-        column_widths = [22, 18, 22, 22, 15, 22, 22, 18, 18, 18, 12, 12, 10, 10, 12, 12]
+        column_widths = [22, 18, 22, 22, 15, 22, 22, 18, 18, 18, 12, 12, 12, 10, 10, 12, 12, 14]
         for col, width in enumerate(column_widths, 1):
             ws.column_dimensions[get_column_letter(col)].width = width
 
@@ -1560,7 +1566,8 @@ class AssetService:
                 # 컬럼 매핑 (export_assets 헤더 순서와 일치)
                 # 1:자산코드, 2:자산명, 3:자산유형, 4:분류, 5:위치, 6:부서,
                 # 7:소유자(Personnel), 8:담당자(쉼표구분), 9:IP주소, 10:호스트명,
-                # 11:제조사, 12:모델, 13:상태, 14:중요도, 15:취득일, 16:취득비용
+                # 11:제조사, 12:모델, 13:버전, 14:상태, 15:중요도, 16:취득일, 17:취득비용,
+                # 18:EoL 만료일
                 location_val = ws.cell(row=row_num, column=5).value
                 owner_raw = ws.cell(row=row_num, column=7).value
                 assignee_raw = ws.cell(row=row_num, column=8).value
@@ -1568,9 +1575,11 @@ class AssetService:
                 hostname_val = ws.cell(row=row_num, column=10).value
                 manufacturer_val = ws.cell(row=row_num, column=11).value
                 model_val = ws.cell(row=row_num, column=12).value
-                status_val = ws.cell(row=row_num, column=13).value
-                acquisition_date_val = ws.cell(row=row_num, column=15).value
-                acquisition_cost_val = ws.cell(row=row_num, column=16).value
+                version_val = ws.cell(row=row_num, column=13).value
+                status_val = ws.cell(row=row_num, column=14).value
+                acquisition_date_val = ws.cell(row=row_num, column=16).value
+                acquisition_cost_val = ws.cell(row=row_num, column=17).value
+                eol_date_val = ws.cell(row=row_num, column=18).value
 
                 # 소유자 조회 ("name (dept)" 형식에서 name 추출)
                 personnel_owner_id = None
@@ -1630,6 +1639,18 @@ class AssetService:
                     except (ValueError, TypeError):
                         pass
 
+                # EoL 만료일 파싱
+                eol_date = None
+                if eol_date_val:
+                    from datetime import date as date_type, datetime as datetime_type
+                    if isinstance(eol_date_val, (date_type, datetime_type)):
+                        eol_date = eol_date_val if isinstance(eol_date_val, date_type) else eol_date_val.date()
+                    else:
+                        try:
+                            eol_date = datetime_type.strptime(str(eol_date_val).strip(), "%Y-%m-%d").date()
+                        except ValueError:
+                            pass
+
                 # 자산코드가 있으면 기존 자산 업데이트 시도
                 if asset_code:
                     existing = self.db.query(Asset).filter(Asset.asset_code == str(asset_code).strip()).first()
@@ -1653,10 +1674,12 @@ class AssetService:
                         existing.hostname = str(hostname_val) if hostname_val else None
                         existing.manufacturer = str(manufacturer_val) if manufacturer_val else None
                         existing.model = str(model_val) if model_val else None
+                        existing.service_version = str(version_val) if version_val else None
                         if status_val:
                             existing.status = str(status_val).strip()
                         existing.acquisition_date = acquisition_date
                         existing.acquisition_cost = acquisition_cost
+                        existing.eol_date = eol_date
                         self.db.commit()
 
                         # 담당자 할당 동기화 (소유자 제외한 나머지)
@@ -1680,6 +1703,7 @@ class AssetService:
                     "hostname": str(hostname_val) if hostname_val else None,
                     "manufacturer": str(manufacturer_val) if manufacturer_val else None,
                     "model": str(model_val) if model_val else None,
+                    "service_version": str(version_val) if version_val else None,
                 }
                 if personnel_owner_id:
                     create_kwargs["personnel_owner_id"] = personnel_owner_id
@@ -1689,6 +1713,8 @@ class AssetService:
                     create_kwargs["acquisition_date"] = acquisition_date
                 if acquisition_cost is not None:
                     create_kwargs["acquisition_cost"] = acquisition_cost
+                if eol_date:
+                    create_kwargs["eol_date"] = eol_date
                 new_asset = self.create_asset(**create_kwargs)
 
                 # 담당자 할당

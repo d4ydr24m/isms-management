@@ -66,6 +66,41 @@ export interface EvidenceSummary {
 
 export type EvidenceStatus = 'draft' | 'active' | 'expired' | 'archived'
 
+// 증적출처 연결
+export interface ControlEvidenceLink {
+  id: number
+  controlItemId: number
+  sourceType: string
+  sourceId: number | null
+  sourceLabel: string
+  sourceUrl: string
+  description: string | null
+  createdBy: number | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ControlEvidenceLinkCreate {
+  controlItemId: number
+  sourceType: string
+  sourceId?: number | null
+  sourceLabel: string
+  sourceUrl: string
+  description?: string
+}
+
+export interface ControlEvidenceLinkUpdate {
+  sourceLabel?: string
+  description?: string
+}
+
+export interface EvidenceLinkSource {
+  type: string
+  label: string
+  url: string
+  icon: string
+}
+
 // 통제항목 진척률
 export interface ControlProgress {
   totalControls: number

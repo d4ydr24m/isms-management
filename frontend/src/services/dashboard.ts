@@ -79,6 +79,24 @@ export interface ExpiringAssetsData {
   count: number
 }
 
+export interface EolAssetItem {
+  id: number
+  assetCode: string
+  name: string
+  assetTypeName: string | null
+  osVersion: string | null
+  serviceVersion: string | null
+  eolDate: string
+  daysRemaining: number
+  status: string
+  location: string | null
+}
+
+export interface EolAssetsData {
+  assets: EolAssetItem[]
+  count: number
+}
+
 export interface PendingTaskData {
   uncompletedCorrectiveActions: number
   controlsWithoutEvidence: number
@@ -99,6 +117,7 @@ export interface DashboardSummaryData {
   expiringEvidences: ExpiringEvidencesData
   expiredEvidences: ExpiredEvidencesData
   expiringAssets: ExpiringAssetsData
+  eolAssets: EolAssetsData
   pendingTasks: PendingTaskData
   nonConformities: NonConformitySummaryData
   generatedAt: string
@@ -135,6 +154,17 @@ export const dashboardService = {
   async getExpiringEvidences(days?: number): Promise<ExpiringEvidencesData> {
     try {
       const response = await apiClient.get<ExpiringEvidencesData>('/dashboard/expiring-evidences', {
+        params: { days },
+      })
+      return response.data
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  async getEolAssets(days?: number): Promise<EolAssetsData> {
+    try {
+      const response = await apiClient.get<EolAssetsData>('/dashboard/eol-assets', {
         params: { days },
       })
       return response.data

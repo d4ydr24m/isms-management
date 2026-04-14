@@ -57,6 +57,7 @@ from app.models.vuln_check import (
     VulnCheckExecution,
 )
 from app.models.isms_scope import IsmsScopeChange
+from app.models.control_evidence_link import ControlEvidenceLink
 
 __all__ = [
     "Base",
@@ -115,4 +116,6 @@ __all__ = [
     "VulnCheckExecution",
     # ISMS Scope
     "IsmsScopeChange",
+    # Control Evidence Links
+    "ControlEvidenceLink",
 ]

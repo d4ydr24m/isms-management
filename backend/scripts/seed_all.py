@@ -77,6 +77,15 @@ try:
 
     db.commit()
     db.close()
-    print("Seed all completed.")
+    print("Roles/departments seed completed.")
 except Exception as e:
-    print(f"Seed error: {e}")
+    print(f"Seed error (roles/departments): {e}")
+
+# 3. Seed control evidence links
+try:
+    from scripts.seed_evidence_links import seed as seed_evidence_links
+    seed_evidence_links()
+except Exception as e:
+    print(f"Seed error (evidence links): {e}")
+
+print("Seed all completed.")

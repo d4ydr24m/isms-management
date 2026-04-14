@@ -107,6 +107,28 @@ class ExpiringAssetsData(BaseModel):
     count: int = Field(..., description="만료 예정 자산 수")
 
 
+class EolAsset(BaseModel):
+    """EoL 만료 예정/만료 자산"""
+
+    id: int = Field(..., description="자산 ID")
+    asset_code: str = Field(..., description="자산코드")
+    name: str = Field(..., description="자산명")
+    asset_type_name: Optional[str] = Field(None, description="자산 유형명")
+    os_version: Optional[str] = Field(None, description="OS 버전")
+    service_version: Optional[str] = Field(None, description="서비스 버전")
+    eol_date: date = Field(..., description="EoL 만료일")
+    days_remaining: int = Field(..., description="남은 일수 (음수면 이미 만료)")
+    status: str = Field(..., description="상태")
+    location: Optional[str] = Field(None, description="위치")
+
+
+class EolAssetsData(BaseModel):
+    """EoL 자산 데이터"""
+
+    assets: List[EolAsset] = Field(default_factory=list, description="EoL 자산 목록")
+    count: int = Field(..., description="EoL 자산 수")
+
+
 class PendingTask(BaseModel):
     """미완료 업무"""
 
@@ -133,6 +155,7 @@ class DashboardSummary(BaseModel):
     expiring_evidences: ExpiringEvidencesData = Field(..., description="만료 예정 증적")
     expired_evidences: ExpiredEvidencesData = Field(default_factory=lambda: ExpiredEvidencesData(evidences=[], count=0), description="만료된 증적")
     expiring_assets: ExpiringAssetsData = Field(default_factory=lambda: ExpiringAssetsData(assets=[], count=0), description="보증 만료 예정 자산")
+    eol_assets: EolAssetsData = Field(default_factory=lambda: EolAssetsData(assets=[], count=0), description="EoL 만료 자산")
     pending_tasks: PendingTask = Field(..., description="미완료 업무")
     non_conformities: NonConformitySummary = Field(..., description="부적합 현황")
     generated_at: datetime = Field(default_factory=datetime.utcnow, description="생성 시각")

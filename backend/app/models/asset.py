@@ -185,6 +185,7 @@ class Asset(Base):
     acquisition_date = Column(Date, nullable=True, comment="취득일")
     acquisition_cost = Column(Integer, nullable=True, comment="취득 비용")
     warranty_end_date = Column(Date, nullable=True, comment="보증 만료일")
+    eol_date = Column(Date, nullable=True, comment="EoL (End of Life) 만료일")
     disposal_date = Column(Date, nullable=True, comment="폐기일")
 
     # 상태 정보 - Enum 사용으로 데이터 무결성 보장

@@ -330,7 +330,7 @@ const AssetCategoriesPage = () => {
           form.resetFields()
         }}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           {!editingCategory && (

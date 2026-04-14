@@ -4,7 +4,7 @@
  */
 import { Link } from 'react-router-dom'
 import { Table, Tag, Button, Space, Tooltip, Select } from 'antd'
-import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons'
+import { EditOutlined, DeleteOutlined, EyeOutlined, WarningOutlined } from '@ant-design/icons'
 import type { TableProps, TablePaginationConfig } from 'antd'
 import type { Asset, AssetStatus } from '@/types'
 
@@ -85,9 +85,23 @@ const AssetTable = ({
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
-      render: (name: string, record: Asset) => (
-        <Link to={`/assets/${record.id}`}>{name}</Link>
-      ),
+      render: (name: string, record: Asset) => {
+        let eolTag = null
+        if (record.eolDate) {
+          const days = Math.ceil((new Date(record.eolDate).getTime() - Date.now()) / 86400000)
+          if (days < 0) {
+            eolTag = <Tooltip title={`EoL 만료 (${Math.abs(days)}일 경과)`}><Tag color="red" style={{ marginLeft: 4, fontSize: 11 }}><WarningOutlined /> EoL</Tag></Tooltip>
+          } else if (days <= 90) {
+            eolTag = <Tooltip title={`EoL ${days}일 남음`}><Tag color="orange" style={{ marginLeft: 4, fontSize: 11 }}><WarningOutlined /> EoL</Tag></Tooltip>
+          }
+        }
+        return (
+          <span>
+            <Link to={`/assets/${record.id}`}>{name}</Link>
+            {eolTag}
+          </span>
+        )
+      },
     },
     {
       title: '유형',

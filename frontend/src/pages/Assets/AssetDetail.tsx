@@ -32,11 +32,14 @@ import {
   ExclamationCircleOutlined,
   UserOutlined,
   WarningOutlined,
+  SearchOutlined,
 } from '@ant-design/icons'
 import { apiClient } from '@/services/api'
 import CIAEvaluation from './components/CIAEvaluation'
 import AssetHistory from './components/AssetHistory'
+import EolLookup from './components/EolLookup'
 import { assetService } from '@/services/assets'
+import { eolService } from '@/services/eol'
 import type {
   Asset,
   AssetValuation,
@@ -74,6 +77,7 @@ const AssetDetailPage = () => {
   const [loading, setLoading] = useState(true)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [assignModalVisible, setAssignModalVisible] = useState(false)
+  const [eolModalOpen, setEolModalOpen] = useState(false)
   const [availableUsers, setAvailableUsers] = useState<Array<{ id: number; name: string; email: string }>>([])
   const [assignForm] = Form.useForm()
 
@@ -292,6 +296,30 @@ const AssetDetailPage = () => {
                 <Descriptions.Item label="보증 만료일">
                   {asset.warrantyEndDate || '-'}
                 </Descriptions.Item>
+                <Descriptions.Item label="EoL 만료일">
+                  <Space>
+                    {asset.eolDate ? (
+                      <>
+                        <span>{asset.eolDate}</span>
+                        {(() => {
+                          const days = Math.ceil((new Date(asset.eolDate).getTime() - Date.now()) / 86400000)
+                          if (days < 0) return <Tag color="red">EoL 만료 ({Math.abs(days)}일 경과)</Tag>
+                          if (days <= 30) return <Tag color="orange">EoL {days}일 남음</Tag>
+                          if (days <= 90) return <Tag color="gold">EoL {days}일 남음</Tag>
+                          return null
+                        })()}
+                      </>
+                    ) : '-'}
+                    <Button
+                      size="small"
+                      type="link"
+                      icon={<SearchOutlined />}
+                      onClick={() => setEolModalOpen(true)}
+                    >
+                      EoL 조회
+                    </Button>
+                  </Space>
+                </Descriptions.Item>
                 <Descriptions.Item label="등록일">
                   {asset.createdAt?.substring(0, 10) || '-'}
                 </Descriptions.Item>
@@ -499,6 +527,22 @@ const AssetDetailPage = () => {
       >
         <Tabs items={tabItems} />
       </Card>
+
+      <EolLookup
+        open={eolModalOpen}
+        onClose={() => setEolModalOpen(false)}
+        onSelect={async (eolDate) => {
+          try {
+            await eolService.applyEolToAsset(assetId, eolDate)
+            message.success('EoL 날짜가 적용되었습니다.')
+            setEolModalOpen(false)
+            fetchAsset()
+          } catch {
+            message.error('EoL 날짜 적용에 실패했습니다.')
+          }
+        }}
+        initialQuery={asset.osVersion || asset.serviceVersion || ''}
+      />
     </div>
   )
 }

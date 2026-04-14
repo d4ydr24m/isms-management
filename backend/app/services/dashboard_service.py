@@ -425,6 +425,57 @@ class DashboardService:
             "count": len(result),
         }
 
+    # ========== 6.1.3.3 EoL 만료 자산 조회 ==========
+
+    def get_eol_assets(self, days: int = 90) -> Dict[str, Any]:
+        """
+        EoL(End of Life) 만료 예정 및 이미 만료된 자산 조회
+
+        Args:
+            days: 향후 조회 기간 (일, 기본 90일)
+
+        Returns:
+            Dict: EoL 만료 예정/만료 자산 목록
+        """
+        today = date.today()
+        end_date = today + timedelta(days=days)
+
+        assets = (
+            self.db.query(Asset)
+            .filter(
+                and_(
+                    Asset.eol_date.isnot(None),
+                    Asset.eol_date <= end_date,
+                    Asset.is_active == True,
+                    Asset.status != "폐기",
+                )
+            )
+            .order_by(Asset.eol_date)
+            .all()
+        )
+
+        result = []
+        for asset in assets:
+            days_remaining = (asset.eol_date - today).days
+
+            result.append({
+                "id": asset.id,
+                "asset_code": asset.asset_code,
+                "name": asset.name,
+                "asset_type_name": asset.asset_type.name if asset.asset_type else None,
+                "os_version": asset.os_version,
+                "service_version": asset.service_version,
+                "eol_date": asset.eol_date.isoformat(),
+                "days_remaining": days_remaining,
+                "status": asset.status,
+                "location": asset.location,
+            })
+
+        return {
+            "assets": result,
+            "count": len(result),
+        }
+
     # ========== 6.1.4 미완료 업무 집계 ==========
 
     def get_pending_tasks(self) -> Dict[str, int]:
@@ -567,6 +618,7 @@ class DashboardService:
             "expiring_evidences": self.get_expiring_evidences(),
             "expired_evidences": self.get_expired_evidences(),
             "expiring_assets": self.get_expiring_assets(),
+            "eol_assets": self.get_eol_assets(),
             "pending_tasks": self.get_pending_tasks(),
             "non_conformities": self.get_nonconformity_summary(),
             "generated_at": datetime.utcnow().isoformat(),

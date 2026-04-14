@@ -105,6 +105,7 @@ def asset_to_response(asset, service: AssetService) -> AssetResponse:
         acquisition_date=asset.acquisition_date,
         acquisition_cost=asset.acquisition_cost,
         warranty_end_date=asset.warranty_end_date,
+        eol_date=asset.eol_date,
         disposal_date=asset.disposal_date,
         status=asset.status,
         is_active=asset.is_active,

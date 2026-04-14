@@ -34,6 +34,14 @@ from app.schemas.control import (
     DomainProgress,
 )
 from app.schemas.evidence import EvidenceList, EvidenceSimpleResponse
+from app.models.control_evidence_link import ControlEvidenceLink
+from app.schemas.control_evidence_link import (
+    ControlEvidenceLinkCreate,
+    ControlEvidenceLinkUpdate,
+    ControlEvidenceLinkResponse,
+    ControlEvidenceLinkList,
+    VALID_SOURCE_TYPES,
+)
 
 router = APIRouter()
 
@@ -186,6 +194,101 @@ def get_control_progress(
         coverage_rate=round(coverage_rate, 2),
         by_domain=by_domain,
     )
+
+
+@router.get(
+    "/evidence-link-sources",
+    response_model=list,
+)
+def get_available_sources(
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    연결 가능한 증적출처 모듈 목록 반환
+
+    프론트엔드에서 드롭다운 등에 사용
+    """
+    sources = [
+        {
+            "type": "assets",
+            "label": "자산 목록",
+            "url": "/assets",
+            "icon": "DatabaseOutlined",
+        },
+        {
+            "type": "assets",
+            "label": "자산 분류 관리",
+            "url": "/assets/categories",
+            "icon": "AppstoreOutlined",
+        },
+        {
+            "type": "risks",
+            "label": "위험 시나리오",
+            "url": "/risk",
+            "icon": "WarningOutlined",
+        },
+        {
+            "type": "risks",
+            "label": "위험 처리 계획",
+            "url": "/risk/treatments",
+            "icon": "SolutionOutlined",
+        },
+        {
+            "type": "risks",
+            "label": "SOA 관리",
+            "url": "/risk/soa",
+            "icon": "AuditOutlined",
+        },
+        {
+            "type": "audits",
+            "label": "감사 계획",
+            "url": "/audits",
+            "icon": "ScheduleOutlined",
+        },
+        {
+            "type": "audits",
+            "label": "부적합 관리",
+            "url": "/non-conformities",
+            "icon": "ExclamationCircleOutlined",
+        },
+        {
+            "type": "vuln_check",
+            "label": "취약점 점검",
+            "url": "/risk/vuln-check",
+            "icon": "BugOutlined",
+        },
+        {
+            "type": "vuln_check",
+            "label": "취약점 DB",
+            "url": "/risk/vulnerabilities",
+            "icon": "SecurityScanOutlined",
+        },
+        {
+            "type": "isms_scope",
+            "label": "인증 범위 관리",
+            "url": "/isms-scope",
+            "icon": "SafetyCertificateOutlined",
+        },
+        {
+            "type": "personnel",
+            "label": "담당자 관리",
+            "url": "/personnel",
+            "icon": "TeamOutlined",
+        },
+        {
+            "type": "departments",
+            "label": "부서 관리",
+            "url": "/departments",
+            "icon": "BankOutlined",
+        },
+        {
+            "type": "evidence",
+            "label": "증적 관리",
+            "url": "/evidence",
+            "icon": "FileProtectOutlined",
+        },
+    ]
+    return sources
 
 
 @router.get("", response_model=ControlItemList)
@@ -406,3 +509,158 @@ def get_control_evidences(
         page_size=page_size,
         total_pages=total_pages,
     )
+
+
+# ── 증적출처 연결 (Control Evidence Links) ────────────────────────────────
+
+
+@router.get(
+    "/{control_id}/evidence-links",
+    response_model=ControlEvidenceLinkList,
+)
+def get_control_evidence_links(
+    control_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """통제항목의 증적출처 연결 목록 조회"""
+    item = db.query(ControlItem).filter(ControlItem.id == control_id).first()
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="통제항목을 찾을 수 없습니다.",
+        )
+
+    links = (
+        db.query(ControlEvidenceLink)
+        .filter(ControlEvidenceLink.control_item_id == control_id)
+        .order_by(ControlEvidenceLink.source_type, ControlEvidenceLink.id)
+        .all()
+    )
+
+    return ControlEvidenceLinkList(
+        items=[ControlEvidenceLinkResponse.model_validate(link) for link in links],
+        total=len(links),
+    )
+
+
+@router.post(
+    "/{control_id}/evidence-links",
+    response_model=ControlEvidenceLinkResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_control_evidence_link(
+    control_id: int,
+    data: ControlEvidenceLinkCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """통제항목에 증적출처 연결 추가"""
+    # 통제항목 존재 확인
+    item = db.query(ControlItem).filter(ControlItem.id == control_id).first()
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="통제항목을 찾을 수 없습니다.",
+        )
+
+    if data.source_type not in VALID_SOURCE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"유효하지 않은 출처 유형입니다. 허용값: {VALID_SOURCE_TYPES}",
+        )
+
+    # 중복 확인 (같은 control + source_type + source_id)
+    existing = (
+        db.query(ControlEvidenceLink)
+        .filter(
+            ControlEvidenceLink.control_item_id == control_id,
+            ControlEvidenceLink.source_type == data.source_type,
+            ControlEvidenceLink.source_id == data.source_id,
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="이미 동일한 증적출처가 연결되어 있습니다.",
+        )
+
+    link = ControlEvidenceLink(
+        control_item_id=control_id,
+        source_type=data.source_type,
+        source_id=data.source_id,
+        source_label=data.source_label,
+        source_url=data.source_url,
+        description=data.description,
+        created_by=current_user.id,
+    )
+    db.add(link)
+    db.commit()
+    db.refresh(link)
+
+    return ControlEvidenceLinkResponse.model_validate(link)
+
+
+@router.put(
+    "/{control_id}/evidence-links/{link_id}",
+    response_model=ControlEvidenceLinkResponse,
+)
+def update_control_evidence_link(
+    control_id: int,
+    link_id: int,
+    data: ControlEvidenceLinkUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """증적출처 연결 수정"""
+    link = (
+        db.query(ControlEvidenceLink)
+        .filter(
+            ControlEvidenceLink.id == link_id,
+            ControlEvidenceLink.control_item_id == control_id,
+        )
+        .first()
+    )
+    if not link:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="증적출처 연결을 찾을 수 없습니다.",
+        )
+
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(link, key, value)
+
+    db.commit()
+    db.refresh(link)
+    return ControlEvidenceLinkResponse.model_validate(link)
+
+
+@router.delete(
+    "/{control_id}/evidence-links/{link_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_control_evidence_link(
+    control_id: int,
+    link_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """증적출처 연결 삭제"""
+    link = (
+        db.query(ControlEvidenceLink)
+        .filter(
+            ControlEvidenceLink.id == link_id,
+            ControlEvidenceLink.control_item_id == control_id,
+        )
+        .first()
+    )
+    if not link:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="증적출처 연결을 찾을 수 없습니다.",
+        )
+
+    db.delete(link)
+    db.commit()

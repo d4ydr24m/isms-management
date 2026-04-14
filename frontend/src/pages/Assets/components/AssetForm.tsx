@@ -4,7 +4,9 @@
  */
 import { useEffect, useState } from 'react'
 import { Form, Input, Select, DatePicker, InputNumber, Row, Col, Divider, Space, Button, Spin } from 'antd'
+import { SearchOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import EolLookup from './EolLookup'
 import type { AssetCreate, AssetUpdate, AssetType, AssetCategory, Asset } from '@/types'
 
 const { Option } = Select
@@ -46,6 +48,7 @@ const AssetForm = ({
   const [form] = Form.useForm()
   const [submitting, setSubmitting] = useState(false)
   const [selectedTypeCode, setSelectedTypeCode] = useState<string>('')
+  const [eolModalOpen, setEolModalOpen] = useState(false)
 
   // 초기값 설정
   useEffect(() => {
@@ -54,6 +57,7 @@ const AssetForm = ({
         ...initialValues,
         acquisitionDate: initialValues.acquisitionDate ? dayjs(initialValues.acquisitionDate) : undefined,
         warrantyEndDate: initialValues.warrantyEndDate ? dayjs(initialValues.warrantyEndDate) : undefined,
+        eolDate: initialValues.eolDate ? dayjs(initialValues.eolDate) : undefined,
       }
       form.setFieldsValue(formValues)
 
@@ -96,6 +100,7 @@ const AssetForm = ({
         ...assetValues,
         acquisitionDate: assetValues.acquisitionDate?.format?.('YYYY-MM-DD') || assetValues.acquisitionDate || undefined,
         warrantyEndDate: assetValues.warrantyEndDate?.format?.('YYYY-MM-DD') || assetValues.warrantyEndDate || undefined,
+        eolDate: assetValues.eolDate?.format?.('YYYY-MM-DD') || assetValues.eolDate || undefined,
       }
       // null/undefined 값 제거
       Object.keys(submitData).forEach(key => {
@@ -325,6 +330,19 @@ const AssetForm = ({
             <DatePicker style={{ width: '100%' }} placeholder="날짜 선택" />
           </Form.Item>
         </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Form.Item name="eolDate" label="EoL 만료일" extra="End of Life / End of Support 일자">
+            <DatePicker style={{ width: '100%' }} placeholder="날짜 선택" />
+          </Form.Item>
+          <Button
+            size="small"
+            icon={<SearchOutlined />}
+            onClick={() => setEolModalOpen(true)}
+            style={{ marginTop: -8 }}
+          >
+            endoflife.date에서 조회
+          </Button>
+        </Col>
       </Row>
 
       {/* 중요도 평가 (CIA) */}
@@ -390,6 +408,16 @@ const AssetForm = ({
           <Button onClick={onCancel}>취소</Button>
         </Space>
       </Form.Item>
+
+      <EolLookup
+        open={eolModalOpen}
+        onClose={() => setEolModalOpen(false)}
+        onSelect={(eolDate) => {
+          form.setFieldValue('eolDate', dayjs(eolDate))
+          setEolModalOpen(false)
+        }}
+        initialQuery={form.getFieldValue('osVersion') || form.getFieldValue('serviceVersion') || ''}
+      />
     </Form>
   )
 }

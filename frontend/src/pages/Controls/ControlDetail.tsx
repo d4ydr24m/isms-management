@@ -24,6 +24,7 @@ import {
   CloseCircleOutlined,
 } from '@ant-design/icons'
 import { controlService } from '@/services/controls'
+import { EvidenceLinks } from './components'
 import type { ControlItemDetail, EvidenceSummary } from '@/types'
 
 const { Title, Text, Paragraph } = Typography
@@ -265,6 +266,10 @@ const ControlDetailPage = () => {
                 )}
               </Descriptions>
             </Card>
+
+            <div style={{ marginTop: 16 }}>
+              <EvidenceLinks controlId={control.id} />
+            </div>
           </Col>
         </Row>
 

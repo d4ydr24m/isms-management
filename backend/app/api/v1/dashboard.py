@@ -22,6 +22,7 @@ from app.schemas.dashboard import (
     ExpiringEvidencesData,
     ExpiredEvidencesData,
     ExpiringAssetsData,
+    EolAssetsData,
     PendingTask,
     NonConformitySummary,
 )
@@ -52,6 +53,7 @@ def get_dashboard_summary(
         expiring_evidences=ExpiringEvidencesData(**data["expiring_evidences"]),
         expired_evidences=ExpiredEvidencesData(**data["expired_evidences"]),
         expiring_assets=ExpiringAssetsData(**data["expiring_assets"]),
+        eol_assets=EolAssetsData(**data["eol_assets"]),
         pending_tasks=PendingTask(**data["pending_tasks"]),
         non_conformities=NonConformitySummary(**data["non_conformities"]),
     )
@@ -139,6 +141,29 @@ def get_expiring_assets(
     data = service.get_expiring_assets(days=days)
 
     return ExpiringAssetsData(**data)
+
+
+@router.get("/eol-assets", response_model=EolAssetsData)
+def get_eol_assets(
+    days: int = Query(default=90, ge=1, le=365, description="조회 기간 (일)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> EolAssetsData:
+    """
+    EoL(End of Life) 만료 예정/만료 자산 조회
+
+    지정된 기간 내 EoL 예정이거나 이미 EoL이 지난 자산 목록을 반환합니다.
+
+    Args:
+        days: 조회 기간 (기본 90일, 최대 365일)
+
+    Returns:
+        EolAssetsData: EoL 자산 데이터
+    """
+    service = DashboardService(db)
+    data = service.get_eol_assets(days=days)
+
+    return EolAssetsData(**data)
 
 
 @router.get("/pending-tasks", response_model=PendingTask)
