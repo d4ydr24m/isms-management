@@ -50,6 +50,7 @@ import {
   deleteRiskScenario,
   compareRiskScenarios,
 } from '@/services/risks'
+import { apiClient } from '@/services/api'
 import type {
   RiskScenario,
   RiskScenarioCreate,
@@ -91,6 +92,15 @@ const RiskIndexPage = () => {
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [editingScenario, setEditingScenario] = useState<RiskScenario | null>(null)
   const [form] = Form.useForm()
+
+  // 완료 시나리오 잠금 설정
+  const [lockCompleted, setLockCompleted] = useState(false)
+
+  useEffect(() => {
+    apiClient.get<Record<string, string>>('/system-settings').then((res) => {
+      setLockCompleted(res.data.riskLockCompletedScenario === 'true')
+    }).catch(() => {})
+  }, [])
 
   // 비교 관련 상태
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
@@ -379,10 +389,10 @@ const RiskIndexPage = () => {
           </Tooltip>
           <Tooltip
             title={
-              record.status === 'completed'
-                ? '완료된 시나리오는 수정할 수 없습니다'
-                : record.status === 'cancelled'
-                  ? '취소된 시나리오는 수정할 수 없습니다'
+              record.status === 'cancelled'
+                ? '취소된 시나리오는 수정할 수 없습니다'
+                : record.status === 'completed' && lockCompleted
+                  ? '완료된 시나리오는 수정이 잠겨 있습니다 (시스템 설정)'
                   : ''
             }
           >
@@ -390,18 +400,26 @@ const RiskIndexPage = () => {
               type="link"
               icon={<EditOutlined />}
               onClick={() => handleEditClick(record)}
-              disabled={record.status === 'completed' || record.status === 'cancelled'}
+              disabled={record.status === 'cancelled' || (record.status === 'completed' && lockCompleted)}
             >
               수정
             </Button>
           </Tooltip>
-          <Tooltip title={record.status !== 'draft' ? '초안 상태만 삭제할 수 있습니다' : ''}>
+          <Tooltip
+            title={
+              record.status === 'cancelled'
+                ? '취소된 시나리오는 삭제할 수 없습니다'
+                : record.status === 'completed' && lockCompleted
+                  ? '완료된 시나리오는 삭제가 잠겨 있습니다 (시스템 설정)'
+                  : ''
+            }
+          >
             <Button
               type="link"
               danger
               icon={<DeleteOutlined />}
               onClick={() => handleDeleteClick(record)}
-              disabled={record.status !== 'draft'}
+              disabled={record.status === 'cancelled' || (record.status === 'completed' && lockCompleted)}
             >
               삭제
             </Button>
@@ -411,7 +429,7 @@ const RiskIndexPage = () => {
             size="small"
             icon={<CheckCircleOutlined />}
             onClick={() => handleAssessClick(record)}
-            disabled={record.status === 'completed' || record.status === 'cancelled'}
+            disabled={record.status === 'cancelled' || (record.status === 'completed' && lockCompleted)}
           >
             평가
           </Button>

@@ -126,8 +126,7 @@ const RiskReportPage = () => {
     if (!selectedScenarioId) return
     setExporting(true)
     try {
-      const result = await exportRiskReport(selectedScenarioId, format)
-      window.open(result.downloadUrl, '_blank')
+      await exportRiskReport(selectedScenarioId, format)
       message.success('보고서 내보내기가 완료되었습니다.')
     } catch {
       message.error('보고서 내보내기에 실패했습니다.')

@@ -41,6 +41,8 @@ interface SettingsState {
   passwordExpiryDays: number
   ipWhitelistEnabled: boolean
   ipWhitelist: string
+  // Risk
+  riskLockCompletedScenario: boolean
   // SMTP
   smtpEnabled: boolean
   smtpHost: string
@@ -65,6 +67,7 @@ const defaultSettings: SettingsState = {
   passwordExpiryDays: 90,
   ipWhitelistEnabled: false,
   ipWhitelist: '',
+  riskLockCompletedScenario: false,
   smtpEnabled: false,
   smtpHost: '',
   smtpPort: 587,
@@ -124,6 +127,7 @@ const SystemSettings: React.FC = () => {
         passwordExpiryDays: parseNum(data.passwordExpiryDays, 90),
         ipWhitelistEnabled: parseBool(data.ipWhitelistEnabled),
         ipWhitelist: (data.ipWhitelist || '').replace(/,/g, '\n'),
+        riskLockCompletedScenario: parseBool(data.riskLockCompletedScenario),
         smtpEnabled: parseBool(data.smtpEnabled),
         smtpHost: data.smtpHost || '',
         smtpPort: parseNum(data.smtpPort, 587),
@@ -160,6 +164,7 @@ const SystemSettings: React.FC = () => {
           .map((s) => s.trim())
           .filter(Boolean)
           .join(','),
+        riskLockCompletedScenario: String(settings.riskLockCompletedScenario),
         smtpEnabled: String(settings.smtpEnabled),
         smtpHost: settings.smtpHost,
         smtpPort: String(settings.smtpPort),
@@ -402,7 +407,34 @@ const SystemSettings: React.FC = () => {
         </Space>
       </Card>
 
-      {/* 섹션 4: 이메일(SMTP) 설정 */}
+      {/* 섹션 4: 위험 관리 설정 */}
+      <Card
+        title={
+          <Space>
+            <SafetyOutlined style={{ color: '#faad14' }} />
+            <span>위험 관리 설정</span>
+          </Space>
+        }
+        style={{ marginBottom: 16 }}
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <Text strong>완료된 시나리오 수정/삭제 잠금</Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                활성화하면 완료 상태의 위험 시나리오를 수정하거나 삭제할 수 없습니다.
+              </Text>
+            </div>
+            <Switch
+              checked={settings.riskLockCompletedScenario}
+              onChange={(checked) => setSettings((prev) => ({ ...prev, riskLockCompletedScenario: checked }))}
+            />
+          </div>
+        </Space>
+      </Card>
+
+      {/* 섹션 5: 이메일(SMTP) 설정 */}
       <Card
         title={
           <Space>

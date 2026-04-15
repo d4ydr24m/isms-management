@@ -34,7 +34,9 @@ import {
   Empty,
 } from 'antd'
 import {
+  PlusOutlined,
   EditOutlined,
+  DeleteOutlined,
   ArrowDownOutlined,
   StopOutlined,
   SwapOutlined,
@@ -46,14 +48,23 @@ import {
 import type { TableProps } from 'antd'
 import dayjs from 'dayjs'
 import {
+  getRiskScenarios,
+  getRiskAssessments,
   getRiskTreatmentPlans,
   getRiskTreatmentPlan,
+  createRiskTreatmentPlan,
   updateRiskTreatmentPlan,
+  deleteRiskTreatmentPlan,
   createRiskTreatmentAction,
+  getRiskTreatmentActions,
   getRiskTreatmentProgress,
 } from '@/services/risks'
+import { apiClient } from '@/services/api'
 import type {
+  RiskScenario,
+  RiskAssessment,
   RiskTreatmentPlan,
+  RiskTreatmentPlanCreate,
   RiskTreatmentPlanUpdate,
   RiskTreatmentAction,
   RiskTreatmentActionCreate,
@@ -79,7 +90,7 @@ interface TreatmentFilters {
 }
 
 const RiskTreatmentPage = () => {
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   // 목록 상태
   const [plans, setPlans] = useState<RiskTreatmentPlan[]>([])
   const [loading, setLoading] = useState(false)
@@ -104,6 +115,34 @@ const RiskTreatmentPage = () => {
   const [detailPlan, setDetailPlan] = useState<RiskTreatmentPlan | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailActions, setDetailActions] = useState<RiskTreatmentAction[]>([])
+
+  // 생성 모달
+  const [createModalVisible, setCreateModalVisible] = useState(false)
+  const [createForm] = Form.useForm()
+  const [createLoading, setCreateLoading] = useState(false)
+  const [scenarios, setScenarios] = useState<RiskScenario[]>([])
+  const [assessmentsForCreate, setAssessmentsForCreate] = useState<RiskAssessment[]>([])
+  const [assessmentsLoading, setAssessmentsLoading] = useState(false)
+  const [personnelList, setPersonnelList] = useState<{ id: number; name: string; position?: string; departmentName?: string }[]>([])
+
+  // 담당자 목록 조회
+  const fetchPersonnel = useCallback(async () => {
+    try {
+      const response = await apiClient.get<{ items: any[]; total: number }>('/personnel', { params: { pageSize: 100, isActive: true } })
+      setPersonnelList((response.data.items || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        position: p.position,
+        departmentName: p.departmentName,
+      })))
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchPersonnel()
+  }, [fetchPersonnel])
 
   // 목록 조회
   const fetchPlans = useCallback(async () => {
@@ -174,6 +213,7 @@ const RiskTreatmentPage = () => {
       const data: RiskTreatmentPlanUpdate = {
         strategy: values.strategy,
         description: values.description || null,
+        assigneeId: values.assigneeId ?? null,
         dueDate: values.dueDate ? values.dueDate.format('YYYY-MM-DD') : null,
         budget: values.budget ?? null,
         status: values.status,
@@ -231,16 +271,94 @@ const RiskTreatmentPage = () => {
     setDetailModalVisible(true)
     setDetailLoading(true)
     try {
-      const detail = await getRiskTreatmentPlan(plan.id)
+      const [detail, actions] = await Promise.all([
+        getRiskTreatmentPlan(plan.id),
+        getRiskTreatmentActions(plan.id),
+      ])
       setDetailPlan(detail)
-      // actions는 detail 응답에 포함될 수도 있고, 별도 조회가 필요할 수도 있음
-      // 현재 API 구조에서는 plan detail에 actions 포함 여부에 따라 처리
-      setDetailActions([])
+      setDetailActions(actions)
     } catch {
       message.error('상세 정보를 불러오는데 실패했습니다')
     } finally {
       setDetailLoading(false)
     }
+  }
+
+  // 생성 모달 열기
+  const handleCreateClick = async () => {
+    createForm.resetFields()
+    setAssessmentsForCreate([])
+    setCreateModalVisible(true)
+    try {
+      const data = await getRiskScenarios({ size: 100 })
+      setScenarios(data.items || [])
+    } catch {
+      message.error('시나리오 목록을 불러오는데 실패했습니다')
+    }
+  }
+
+  // 시나리오 선택 시 평가 목록 조회 (처리 계획 미등록 건만)
+  const handleScenarioChange = async (scenarioId: number) => {
+    createForm.setFieldsValue({ assessmentId: undefined })
+    setAssessmentsLoading(true)
+    try {
+      const data = await getRiskAssessments(scenarioId, { size: 100 })
+      const withoutPlan = (data.items || []).filter((a: RiskAssessment) => !a.hasTreatmentPlan)
+      setAssessmentsForCreate(withoutPlan)
+    } catch {
+      message.error('평가 목록을 불러오는데 실패했습니다')
+    } finally {
+      setAssessmentsLoading(false)
+    }
+  }
+
+  // 생성 저장
+  const handleCreateSave = async () => {
+    try {
+      const values = await createForm.validateFields()
+      setCreateLoading(true)
+
+      const data: RiskTreatmentPlanCreate = {
+        strategy: values.strategy,
+        description: values.description || null,
+        assigneeId: values.assigneeId ?? null,
+        dueDate: values.dueDate ? values.dueDate.format('YYYY-MM-DD') : null,
+        budget: values.budget ?? null,
+      }
+
+      await createRiskTreatmentPlan(values.assessmentId, data)
+      message.success('처리 계획이 생성되었습니다')
+      setCreateModalVisible(false)
+      createForm.resetFields()
+      fetchPlans()
+      fetchProgress()
+    } catch {
+      // 폼 검증 에러
+    } finally {
+      setCreateLoading(false)
+    }
+  }
+
+  // 삭제 핸들러
+  const handleDeleteClick = (plan: RiskTreatmentPlan) => {
+    modal.confirm({
+      title: '처리 계획 삭제',
+      icon: <ExclamationCircleOutlined />,
+      content: '이 처리 계획을 삭제하시겠습니까? 관련된 조치 이력도 함께 삭제됩니다.',
+      okText: '삭제',
+      okType: 'danger',
+      cancelText: '취소',
+      onOk: async () => {
+        try {
+          await deleteRiskTreatmentPlan(plan.id)
+          message.success('처리 계획이 삭제되었습니다')
+          fetchPlans()
+          fetchProgress()
+        } catch {
+          message.error('처리 계획 삭제에 실패했습니다')
+        }
+      },
+    })
   }
 
   // 전략 태그 렌더
@@ -398,6 +516,15 @@ const RiskTreatmentPage = () => {
               disabled={record.status === 'completed' || record.status === 'cancelled'}
             />
           </Tooltip>
+          <Tooltip title="삭제">
+            <Button
+              type="link"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteClick(record)}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -469,6 +596,9 @@ const RiskTreatmentPage = () => {
         title="위험 처리 계획"
         extra={
           <Space>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateClick}>
+              처리 계획 생성
+            </Button>
             <Select
               placeholder="전략"
               allowClear
@@ -582,6 +712,16 @@ const RiskTreatmentPage = () => {
               {TREATMENT_STATUSES.map((s) => (
                 <Option key={s.value} value={s.value}>
                   <Tag color={s.color}>{s.label}</Tag>
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="assigneeId" label="담당자">
+            <Select placeholder="담당자 선택" allowClear showSearch optionFilterProp="children">
+              {personnelList.map((p) => (
+                <Option key={p.id} value={p.id}>
+                  {p.name}{p.position ? ` (${p.position})` : ''}{p.departmentName ? ` - ${p.departmentName}` : ''}
                 </Option>
               ))}
             </Select>
@@ -823,6 +963,115 @@ const RiskTreatmentPage = () => {
         ) : (
           <Empty description="데이터를 불러올 수 없습니다" />
         )}
+      </Modal>
+      {/* 처리 계획 생성 모달 */}
+      <Modal
+        title="처리 계획 생성"
+        open={createModalVisible}
+        onOk={handleCreateSave}
+        onCancel={() => {
+          setCreateModalVisible(false)
+          createForm.resetFields()
+        }}
+        okText="생성"
+        cancelText="취소"
+        confirmLoading={createLoading}
+        width={600}
+        styles={{ body: { maxHeight: '70vh', overflowY: 'auto', overflowX: 'hidden' } }}
+      >
+        <Form form={createForm} layout="vertical">
+          <Form.Item
+            name="scenarioId"
+            label="위험 시나리오"
+            rules={[{ required: true, message: '시나리오를 선택해주세요' }]}
+          >
+            <Select
+              placeholder="시나리오 선택"
+              showSearch
+              optionFilterProp="children"
+              onChange={handleScenarioChange}
+            >
+              {scenarios.map((s) => (
+                <Option key={s.id} value={s.id}>
+                  {s.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="assessmentId"
+            label="위험 평가 (처리 계획 미등록 건)"
+            rules={[{ required: true, message: '위험 평가를 선택해주세요' }]}
+          >
+            <Select
+              placeholder={assessmentsForCreate.length === 0 ? '시나리오를 먼저 선택하세요' : '위험 평가 선택'}
+              loading={assessmentsLoading}
+              disabled={assessmentsForCreate.length === 0 && !assessmentsLoading}
+              showSearch
+              optionFilterProp="children"
+            >
+              {assessmentsForCreate.map((a) => (
+                <Option key={a.id} value={a.id}>
+                  {a.assetName || '자산 없음'} - {a.threatName || '위협 없음'} / {a.vulnerabilityName || '취약점 없음'} (DoR: {a.riskScore ?? '-'})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="strategy"
+            label="처리 전략"
+            rules={[{ required: true, message: '처리 전략을 선택해주세요' }]}
+          >
+            <Select placeholder="전략 선택">
+              {TREATMENT_STRATEGIES.map((s) => (
+                <Option key={s.value} value={s.value}>
+                  <Space>
+                    {strategyIcons[s.value as TreatmentStrategy]}
+                    <span>{s.label}</span>
+                    <span style={{ fontSize: 12, color: '#8c8c8c' }}>- {s.description}</span>
+                  </Space>
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="assigneeId" label="담당자">
+            <Select placeholder="담당자 선택" allowClear showSearch optionFilterProp="children">
+              {personnelList.map((p) => (
+                <Option key={p.id} value={p.id}>
+                  {p.name}{p.position ? ` (${p.position})` : ''}{p.departmentName ? ` - ${p.departmentName}` : ''}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="description" label="설명">
+            <Input.TextArea rows={3} placeholder="처리 계획 설명" />
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="dueDate" label="기한">
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="budget" label="예산 (원)">
+                <InputNumber
+                  style={{ width: '100%' }}
+                  min={0}
+                  formatter={(value) =>
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                  }
+                  parser={(value) => (value?.replace(/,/g, '') || '0') as unknown as 0}
+                  placeholder="예산"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
       </Modal>
     </div>
   )

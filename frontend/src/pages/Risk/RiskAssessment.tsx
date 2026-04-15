@@ -11,7 +11,7 @@
  * - 위험 매트릭스 히트맵 시각화
  * - 위험 분포 차트
  */
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   App,
   Card,
@@ -102,6 +102,8 @@ const RiskAssessmentPage = () => {
 
   // 선택 데이터
   const [assets, setAssets] = useState<Asset[]>([])
+  const [assetSearchLoading, setAssetSearchLoading] = useState(false)
+  const assetSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [threats, setThreats] = useState<Threat[]>([])
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([])
 
@@ -159,11 +161,42 @@ const RiskAssessmentPage = () => {
     }
   }, [])
 
+  // 자산 검색 (서버사이드, 디바운스)
+  const handleAssetSearch = useCallback((search: string) => {
+    if (assetSearchTimer.current) clearTimeout(assetSearchTimer.current)
+    setAssetSearchLoading(true)
+    assetSearchTimer.current = setTimeout(async () => {
+      try {
+        const data = await assetService.getAssets({
+          size: 50,
+          search: search || undefined,
+        })
+        const searchResults = (data.items || []).filter((a: any) => a.status !== '폐기')
+        // 이미 선택된 자산을 유지 (multi-select에서 선택 항목 사라지지 않도록)
+        setAssets((prev) => {
+          const selectedIds = new Set([
+            ...(modalVisible ? (form.getFieldValue('assetIds') || []) : []),
+            ...(modalVisible ? [form.getFieldValue('assetId')] : []),
+            ...(bulkModalVisible ? (bulkForm.getFieldValue('assetIds') || []) : []),
+          ].filter(Boolean))
+          const selectedAssets = prev.filter((a) => selectedIds.has(a.id))
+          const newIds = new Set(searchResults.map((a: Asset) => a.id))
+          const merged = [...searchResults, ...selectedAssets.filter((a) => !newIds.has(a.id))]
+          return merged
+        })
+      } catch {
+        // 검색 실패 시 무시
+      } finally {
+        setAssetSearchLoading(false)
+      }
+    }, 300)
+  }, [form, bulkForm, modalVisible, bulkModalVisible])
+
   // 자산, 위협, 취약점 목록 조회
   const fetchSelectOptions = useCallback(async () => {
     try {
       const [assetsData, threatsData, vulnerabilitiesData] = await Promise.all([
-        assetService.getAssets({ pageSize: 500 }),
+        assetService.getAssets({ size: 50 }),
         getThreats(),
         getVulnerabilities(),
       ])
@@ -243,6 +276,14 @@ const RiskAssessmentPage = () => {
   const handleEditClick = (assessment: RiskAssessment) => {
     setModalMode('edit')
     setEditingAssessment(assessment)
+    // 현재 자산이 목록에 없으면 추가 (서버 검색 결과에 포함 안 될 수 있음)
+    setAssets((prev) => {
+      if (prev.some((a) => a.id === assessment.assetId)) return prev
+      return [
+        ...prev,
+        { id: assessment.assetId, name: assessment.assetName ?? '', assetCode: assessment.assetCode ?? '' } as Asset,
+      ]
+    })
     form.setFieldsValue({
       assetId: assessment.assetId,
       threatId: assessment.threatId,
@@ -641,6 +682,7 @@ const RiskAssessmentPage = () => {
         okText="확인"
         cancelText="취소"
         width={600}
+        styles={{ body: { maxHeight: '70vh', overflowY: 'auto', overflowX: 'hidden' } }}
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -648,7 +690,14 @@ const RiskAssessmentPage = () => {
             label="자산"
             rules={[{ required: true, message: '자산을 선택해주세요' }]}
           >
-            <Select placeholder="자산 선택" showSearch optionFilterProp="children">
+            <Select
+              placeholder="자산 선택 (이름/코드 검색)"
+              showSearch
+              filterOption={false}
+              onSearch={handleAssetSearch}
+              loading={assetSearchLoading}
+              notFoundContent={assetSearchLoading ? '검색 중...' : '데이터 없음'}
+            >
               {assets.map((asset) => (
                 <Option key={asset.id} value={asset.id}>
                   {asset.name} ({asset.assetCode})
@@ -755,7 +804,15 @@ const RiskAssessmentPage = () => {
             label="자산 (복수 선택)"
             rules={[{ required: true, message: '최소 1개 이상의 자산을 선택해주세요' }]}
           >
-            <Select mode="multiple" placeholder="자산 선택" showSearch optionFilterProp="children">
+            <Select
+              mode="multiple"
+              placeholder="자산 선택 (이름/코드 검색)"
+              showSearch
+              filterOption={false}
+              onSearch={handleAssetSearch}
+              loading={assetSearchLoading}
+              notFoundContent={assetSearchLoading ? '검색 중...' : '데이터 없음'}
+            >
               {assets.map((asset) => (
                 <Option key={asset.id} value={asset.id}>
                   {asset.name} ({asset.assetCode})

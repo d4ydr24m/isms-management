@@ -513,11 +513,34 @@ export async function updateRiskTreatmentPlan(id: number, data: RiskTreatmentPla
 }
 
 /**
+ * 위험 처리 계획 삭제
+ */
+export async function deleteRiskTreatmentPlan(id: number): Promise<void> {
+  try {
+    await apiClient.delete(`/risks/treatments/${id}`)
+  } catch (error) {
+    throw handleApiError(error)
+  }
+}
+
+/**
  * 위험 처리 조치 등록
  */
 export async function createRiskTreatmentAction(planId: number, data: RiskTreatmentActionCreate): Promise<RiskTreatmentAction> {
   try {
     const response = await apiClient.post<RiskTreatmentAction>(`/risks/treatments/${planId}/actions`, data)
+    return response.data
+  } catch (error) {
+    throw handleApiError(error)
+  }
+}
+
+/**
+ * 위험 처리 조치 목록 조회
+ */
+export async function getRiskTreatmentActions(planId: number): Promise<RiskTreatmentAction[]> {
+  try {
+    const response = await apiClient.get<RiskTreatmentAction[]>(`/risks/treatments/${planId}/actions`)
     return response.data
   } catch (error) {
     throw handleApiError(error)
@@ -643,12 +666,24 @@ export async function getRiskDistribution(scenarioId: number): Promise<RiskDistr
 /**
  * 위험 평가 보고서 내보내기
  */
-export async function exportRiskReport(scenarioId: number, format: 'excel' | 'word'): Promise<{ downloadUrl: string }> {
+export async function exportRiskReport(scenarioId: number, format: 'excel' | 'word'): Promise<void> {
   try {
-    const response = await apiClient.get<{ downloadUrl: string }>(`/risks/scenarios/${scenarioId}/report/export`, {
+    const response = await apiClient.get(`/risks/scenarios/${scenarioId}/report/export`, {
       params: { format },
+      responseType: 'blob',
     })
-    return response.data
+    const blob = new Blob([response.data])
+    const contentDisposition = response.headers['content-disposition'] || ''
+    const filenameMatch = contentDisposition.match(/filename\*?=(?:UTF-8'')?([^;\s]+)/)
+    const filename = filenameMatch
+      ? decodeURIComponent(filenameMatch[1])
+      : `RiskReport.${format === 'excel' ? 'xlsx' : 'docx'}`
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    window.URL.revokeObjectURL(url)
   } catch (error) {
     throw handleApiError(error)
   }

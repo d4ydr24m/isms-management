@@ -548,14 +548,14 @@ class RiskService:
         if risk_level is not None:
             query = query.filter(RiskAssessment.risk_level == risk_level)
 
-        # DoA 초과 필터
+        # DoA 초과 필터 (DoA 임계값 초과 = risk_score > threshold)
         if exceeds_doa is not None:
             doa = self.get_current_doa()
             if doa:
                 if exceeds_doa:
-                    query = query.filter(RiskAssessment.risk_score >= doa.threshold_value)
+                    query = query.filter(RiskAssessment.risk_score > doa.threshold_value)
                 else:
-                    query = query.filter(RiskAssessment.risk_score < doa.threshold_value)
+                    query = query.filter(RiskAssessment.risk_score <= doa.threshold_value)
 
         total = query.count()
         offset = (page - 1) * size
@@ -704,7 +704,7 @@ class RiskService:
             return []
 
         query = self.db.query(RiskAssessment).filter(
-            RiskAssessment.risk_score >= doa.threshold_value
+            RiskAssessment.risk_score > doa.threshold_value
         )
 
         if scenario_id is not None:
@@ -722,7 +722,7 @@ class RiskService:
         if not doa:
             return False
 
-        return assessment.risk_score >= doa.threshold_value
+        return assessment.risk_score > doa.threshold_value
 
     # =========================================================================
     # 4.2.6: 위험 처리 계획 관리 (FR-605)
@@ -804,6 +804,14 @@ class RiskService:
         self.db.commit()
         self.db.refresh(plan)
         return plan
+
+    def delete_treatment_plan(self, plan_id: int) -> None:
+        """위험 처리 계획 삭제"""
+        plan = self.get_treatment_plan_by_id(plan_id)
+        if not plan:
+            raise ValueError("처리 계획을 찾을 수 없습니다.")
+        self.db.delete(plan)
+        self.db.commit()
 
     def create_treatment_action(
         self,

@@ -472,7 +472,7 @@ class RiskTreatmentPlan(Base):
     )
     description = Column(Text, nullable=True, comment="처리 계획 설명")
     assignee_id = Column(
-        Integer, ForeignKey("users.id"), nullable=True, comment="담당자 ID"
+        Integer, ForeignKey("personnel.id"), nullable=True, comment="담당자 ID (personnel)"
     )
     due_date = Column(Date, nullable=True, comment="완료 예정일")
     budget = Column(Integer, nullable=True, comment="예산 (원)")
@@ -486,7 +486,7 @@ class RiskTreatmentPlan(Base):
 
     # 관계
     risk_assessment = relationship("RiskAssessment", back_populates="treatment_plans")
-    assignee = relationship("User", foreign_keys=[assignee_id], backref="assigned_treatments")
+    assignee = relationship("Personnel", foreign_keys=[assignee_id], backref="assigned_treatments")
     actions = relationship(
         "RiskTreatmentAction", back_populates="plan", cascade="all, delete-orphan"
     )

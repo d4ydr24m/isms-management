@@ -29,6 +29,8 @@ DEFAULTS = {
     # IP whitelist (comma-separated, empty = allow all)
     "ip_whitelist": "",
     "ip_whitelist_enabled": "false",
+    # Risk settings
+    "risk_lock_completed_scenario": "false",
     # SMTP settings
     "smtp_host": "",
     "smtp_port": "587",

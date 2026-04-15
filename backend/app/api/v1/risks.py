@@ -5,7 +5,7 @@ Phase 2: FR-603 ~ FR-607
 """
 from io import BytesIO
 from typing import Dict, List, Optional
-from datetime import datetime
+from datetime import date, datetime
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -43,6 +43,7 @@ from app.schemas.risk import (
     RiskMatrixData,
     ScenarioComparison,
     RiskReportSummary,
+    ExecutiveSummary,
 )
 from app.services.risk_service import RiskService
 
@@ -123,7 +124,7 @@ def assessment_to_response(assessment, service: RiskService) -> RiskAssessmentRe
     """RiskAssessment 모델을 응답으로 변환"""
     doa = service.get_current_doa()
     exceeds_doa = (
-        assessment.risk_score >= doa.threshold_value
+        assessment.risk_score > doa.threshold_value
         if doa and assessment.risk_score
         else False
     )
@@ -465,6 +466,74 @@ def get_risk_report(
         )
 
 
+@router.get("/scenarios/{scenario_id}/executive-summary", response_model=ExecutiveSummary)
+def get_executive_summary(
+    scenario_id: int,
+    service: RiskService = Depends(get_risk_service),
+    current_user: User = Depends(require_permission("risk:read")),
+) -> ExecutiveSummary:
+    """경영진 요약 보고서 조회"""
+    try:
+        report = service.get_report_summary(scenario_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+    dist = report["risk_distribution"]
+    total = dist["total"]
+    doa = service.get_current_doa()
+    progress = report["treatment_progress"]
+
+    # 주요 발견사항
+    key_findings = []
+    key_findings.append(f"총 {total}건의 위험이 식별되었습니다.")
+    if dist["high"] > 0:
+        key_findings.append(f"고위험 {dist['high']}건이 즉각적인 조치가 필요합니다.")
+    if report["exceeding_doa_count"] > 0:
+        key_findings.append(f"DoA 초과 위험이 {report['exceeding_doa_count']}건 존재합니다.")
+    if progress.get("completed", 0) > 0:
+        rate = progress.get("completion_rate", 0)
+        key_findings.append(f"처리 계획 완료율은 {rate:.0f}%입니다.")
+
+    # 권고사항
+    recommendations = []
+    if dist["high"] > 0:
+        recommendations.append("고위험 항목에 대한 즉각적인 위험 처리 계획을 수립하십시오.")
+    if report["exceeding_doa_count"] > 0:
+        recommendations.append("DoA 초과 위험에 대한 처리 계획을 우선적으로 실행하십시오.")
+    if progress.get("completion_rate", 0) < 50:
+        recommendations.append("처리 계획 완료율을 높이기 위해 자원을 추가 배정하십시오.")
+    if not recommendations:
+        recommendations.append("현재 위험 수준이 양호합니다. 정기적인 모니터링을 계속하십시오.")
+
+    # 조치 항목
+    action_items = []
+    if dist["high"] > 0:
+        action_items.append({"priority": "높음", "action": f"고위험 {dist['high']}건 처리", "status": "필요"})
+    if report["exceeding_doa_count"] > 0:
+        action_items.append({"priority": "높음", "action": f"DoA 초과 {report['exceeding_doa_count']}건 처리", "status": "필요"})
+    if dist["medium"] > 0:
+        action_items.append({"priority": "중간", "action": f"중위험 {dist['medium']}건 모니터링", "status": "진행"})
+
+    return ExecutiveSummary(
+        report_date=date.today(),
+        scenario_name=report["scenario_name"],
+        key_findings=key_findings,
+        risk_overview={
+            "total": total,
+            "high": dist["high"],
+            "medium": dist["medium"],
+            "low": dist["low"],
+            "exceeding_doa": report["exceeding_doa_count"],
+            "doa_threshold": doa.threshold_value if doa else None,
+        },
+        recommendations=recommendations,
+        action_items=action_items,
+    )
+
+
 @router.get("/scenarios/{scenario_id}/matrix")
 def get_risk_matrix(
     scenario_id: int,
@@ -772,6 +841,52 @@ def update_treatment_plan(
         )
 
 
+@router.delete("/treatments/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_treatment_plan(
+    plan_id: int,
+    service: RiskService = Depends(get_risk_service),
+    current_user: User = Depends(require_permission("risk:delete")),
+):
+    """위험 처리 계획 삭제"""
+    try:
+        service.delete_treatment_plan(plan_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+
+@router.get("/treatments/{plan_id}/actions", response_model=List[RiskTreatmentActionResponse])
+def get_treatment_actions(
+    plan_id: int,
+    service: RiskService = Depends(get_risk_service),
+    current_user: User = Depends(require_permission("risk:read")),
+) -> List[RiskTreatmentActionResponse]:
+    """위험 처리 조치 목록 조회"""
+    plan = service.get_treatment_plan_by_id(plan_id)
+    if not plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="처리 계획을 찾을 수 없습니다.",
+        )
+    return [
+        RiskTreatmentActionResponse(
+            id=a.id,
+            plan_id=a.plan_id,
+            action_description=a.action_description,
+            result=a.result,
+            residual_risk_score=a.residual_risk_score,
+            completed_by=a.completed_by,
+            completer_name=a.completer.name if a.completer else None,
+            completed_at=a.completed_at,
+            evidence_file_path=a.evidence_file_path,
+            created_at=a.created_at,
+        )
+        for a in (plan.actions or [])
+    ]
+
+
 @router.post("/treatments/{plan_id}/actions", response_model=RiskTreatmentActionResponse, status_code=status.HTTP_201_CREATED)
 def create_treatment_action(
     plan_id: int,
@@ -831,6 +946,23 @@ def export_risk_report(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
+
+    # ORM 객체를 dict로 변환 (엑셀/워드 생성 함수에서 .get() 사용)
+    doa = service.get_current_doa()
+    report["top_risks"] = [
+        {
+            "asset_name": r.asset.name if r.asset else "",
+            "threat_name": r.threat.name if r.threat else "",
+            "vulnerability_name": r.vulnerability.name if r.vulnerability else "",
+            "asset_value": r.asset_value,
+            "threat_level": r.threat_level,
+            "vulnerability_level": r.vulnerability_level,
+            "risk_score": r.risk_score,
+            "risk_level": r.risk_level,
+            "exceeds_doa": r.risk_score > doa.threshold_value if doa and r.risk_score else False,
+        }
+        for r in report["top_risks"]
+    ]
 
     if format == "excel":
         content = _generate_risk_report_excel(report, service)
