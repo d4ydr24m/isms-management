@@ -188,6 +188,7 @@ export interface Asset extends AssetBase {
   createdAt: string
   updatedAt?: string
   // 최신 가치 평가 정보
+  importanceScore?: number
   importanceLevel?: number
   confidentiality?: number
   integrity?: number
@@ -238,6 +239,7 @@ export interface AssetValuation {
   confidentiality: number
   integrity: number
   availability: number
+  importanceScore?: number
   importanceLevel?: number
   evaluationReason?: string
   evaluatedBy?: number

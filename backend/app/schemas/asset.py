@@ -220,6 +220,7 @@ class AssetResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
     # 최신 가치 평가 정보
+    importance_score: Optional[int] = None
     importance_level: Optional[int] = None
     confidentiality: Optional[int] = None
     integrity: Optional[int] = None
@@ -258,6 +259,7 @@ class AssetValuationResponse(AssetValuationBase):
     """자산 가치 평가 응답 스키마"""
     id: int
     asset_id: int
+    importance_score: Optional[int] = None
     importance_level: Optional[int] = None
     evaluated_by: Optional[int] = None
     evaluator_name: Optional[str] = None

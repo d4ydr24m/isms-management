@@ -124,12 +124,13 @@ class AssetImpactService:
         asset = self._get_asset_or_raise(asset_id)
         self._validate_cia_values(new_valuation)
 
-        # 새 중요도 계산 (MAX 방식)
-        new_importance = max(
-            new_valuation.get("confidentiality", 1),
-            new_valuation.get("integrity", 1),
-            new_valuation.get("availability", 1)
+        # 새 중요도 계산 (C+I+A 합산 방식)
+        score = (
+            new_valuation.get("confidentiality", 1)
+            + new_valuation.get("integrity", 1)
+            + new_valuation.get("availability", 1)
         )
+        new_importance = 3 if score >= 8 else (2 if score >= 6 else 1)
 
         # 현재 중요도 조회
         current_importance = self._get_current_importance(asset_id)
@@ -193,12 +194,13 @@ class AssetImpactService:
         asset = self._get_asset_or_raise(asset_id)
         self._validate_cia_values(new_valuation)
 
-        # 새 중요도 계산
-        new_importance = max(
-            new_valuation.get("confidentiality", 1),
-            new_valuation.get("integrity", 1),
-            new_valuation.get("availability", 1)
+        # 새 중요도 계산 (C+I+A 합산 방식)
+        score = (
+            new_valuation.get("confidentiality", 1)
+            + new_valuation.get("integrity", 1)
+            + new_valuation.get("availability", 1)
         )
+        new_importance = 3 if score >= 8 else (2 if score >= 6 else 1)
 
         # 기존 가치 평가 조회
         current_valuation = self._get_latest_valuation(asset_id)

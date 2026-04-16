@@ -265,9 +265,12 @@ class AssetValuation(Base):
         Integer, nullable=False, default=1, comment="가용성 (1: 하, 2: 중, 3: 상)"
     )
 
-    # 중요도 (자동 계산: MAX 또는 가중평균)
+    # 중요도 (자동 계산: C+I+A 합산 후 등급 분류)
+    importance_score = Column(
+        Integer, nullable=True, comment="자산 중요도 점수 (C+I+A, 3~9)"
+    )
     importance_level = Column(
-        Integer, nullable=True, comment="자산 중요도 (자동 계산)"
+        Integer, nullable=True, comment="자산 중요도 등급 (1:하, 2:중, 3:상)"
     )
 
     # 평가 정보
@@ -292,15 +295,26 @@ class AssetValuation(Base):
         return f"<AssetValuation(id={self.id}, asset_id={self.asset_id}, C={self.confidentiality}, I={self.integrity}, A={self.availability})>"
 
 
+def score_to_importance_level(score: int) -> int:
+    """중요도 점수(3~9)를 등급(1:하, 2:중, 3:상)으로 변환"""
+    if score >= 8:
+        return 3  # 상
+    elif score >= 6:
+        return 2  # 중
+    else:
+        return 1  # 하
+
+
 # 중요도 자동 계산 이벤트
 @event.listens_for(AssetValuation, "before_insert")
 @event.listens_for(AssetValuation, "before_update")
 def calculate_importance_level(mapper, connection, target):
-    """CIA 값 기준 중요도 자동 계산 (MAX 방식)"""
+    """CIA 값 기준 중요도 자동 계산 (C+I+A 합산 방식)"""
     if target.confidentiality and target.integrity and target.availability:
-        target.importance_level = max(
-            target.confidentiality, target.integrity, target.availability
+        target.importance_score = (
+            target.confidentiality + target.integrity + target.availability
         )
+        target.importance_level = score_to_importance_level(target.importance_score)
 
 
 class AssetHistory(Base):

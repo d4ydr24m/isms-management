@@ -111,6 +111,7 @@ def asset_to_response(asset, service: AssetService) -> AssetResponse:
         is_active=asset.is_active,
         created_at=asset.created_at,
         updated_at=asset.updated_at,
+        importance_score=valuation.importance_score if valuation else None,
         importance_level=valuation.importance_level if valuation else None,
         confidentiality=valuation.confidentiality if valuation else None,
         integrity=valuation.integrity if valuation else None,
@@ -683,7 +684,7 @@ def create_valuation(
     - **confidentiality**: 기밀성 (1: 하, 2: 중, 3: 상)
     - **integrity**: 무결성 (1: 하, 2: 중, 3: 상)
     - **availability**: 가용성 (1: 하, 2: 중, 3: 상)
-    - 중요도는 MAX(C, I, A)로 자동 계산됩니다
+    - 중요도 점수는 C+I+A(3~9)로 계산되며, 3~5:하, 6~7:중, 8~9:상으로 분류됩니다
     """
     try:
         valuation = service.create_valuation(

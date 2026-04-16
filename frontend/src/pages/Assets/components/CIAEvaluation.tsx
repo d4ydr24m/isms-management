@@ -2,8 +2,8 @@
  * CIA 평가 컴포넌트
  * 기밀성, 무결성, 가용성 시각적 게이지 표시
  */
-import { App, Card, Row, Col, Progress, Typography, Tag, Button, Modal, Form, Select, Input } from 'antd'
-import { EditOutlined } from '@ant-design/icons'
+import { App, Card, Row, Col, Progress, Typography, Tag, Button, Modal, Form, Select, Input, Tooltip, Table } from 'antd'
+import { EditOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import type { AssetValuation, AssetValuationCreate } from '@/types'
 
@@ -39,10 +39,49 @@ const levelLabels: Record<number, string> = {
   3: '상',
 }
 
-/** 중요도 계산 (MAX 방식) */
-const calculateImportance = (c: number, i: number, a: number): number => {
-  return Math.max(c, i, a)
+/** 중요도 점수 계산 (C+I+A 합산 방식) */
+const calculateImportanceScore = (c: number, i: number, a: number): number => {
+  return c + i + a
 }
+
+/** 중요도 점수 → 등급 변환 (3-5:하, 6-7:중, 8-9:상) */
+const scoreToLevel = (score: number): number => {
+  if (score >= 8) return 3 // 상
+  if (score >= 6) return 2 // 중
+  return 1 // 하
+}
+
+/** 등급별 분류 기준 설명 */
+const importanceCriteria: Record<number, string> = {
+  1: '점수 3~5: C+I+A 합산이 낮은 경우',
+  2: '점수 6~7: C+I+A 합산이 보통인 경우',
+  3: '점수 8~9: C+I+A 합산이 높은 경우',
+}
+
+/** 점수별 색상 (3~9) */
+const scoreColors: Record<number, string> = {
+  3: '#52c41a', 4: '#52c41a', 5: '#52c41a',
+  6: '#faad14', 7: '#faad14',
+  8: '#f5222d', 9: '#f5222d',
+}
+
+/** 중요도 분류 기준 테이블 데이터 */
+const importanceCriteriaData = [
+  { key: '3', level: '상', color: '#f5222d', score: '8 ~ 9', criteria: 'C+I+A 합산 점수가 8 이상', example: 'C=3, I=3, A=2 → 8점 → 상' },
+  { key: '2', level: '중', color: '#faad14', score: '6 ~ 7', criteria: 'C+I+A 합산 점수가 6 이상 7 이하', example: 'C=2, I=2, A=2 → 6점 → 중' },
+  { key: '1', level: '하', color: '#52c41a', score: '3 ~ 5', criteria: 'C+I+A 합산 점수가 5 이하', example: 'C=1, I=2, A=1 → 4점 → 하' },
+]
+
+const importanceCriteriaColumns = [
+  { title: '등급', dataIndex: 'level', key: 'level', width: 60, render: (text: string, record: { color: string }) => <Tag color={record.color}>{text}</Tag> },
+  { title: '점수 범위', dataIndex: 'score', key: 'score', width: 90 },
+  { title: '분류 기준', dataIndex: 'criteria', key: 'criteria' },
+  { title: '예시', dataIndex: 'example', key: 'example' },
+]
+
+/** 평가 등급표 셀 스타일 */
+const thStyle: React.CSSProperties = { border: '1px solid #d9d9d9', padding: '6px 8px', backgroundColor: '#fafafa', fontWeight: 'bold' }
+const tdStyle: React.CSSProperties = { border: '1px solid #d9d9d9', padding: '6px 8px' }
 
 const CIAEvaluation = ({ valuation, assetId: _assetId, onUpdate, readonly = false }: CIAEvaluationProps) => {
   const { message } = App.useApp()
@@ -106,9 +145,10 @@ const CIAEvaluation = ({ valuation, assetId: _assetId, onUpdate, readonly = fals
     )
   }
 
-  const importanceLevel = valuation
-    ? calculateImportance(valuation.confidentiality, valuation.integrity, valuation.availability)
+  const importanceScore = valuation
+    ? calculateImportanceScore(valuation.confidentiality, valuation.integrity, valuation.availability)
     : 0
+  const importanceLevel = importanceScore > 0 ? scoreToLevel(importanceScore) : 0
 
   return (
     <>
@@ -141,6 +181,77 @@ const CIAEvaluation = ({ valuation, assetId: _assetId, onUpdate, readonly = fals
               <Tag color={levelColors[importanceLevel]} style={{ fontSize: 16, padding: '4px 12px' }}>
                 {levelLabels[importanceLevel]}
               </Tag>
+              <Tag color={scoreColors[importanceScore]} style={{ fontSize: 14, padding: '2px 8px', marginLeft: 4 }}>
+                {importanceScore}점
+              </Tag>
+              <Tooltip title={importanceCriteria[importanceLevel]}>
+                <InfoCircleOutlined style={{ marginLeft: 8, color: '#1890ff', cursor: 'pointer' }} />
+              </Tooltip>
+            </div>
+
+            <div style={{ marginTop: 12, padding: '12px 16px', background: '#fafafa', borderRadius: 4, border: '1px solid #f0f0f0' }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                산정 기준: 중요도 점수 = 기밀성({valuation.confidentiality}) + 무결성({valuation.integrity}) + 가용성({valuation.availability}) = {importanceScore}점 → {levelLabels[importanceLevel]}
+              </Text>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <Table
+                columns={importanceCriteriaColumns}
+                dataSource={importanceCriteriaData}
+                size="small"
+                pagination={false}
+                bordered
+                title={() => <Text type="secondary" strong style={{ fontSize: 12 }}>중요도 분류 기준표</Text>}
+              />
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <Text type="secondary" strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+                {'<'}정보자산 중요도 평가 등급{'>'}
+              </Text>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12, textAlign: 'center' }}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle} colSpan={2}>기밀성</th>
+                      <th style={thStyle} colSpan={3}>L(1)</th>
+                      <th style={thStyle} colSpan={3}>M(2)</th>
+                      <th style={thStyle} colSpan={3}>H(3)</th>
+                    </tr>
+                    <tr>
+                      <th style={thStyle} colSpan={2}>무결성</th>
+                      <th style={thStyle}>L(1)</th>
+                      <th style={thStyle}>M(2)</th>
+                      <th style={thStyle}>H(3)</th>
+                      <th style={thStyle}>L(1)</th>
+                      <th style={thStyle}>M(2)</th>
+                      <th style={thStyle}>H(3)</th>
+                      <th style={thStyle}>L(1)</th>
+                      <th style={thStyle}>M(2)</th>
+                      <th style={thStyle}>H(3)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {([1, 2, 3] as const).map((a, ai) => (
+                      <tr key={a}>
+                        {ai === 0 && <td style={{ ...tdStyle, fontWeight: 'bold' }} rowSpan={3}>가용성</td>}
+                        <td style={{ ...tdStyle, fontWeight: 'bold' }}>{a === 1 ? 'L(1)' : a === 2 ? 'M(2)' : 'H(3)'}</td>
+                        {([1, 2, 3] as const).map((c) =>
+                          ([1, 2, 3] as const).map((i) => {
+                            const score = c + i + a
+                            return (
+                              <td key={`${c}-${i}-${a}`} style={{ ...tdStyle, backgroundColor: scoreColors[score] + '33', fontWeight: score === importanceScore ? 'bold' : 'normal', border: score === importanceScore ? '2px solid #1890ff' : '1px solid #d9d9d9' }}>
+                                {score}
+                              </td>
+                            )
+                          })
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {valuation.evaluationReason && (

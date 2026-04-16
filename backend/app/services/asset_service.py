@@ -633,14 +633,21 @@ class AssetService:
             if not (1 <= value <= 3):
                 raise ValueError(f"{name}은 1-3 사이의 값이어야 합니다.")
 
-        # 중요도 자동 계산 (MAX 방식)
-        importance_level = max(confidentiality, integrity, availability)
+        # 중요도 자동 계산 (C+I+A 합산 방식)
+        importance_score = confidentiality + integrity + availability
+        if importance_score >= 8:
+            importance_level = 3  # 상
+        elif importance_score >= 6:
+            importance_level = 2  # 중
+        else:
+            importance_level = 1  # 하
 
         valuation = AssetValuation(
             asset_id=asset_id,
             confidentiality=confidentiality,
             integrity=integrity,
             availability=availability,
+            importance_score=importance_score,
             importance_level=importance_level,
             evaluation_reason=evaluation_reason,
             evaluated_by=user_id,
@@ -653,7 +660,7 @@ class AssetService:
             asset_id=asset_id,
             change_type=AssetChangeType.VALUATION.value,
             changed_by=user_id,
-            new_value=f"C:{confidentiality}, I:{integrity}, A:{availability} -> 중요도:{importance_level}",
+            new_value=f"C:{confidentiality}, I:{integrity}, A:{availability} -> 점수:{importance_score}, 중요도:{importance_level}",
         )
 
         self.db.commit()
