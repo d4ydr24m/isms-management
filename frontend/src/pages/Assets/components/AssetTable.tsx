@@ -78,6 +78,7 @@ const AssetTable = ({
       dataIndex: 'assetCode',
       key: 'assetCode',
       width: 180,
+      sorter: true,
       render: (code: string, record: Asset) => (
         <Link to={`/assets/${record.id}`} style={{ fontFamily: 'monospace' }}>
           {code}
@@ -89,6 +90,7 @@ const AssetTable = ({
       dataIndex: 'name',
       key: 'name',
       ellipsis: true,
+      sorter: true,
       render: (name: string, record: Asset) => {
         let eolTag = null
         if (record.eolDate) {
@@ -112,6 +114,15 @@ const AssetTable = ({
       dataIndex: 'assetTypeName',
       key: 'assetTypeName',
       width: 120,
+      sorter: true,
+    },
+    {
+      title: '분류',
+      dataIndex: 'categoryNames',
+      key: 'categoryNames',
+      width: 150,
+      ellipsis: true,
+      render: (names?: string[]) => names && names.length > 0 ? names.join(', ') : '-',
     },
     {
       title: '담당부서',
@@ -139,6 +150,7 @@ const AssetTable = ({
       dataIndex: 'status',
       key: 'status',
       width: 110,
+      sorter: true,
       render: (status: string, record: Asset) => onStatusChange ? (
         <Select
           value={statusLabelMap[status] ? (Object.entries(statusLabelMap).find(([k, v]) => k === status)?.[0] || status) : status}
@@ -161,6 +173,7 @@ const AssetTable = ({
       key: 'importanceLevel',
       width: 80,
       align: 'center',
+      sorter: true,
       render: (level?: number) => {
         if (!level) return '-'
         const { label, color } = importanceLabelMap[level] || { label: '-', color: 'default' }

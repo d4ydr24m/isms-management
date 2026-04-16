@@ -28,6 +28,7 @@ const AssetListPage = () => {
     importanceLevel: undefined,
   })
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
+  const [sorter, setSorter] = useState<{ sort?: string; order?: string }>({})
 
   // 자산 유형 목록 조회
   const fetchAssetTypes = useCallback(async () => {
@@ -47,6 +48,7 @@ const AssetListPage = () => {
         page: pagination.current,
         size: pagination.pageSize,
         ...filters,
+        ...sorter,
       })
       setAssets(response.items)
       setPagination((prev) => ({
@@ -58,7 +60,7 @@ const AssetListPage = () => {
     } finally {
       setLoading(false)
     }
-  }, [pagination.current, pagination.pageSize, filters])
+  }, [pagination.current, pagination.pageSize, filters, sorter])
 
   useEffect(() => {
     fetchAssetTypes()
@@ -68,13 +70,31 @@ const AssetListPage = () => {
     fetchAssets()
   }, [fetchAssets])
 
-  // 테이블 변경 핸들러
-  const handleTableChange: TableProps<Asset>['onChange'] = (paginationConfig) => {
+  // 테이블 변경 핸들러 (페이지네이션 + 정렬)
+  const handleTableChange: TableProps<Asset>['onChange'] = (paginationConfig, _filters, sorterResult) => {
     setPagination((prev) => ({
       ...prev,
       current: paginationConfig.current || 1,
       pageSize: paginationConfig.pageSize || 10,
     }))
+    // antd sorter → API sort/order 변환
+    const s = Array.isArray(sorterResult) ? sorterResult[0] : sorterResult
+    if (s?.field && s?.order) {
+      // camelCase dataIndex → snake_case 변환
+      const fieldMap: Record<string, string> = {
+        assetCode: 'asset_code',
+        name: 'name',
+        assetTypeName: 'asset_type_name',
+        status: 'status',
+        importanceLevel: 'importance_level',
+      }
+      setSorter({
+        sort: fieldMap[s.field as string] || s.field as string,
+        order: s.order === 'ascend' ? 'asc' : 'desc',
+      })
+    } else {
+      setSorter({})
+    }
   }
 
   // 검색어 변경 핸들러

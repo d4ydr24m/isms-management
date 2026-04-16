@@ -371,6 +371,8 @@ def get_assets(
     is_active: Optional[bool] = Query(True, description="활성 상태"),
     importance_level: Optional[int] = Query(None, ge=1, le=3, description="중요도"),
     eol_status: Optional[str] = Query(None, description="EoL 상태 (expired/soon/none)"),
+    sort: Optional[str] = Query(None, description="정렬 필드"),
+    order: Optional[str] = Query(None, description="정렬 순서 (asc/desc)"),
     service: AssetService = Depends(get_asset_service),
     current_user: User = Depends(require_permission("asset:read")),
 ) -> AssetList:
@@ -393,6 +395,8 @@ def get_assets(
         is_active=is_active,
         importance_level=importance_level,
         eol_status=eol_status,
+        sort=sort,
+        order=order,
         page=page,
         size=size,
     )

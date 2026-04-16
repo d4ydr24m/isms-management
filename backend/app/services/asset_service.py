@@ -508,6 +508,8 @@ class AssetService:
         is_active: Optional[bool] = True,
         importance_level: Optional[int] = None,
         eol_status: Optional[str] = None,
+        sort: Optional[str] = None,
+        order: Optional[str] = None,
         page: int = 1,
         size: int = 20,
     ) -> Dict:
@@ -587,6 +589,38 @@ class AssetService:
                 # EoL 미설정
                 query = query.filter(Asset.eol_date.is_(None))
 
+        # 정렬
+        if sort == 'importance_level':
+            # 중요도 정렬: 최신 가치평가의 importance_level 기준
+            latest_val = (
+                self.db.query(
+                    AssetValuation.asset_id,
+                    func.max(AssetValuation.id).label("max_id")
+                )
+                .group_by(AssetValuation.asset_id)
+                .subquery()
+            )
+            query = (
+                query
+                .outerjoin(latest_val, Asset.id == latest_val.c.asset_id)
+                .outerjoin(AssetValuation, AssetValuation.id == latest_val.c.max_id)
+            )
+            sort_col = AssetValuation.importance_level
+        else:
+            sort_column_map = {
+                'asset_code': Asset.asset_code,
+                'name': Asset.name,
+                'asset_type_name': Asset.asset_type_id,
+                'status': Asset.status,
+                'created_at': Asset.created_at,
+                'acquisition_date': Asset.acquisition_date,
+            }
+            sort_col = sort_column_map.get(sort, Asset.created_at)
+        if order == 'asc':
+            query = query.order_by(sort_col.asc().nullslast())
+        else:
+            query = query.order_by(sort_col.desc().nullslast())
+
         # 전체 개수
         total = query.count()
 
@@ -594,7 +628,6 @@ class AssetService:
         offset = (page - 1) * size
         items = (
             query
-            .order_by(Asset.created_at.desc())
             .offset(offset)
             .limit(size)
             .all()
