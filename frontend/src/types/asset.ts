@@ -327,7 +327,8 @@ export interface AssetAssignmentUpdate {
 export interface AssetAssignment {
   id: number
   assetId: number
-  userId: number
+  userId?: number
+  personnelId?: number
   userName?: string
   userEmail?: string
   role: AssetAssignmentRole

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { CurrentUser, LoginRequest, LoginResponse } from '@/types'
 import { authService } from '@/services'
+import { scheduleProactiveRefresh, cancelProactiveRefresh } from '@/services/api'
 
 interface AuthState {
   user: CurrentUser | null
@@ -50,6 +51,10 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
               pendingMfaCredentials: null,
             })
+            // 만료 전 선제적 토큰 갱신 예약
+            if (response.expiresIn) {
+              scheduleProactiveRefresh(response.expiresIn)
+            }
           } else {
             set({
               isLoading: false,
@@ -99,6 +104,10 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             pendingMfaCredentials: null,
           })
+          // 만료 전 선제적 토큰 갱신 예약
+          if (response.expiresIn) {
+            scheduleProactiveRefresh(response.expiresIn)
+          }
 
           return response
         } catch (error: any) {
@@ -112,6 +121,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         set({ isLoading: true })
+        cancelProactiveRefresh()
         try {
           await authService.logout()
         } finally {

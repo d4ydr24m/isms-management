@@ -496,8 +496,9 @@ class AssetRiskMappingService:
         for col, width in enumerate(column_widths, 1):
             ws.column_dimensions[chr(64 + col)].width = width
 
-        # 헤더 자동 필터
+        # 헤더 자동 필터 및 틀 고정
         ws.auto_filter.ref = "A1:G1"
+        ws.freeze_panes = "A2"
 
         # 바이트로 변환
         output = BytesIO()

@@ -29,6 +29,7 @@ import AssetDetail from '@/pages/Assets/AssetDetail'
 import AssetCreate from '@/pages/Assets/AssetCreate'
 import AssetImport from '@/pages/Assets/AssetImport'
 import AssetCategories from '@/pages/Assets/AssetCategories'
+import AssetTypes from '@/pages/Assets/AssetTypes'
 // Department Management
 import DepartmentsPage from '@/pages/Departments'
 // Personnel Management
@@ -337,6 +338,14 @@ const AppRouter = () => {
         element={
           <PrivateRoute>
             <AssetCategories />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/assets/types"
+        element={
+          <PrivateRoute>
+            <AssetTypes />
           </PrivateRoute>
         }
       />

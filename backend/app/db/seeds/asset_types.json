@@ -85,6 +85,13 @@
       "description": "클라우드 서비스, SaaS, 외부 서비스 등",
       "icon": "cloud",
       "sort_order": 12
+    },
+    {
+      "code": "PPD",
+      "name": "주변기기",
+      "description": "프린터, 복합기, 스캐너 등 주변기기",
+      "icon": "printer",
+      "sort_order": 13
     }
   ]
 }

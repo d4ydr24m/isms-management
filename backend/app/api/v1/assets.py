@@ -168,6 +168,43 @@ def create_asset_type(
         )
 
 
+@router.put("/types/{type_id}", response_model=AssetTypeResponse)
+def update_asset_type(
+    type_id: int,
+    data: AssetTypeUpdate,
+    service: AssetService = Depends(get_asset_service),
+    current_user: User = Depends(require_permission("asset:create")),
+) -> AssetTypeResponse:
+    """자산 유형 수정"""
+    try:
+        asset_type = service.update_asset_type(
+            type_id=type_id,
+            **data.model_dump(exclude_unset=True),
+        )
+        return AssetTypeResponse.model_validate(asset_type)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+
+@router.delete("/types/{type_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_asset_type(
+    type_id: int,
+    service: AssetService = Depends(get_asset_service),
+    current_user: User = Depends(require_permission("asset:delete")),
+):
+    """자산 유형 비활성화"""
+    try:
+        service.update_asset_type(type_id=type_id, is_active=False)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+
 # =============================================================================
 # FR-501: 자산 분류 API
 # =============================================================================

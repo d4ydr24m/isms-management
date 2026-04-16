@@ -8,6 +8,7 @@ import { App, Card, Breadcrumb } from 'antd'
 import { HomeOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import AssetForm from './components/AssetForm'
+import type { AssigneeEntry } from './components/AssetForm'
 import { assetService } from '@/services/assets'
 import { apiClient } from '@/services/api'
 import type { AssetCreate as AssetCreateType, AssetType, AssetCategory, Asset, AssetUpdate } from '@/types'
@@ -24,6 +25,7 @@ const AssetCreatePage = () => {
   const [departments, setDepartments] = useState<Array<{ id: number; name: string }>>([])
   const [users, setUsers] = useState<Array<{ id: number; name: string; email: string }>>([])
   const [existingAsset, setExistingAsset] = useState<Asset | undefined>(undefined)
+  const [existingAssignees, setExistingAssignees] = useState<AssigneeEntry[]>([])
   const [loading, setLoading] = useState(true)
 
   // 초기 데이터 로드
@@ -64,6 +66,15 @@ const AssetCreatePage = () => {
             (asset as any).evaluationReason = valuation.evaluationReason
           }
         } catch { /* 평가 없는 경우 무시 */ }
+        // 기존 담당자 로드
+        try {
+          const assignments = await assetService.getAssetAssignments(parseInt(id))
+          setExistingAssignees(assignments.map(a => ({
+            assignmentId: a.id,
+            personnelId: a.personnelId || a.userId || 0,
+            role: a.role as 'owner' | 'manager' | 'user',
+          })).filter(a => a.personnelId))
+        } catch { /* 담당자 없는 경우 무시 */ }
         setExistingAsset(asset)
       } catch {
         message.error('자산 정보를 불러오는데 실패했습니다')
@@ -77,7 +88,7 @@ const AssetCreatePage = () => {
   }, [fetchInitialData])
 
   // 자산 등록/수정 핸들러
-  const handleSubmit = async (values: AssetCreateType | AssetUpdate, ciaData?: { confidentiality: number; integrity: number; availability: number; evaluationReason?: string }) => {
+  const handleSubmit = async (values: AssetCreateType | AssetUpdate, extra?: { ciaData?: { confidentiality: number; integrity: number; availability: number; evaluationReason?: string }; assignees?: AssigneeEntry[] }) => {
     try {
       let assetId: number
       if (isEdit) {
@@ -90,11 +101,43 @@ const AssetCreatePage = () => {
         message.success(`자산이 등록되었습니다. (자산코드: ${result.assetCode})`)
       }
       // CIA 평가 데이터가 있으면 저장
-      if (ciaData) {
+      if (extra?.ciaData) {
         try {
-          await assetService.createAssetValuation(assetId, ciaData)
+          await assetService.createAssetValuation(assetId, extra.ciaData)
         } catch {
           message.warning('자산은 저장되었으나 중요도 평가 저장에 실패했습니다')
+        }
+      }
+      // 담당자 동기화 (추가/역할변경/삭제) — 병렬 처리
+      if (extra?.assignees !== undefined) {
+        try {
+          const newAssignees = extra.assignees || []
+          const existingNonOwner = existingAssignees.filter(a => a.role !== 'owner')
+          const existingMap = new Map(existingNonOwner.map(a => [a.personnelId, a]))
+          const newIds = new Set(newAssignees.map(a => a.personnelId))
+          const promises: Promise<any>[] = []
+
+          for (const assignee of newAssignees) {
+            const existing = existingMap.get(assignee.personnelId)
+            if (!existing) {
+              promises.push(assetService.createAssetAssignment(assetId, {
+                userId: assignee.personnelId,
+                role: assignee.role,
+              }))
+            } else if (existing.role !== assignee.role && existing.assignmentId) {
+              promises.push(assetService.updateAssetAssignment(assetId, existing.assignmentId, {
+                role: assignee.role,
+              }))
+            }
+          }
+          for (const existing of existingNonOwner) {
+            if (!newIds.has(existing.personnelId) && existing.assignmentId) {
+              promises.push(assetService.deleteAssetAssignment(assetId, existing.assignmentId))
+            }
+          }
+          await Promise.all(promises)
+        } catch {
+          message.warning('자산은 저장되었으나 일부 담당자 처리에 실패했습니다')
         }
       }
       navigate(`/assets/${assetId}`)
@@ -127,6 +170,7 @@ const AssetCreatePage = () => {
           categories={categories}
           departments={departments}
           users={users}
+          existingAssignees={isEdit ? existingAssignees : undefined}
           loading={loading}
           onSubmit={handleSubmit}
           onCancel={handleCancel}

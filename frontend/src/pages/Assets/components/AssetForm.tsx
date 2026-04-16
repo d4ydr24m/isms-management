@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react'
 import { Form, Input, Select, DatePicker, InputNumber, Row, Col, Divider, Space, Button, Spin } from 'antd'
-import { SearchOutlined } from '@ant-design/icons'
+import { SearchOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import EolLookup from './EolLookup'
 import type { AssetCreate, AssetUpdate, AssetType, AssetCategory, Asset } from '@/types'
@@ -12,15 +12,60 @@ import type { AssetCreate, AssetUpdate, AssetType, AssetCategory, Asset } from '
 const { Option } = Select
 const { TextArea } = Input
 
+export interface AssigneeEntry {
+  assignmentId?: number
+  personnelId: number
+  role: 'owner' | 'manager' | 'user'
+}
+
 interface AssetFormProps {
   initialValues?: Asset
   assetTypes: AssetType[]
   categories: AssetCategory[]
   departments: Array<{ id: number; name: string }>
   users: Array<{ id: number; name: string; email: string }>
+  existingAssignees?: AssigneeEntry[]
   loading?: boolean
-  onSubmit: (values: AssetCreate | AssetUpdate, ciaData?: { confidentiality: number; integrity: number; availability: number; evaluationReason?: string }) => Promise<void>
+  onSubmit: (values: AssetCreate | AssetUpdate, extra?: { ciaData?: { confidentiality: number; integrity: number; availability: number; evaluationReason?: string }; assignees?: AssigneeEntry[] }) => Promise<void>
   onCancel: () => void
+}
+
+/**
+ * 자산 유형 코드 → 허용 분류 코드 접두사 매핑
+ * 분류 코드가 이 접두사로 시작하면 해당 유형에 표시됨
+ */
+const typeToAllowedPrefixes: Record<string, string[]> = {
+  SRV: ['HW-SRV'],
+  NET: ['HW-NET'],
+  SEC: ['HW-SEC', 'SW-SEC'],
+  PC:  ['HW-END'],
+  MOB: ['HW-END'],
+  STG: ['HW-STG'],
+  PPD: ['HW-PPD'],
+  DB:  ['SW-DB'],
+  APP: ['SW-APP', 'SW-OS'],
+  DOC: ['DATA'],
+  SVC: ['SVC'],
+  FAC: ['FAC'],
+  HUM: ['HUM'],
+}
+
+/** 분류 코드 접두사 → 자산 유형 코드 매핑 (역방향, 자동 선택용) */
+const prefixToTypeMap: Record<string, string> = {
+  'HW-SRV': 'SRV',
+  'HW-NET': 'NET',
+  'HW-SEC': 'SEC',
+  'HW-END': 'PC',
+  'HW-STG': 'STG',
+  'HW-PPD': 'PPD',
+  'SW-DB':  'DB',
+  'SW-APP': 'APP',
+  'SW-OS':  'APP',
+  'SW-SEC': 'SEC',
+  'DATA':   'DOC',
+  'SVC':    'SVC',
+  'FAC':    'FAC',
+  'HUM':    'HUM',
 }
 
 /** 자산 유형별 추가 필드 정의 */
@@ -31,6 +76,7 @@ const typeSpecificFields: Record<string, string[]> = {
   DB: ['ipAddress', 'url', 'hostname', 'serviceVersion'],
   APP: ['ipAddress', 'url', 'hostname', 'serviceVersion'],
   PC: ['ipAddress', 'macAddress', 'hostname', 'osVersion'],
+  PPD: ['ipAddress', 'macAddress', 'hostname'],
   DOC: [],
   HUM: [],
 }
@@ -41,6 +87,7 @@ const AssetForm = ({
   categories,
   departments,
   users,
+  existingAssignees,
   loading = false,
   onSubmit,
   onCancel,
@@ -59,6 +106,12 @@ const AssetForm = ({
         warrantyEndDate: initialValues.warrantyEndDate ? dayjs(initialValues.warrantyEndDate) : undefined,
         eolDate: initialValues.eolDate ? dayjs(initialValues.eolDate) : undefined,
       }
+      // 기존 담당자 설정 (소유자 제외)
+      if (existingAssignees?.length) {
+        formValues.assignees = existingAssignees
+          .filter(a => a.role !== 'owner')
+          .map(a => ({ personnelId: a.personnelId, role: a.role }))
+      }
       form.setFieldsValue(formValues)
 
       // 자산 유형 코드 설정
@@ -69,11 +122,66 @@ const AssetForm = ({
     }
   }, [initialValues, assetTypes, form])
 
+  /** 분류가 특정 자산 유형에 허용되는지 확인 */
+  const isCategoryAllowedForType = (catCode: string, typeCode: string): boolean => {
+    const prefixes = typeToAllowedPrefixes[typeCode]
+    if (!prefixes) return true // 매핑 없으면 모두 허용
+    // 분류의 level-2 접두사가 어떤 유형에도 매핑되지 않으면 모두에게 허용
+    const catLevel2Prefix = catCode.split('-').slice(0, 2).join('-')
+    const isMappedToAnyType = Object.values(typeToAllowedPrefixes).some(
+      ps => ps.some(p => catLevel2Prefix.startsWith(p) || p.startsWith(catLevel2Prefix))
+    )
+    if (!isMappedToAnyType) return true // 매핑되지 않은 분류는 모든 유형에 표시
+    return prefixes.some(prefix => catCode.startsWith(prefix))
+  }
+
+  /** 분류 코드로부터 자산 유형 코드 추론 (가장 긴 접두사 매칭) */
+  const inferTypeFromCategory = (catCode: string): string | undefined => {
+    // 긴 접두사부터 매칭 (HW-SRV가 HW보다 우선)
+    const sortedPrefixes = Object.keys(prefixToTypeMap).sort((a, b) => b.length - a.length)
+    for (const prefix of sortedPrefixes) {
+      if (catCode.startsWith(prefix)) {
+        return prefixToTypeMap[prefix]
+      }
+    }
+    return undefined
+  }
+
   // 자산 유형 변경 핸들러
   const handleAssetTypeChange = (value: number) => {
     const assetType = assetTypes.find(t => t.id === value)
     if (assetType) {
       setSelectedTypeCode(assetType.code)
+      // 현재 선택된 분류가 새 유형과 호환되지 않으면 초기화
+      const currentCategoryIds: number[] = form.getFieldValue('categoryIds') || []
+      if (currentCategoryIds.length > 0) {
+        const compatible = currentCategoryIds.filter(cid => {
+          const cat = flatCategories.find(c => c.id === cid)
+          return cat ? isCategoryAllowedForType(cat.code, assetType.code) : false
+        })
+        if (compatible.length !== currentCategoryIds.length) {
+          form.setFieldsValue({ categoryIds: compatible })
+        }
+      }
+    }
+  }
+
+  // 분류 변경 핸들러 — 선택된 분류에 맞는 자산 유형 자동 선택
+  const handleCategoryChange = (categoryIds: number[]) => {
+    if (categoryIds.length === 0) return
+    // 마지막으로 추가된 분류 기준으로 유형 추론
+    const lastCatId = categoryIds[categoryIds.length - 1]
+    const lastCat = flatCategories.find(c => c.id === lastCatId)
+    if (!lastCat) return
+    const inferredTypeCode = inferTypeFromCategory(lastCat.code)
+    if (!inferredTypeCode) return
+    // 현재 자산 유형이 이미 호환되면 유지
+    if (selectedTypeCode && isCategoryAllowedForType(lastCat.code, selectedTypeCode)) return
+    // 호환되지 않으면 추론된 유형으로 자동 설정
+    const matchedType = assetTypes.find(t => t.code === inferredTypeCode && t.isActive)
+    if (matchedType) {
+      form.setFieldsValue({ assetTypeId: matchedType.id })
+      setSelectedTypeCode(matchedType.code)
     }
   }
 
@@ -94,8 +202,8 @@ const AssetForm = ({
   const handleFinish = async (values: any) => {
     setSubmitting(true)
     try {
-      // CIA 필드를 분리 (자산 API에 보내지 않음)
-      const { confidentiality, integrity, availability, evaluationReason, ...assetValues } = values
+      // CIA 및 담당자 필드를 분리 (자산 API에 보내지 않음)
+      const { confidentiality, integrity, availability, evaluationReason, assignees: assigneesRaw, ...assetValues } = values
       const submitData: Record<string, any> = {
         ...assetValues,
         acquisitionDate: assetValues.acquisitionDate?.format?.('YYYY-MM-DD') || assetValues.acquisitionDate || undefined,
@@ -108,11 +216,17 @@ const AssetForm = ({
           delete submitData[key]
         }
       })
-      // onSubmit에 CIA 데이터를 같이 전달
       const ciaData = (confidentiality && integrity && availability)
         ? { confidentiality, integrity, availability, evaluationReason }
         : undefined
-      await onSubmit(submitData, ciaData)
+      // 담당자 데이터 구성
+      const assignees: AssigneeEntry[] | undefined = assigneesRaw?.length
+        ? assigneesRaw.filter((a: any) => a?.personnelId).map((a: any) => ({
+            personnelId: a.personnelId,
+            role: a.role || 'user',
+          }))
+        : undefined
+      await onSubmit(submitData, { ciaData, assignees })
     } finally {
       setSubmitting(false)
     }
@@ -162,7 +276,14 @@ const AssetForm = ({
           >
             <Select
               placeholder="자산 유형 선택"
-              onChange={handleAssetTypeChange}
+              allowClear
+              onChange={(value) => {
+                if (value) {
+                  handleAssetTypeChange(value)
+                } else {
+                  setSelectedTypeCode('')
+                }
+              }}
               showSearch
               optionFilterProp="children"
             >
@@ -184,13 +305,38 @@ const AssetForm = ({
               placeholder="분류 선택 (복수 선택 가능)"
               allowClear
               showSearch
+              onChange={handleCategoryChange}
               filterOption={(input, option) =>
                 (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
               }
-              options={flatCategories.filter(c => c.isActive).map(cat => ({
-                value: cat.id,
-                label: `${'─'.repeat(cat.level - 1)}${cat.level > 1 ? ' ' : ''}${cat.name}`,
-              }))}
+              options={(() => {
+                const filtered = flatCategories.filter(c => {
+                  if (!c.isActive) return false
+                  if (selectedTypeCode) {
+                    return isCategoryAllowedForType(c.code, selectedTypeCode)
+                  }
+                  return true
+                })
+                // level-2를 그룹 헤더, level-3만 선택 가능
+                const level2Cats = filtered.filter(c => c.level === 2)
+                const groups = level2Cats.map(l2 => ({
+                  label: l2.name,
+                  options: filtered
+                    .filter(c => c.level === 3 && c.code.startsWith(l2.code))
+                    .map(c => ({ value: c.id, label: c.name })),
+                })).filter(g => g.options.length > 0)
+                // level-3가 없는 level-2는 단독 옵션으로 표시
+                const l2WithoutChildren = level2Cats.filter(l2 =>
+                  !filtered.some(c => c.level === 3 && c.code.startsWith(l2.code))
+                )
+                if (l2WithoutChildren.length > 0) {
+                  groups.push({
+                    label: '기타',
+                    options: l2WithoutChildren.map(c => ({ value: c.id, label: c.name })),
+                  })
+                }
+                return groups
+              })()}
             />
           </Form.Item>
         </Col>
@@ -235,6 +381,58 @@ const AssetForm = ({
           </Form.Item>
         </Col>
       </Row>
+      <Form.List name="assignees">
+        {(fields, { add, remove }) => (
+          <>
+            <Row gutter={16} style={{ marginBottom: fields.length ? 8 : 0 }}>
+              <Col xs={24}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#666', fontSize: 13 }}>담당자</span>
+                  <Button type="dashed" size="small" icon={<PlusOutlined />} onClick={() => add({ role: 'user' })}>
+                    담당자 추가
+                  </Button>
+                </div>
+              </Col>
+            </Row>
+            {fields.map(({ key, name, ...restField }) => (
+              <Row gutter={8} key={key} align="middle" style={{ marginBottom: 8 }}>
+                <Col flex="auto">
+                  <Form.Item
+                    {...restField}
+                    name={[name, 'personnelId']}
+                    rules={[{ required: true, message: '담당자를 선택하세요' }]}
+                    style={{ marginBottom: 0 }}
+                  >
+                    <Select placeholder="담당자 선택" showSearch optionFilterProp="children">
+                      {users.map(user => (
+                        <Option key={user.id} value={user.id}>
+                          {user.name}{user.email ? ` (${user.email})` : ''}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col flex="140px">
+                  <Form.Item
+                    {...restField}
+                    name={[name, 'role']}
+                    rules={[{ required: true, message: '역할 선택' }]}
+                    style={{ marginBottom: 0 }}
+                  >
+                    <Select>
+                      <Option value="manager">관리자</Option>
+                      <Option value="user">사용자</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col flex="32px">
+                  <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} size="small" />
+                </Col>
+              </Row>
+            ))}
+          </>
+        )}
+      </Form.List>
 
       {/* 기술 정보 (유형에 따라 동적 표시) */}
       {selectedTypeCode && (

@@ -64,6 +64,29 @@ export const assetService = {
     }
   },
 
+  /**
+   * 자산 유형 수정
+   */
+  async updateAssetType(id: number, data: Partial<AssetTypeCreate> & { isActive?: boolean }): Promise<AssetType> {
+    try {
+      const response = await apiClient.put<AssetType>(`/assets/types/${id}`, data)
+      return response.data
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  /**
+   * 자산 유형 삭제 (비활성화)
+   */
+  async deleteAssetType(id: number): Promise<void> {
+    try {
+      await apiClient.delete(`/assets/types/${id}`)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
   // ==========================================================================
   // 자산 분류 API (FR-501)
   // ==========================================================================

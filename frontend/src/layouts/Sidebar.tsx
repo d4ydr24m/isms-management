@@ -94,6 +94,7 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
         label: '자산 관리',
         children: [
           { key: '/assets', label: '자산 목록' },
+          { key: '/assets/types', label: '유형 관리' },
           { key: '/assets/categories', label: '분류 관리' },
         ],
       })
@@ -171,6 +172,7 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
   const selectedKeys = useMemo(() => {
     const pathname = location.pathname
     if (pathname === '/assets/categories') return ['/assets/categories']
+    if (pathname === '/assets/types') return ['/assets/types']
     if (pathname.startsWith('/assets')) return ['/assets']
     if (pathname === '/risk/threats') return ['/risk/threats']
     if (pathname === '/risk/vulnerabilities') return ['/risk/vulnerabilities']

@@ -148,6 +148,7 @@ def download_user_template(
         ws.column_dimensions[chr(64 + col)].width = w
 
     ws.auto_filter.ref = "A1:E1"
+    ws.freeze_panes = "A2"
 
     filename = "user_bulk_data.xlsx" if include_data else "user_bulk_template.xlsx"
     return _workbook_to_streaming_response(wb, filename)
@@ -347,6 +348,7 @@ def download_department_template(
         ws.column_dimensions[chr(64 + col)].width = w
 
     ws.auto_filter.ref = "A1:D1"
+    ws.freeze_panes = "A2"
 
     filename = "department_bulk_data.xlsx" if include_data else "department_bulk_template.xlsx"
     return _workbook_to_streaming_response(wb, filename)
@@ -520,6 +522,7 @@ def download_personnel_template(
         ws.column_dimensions[chr(64 + col)].width = w
 
     ws.auto_filter.ref = "A1:F1"
+    ws.freeze_panes = "A2"
 
     filename = "personnel_bulk_data.xlsx" if include_data else "personnel_bulk_template.xlsx"
     return _workbook_to_streaming_response(wb, filename)

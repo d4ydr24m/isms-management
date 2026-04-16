@@ -1199,15 +1199,25 @@ class AssetService:
             type_code_list.append(label)
         type_last_row = len(asset_types) + 1
 
-        # 분류 목록
-        categories = self.db.query(AssetCategory).filter(AssetCategory.is_active == True).all()
+        # 분류 목록 (소분류 level-3만, level-2는 level-3가 없을 때만 포함)
+        all_categories = self.db.query(AssetCategory).filter(AssetCategory.is_active == True).order_by(AssetCategory.code).all()
+        level3_cats = [c for c in all_categories if c.level == 3]
+        level2_codes_with_children = set(c.code.rsplit('-', 1)[0] for c in level3_cats if '-' in c.code)
+        level2_without_children = [c for c in all_categories if c.level == 2 and c.code not in level2_codes_with_children]
+        selectable_cats = sorted(level3_cats + level2_without_children, key=lambda c: c.code)
         ref_ws.cell(row=1, column=3, value="분류코드")
         cat_list = []
-        for i, cat in enumerate(categories, 2):
-            label = f"{cat.code} ({cat.name})"
+        for i, cat in enumerate(selectable_cats, 2):
+            # level-2의 부모 이름을 접두사로 표시
+            parent_name = ""
+            if cat.level == 3:
+                parent = next((p for p in all_categories if p.id == cat.parent_id), None)
+                if parent:
+                    parent_name = f"{parent.name} > "
+            label = f"{cat.code} ({parent_name}{cat.name})"
             ref_ws.cell(row=i, column=3, value=label)
             cat_list.append(label)
-        cat_last_row = len(categories) + 1
+        cat_last_row = len(selectable_cats) + 1
 
         # 부서 목록
         departments = self.db.query(Department).order_by(Department.name).all()
@@ -1396,7 +1406,8 @@ class AssetService:
             example_font = Font(italic=True, color="888888")
             example_fill = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
             example_type = type_code_list[0] if type_code_list else "SRV (서버)"
-            example_cat = cat_list[0] if cat_list else ""
+            # SRV에 맞는 level-3 분류 찾기
+            example_cat = next((c for c in cat_list if c.startswith("HW-SRV-")), cat_list[0] if cat_list else "")
             example_dept = dept_list[0] if dept_list else ""
             example_owner = ""
             if personnel_list:
@@ -1438,7 +1449,9 @@ class AssetService:
             ws.cell(row=row, column=1, value=asset.asset_code)
             ws.cell(row=row, column=2, value=asset.name)
             ws.cell(row=row, column=3, value=f"{asset.asset_type.code} ({asset.asset_type.name})" if asset.asset_type else "")
-            ws.cell(row=row, column=4, value=", ".join(f"{c.code} ({c.name})" for c in asset.categories) if asset.categories else "")
+            # 분류: level-3 우선, level-2는 하위가 없을 때만 표시
+            export_cats = [c for c in asset.categories if c.level == 3] or [c for c in asset.categories if c.level == 2]
+            ws.cell(row=row, column=4, value=", ".join(f"{c.code} ({c.name})" for c in export_cats) if export_cats else "")
             ws.cell(row=row, column=5, value=asset.location or "")
             ws.cell(row=row, column=6, value=f"{asset.department.code} ({asset.department.name})" if asset.department else "")
             ws.cell(row=row, column=7, value=f"{asset.personnel_owner.name} ({asset.personnel_owner.department.name})" if asset.personnel_owner and asset.personnel_owner.department else (asset.personnel_owner.name if asset.personnel_owner else ""))
@@ -1475,9 +1488,10 @@ class AssetService:
         for col, width in enumerate(column_widths, 1):
             ws.column_dimensions[get_column_letter(col)].width = width
 
-        # 헤더 자동 필터
+        # 헤더 자동 필터 및 틀 고정
         last_col_letter = get_column_letter(len(headers))
         ws.auto_filter.ref = f"A1:{last_col_letter}1"
+        ws.freeze_panes = "A2"
 
         # 바이트로 반환
         output = BytesIO()

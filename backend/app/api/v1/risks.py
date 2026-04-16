@@ -1122,6 +1122,7 @@ def _generate_risk_report_excel(report: dict, service: RiskService) -> bytes:
         ws_risks.column_dimensions[chr(64 + col)].width = width
 
     ws_risks.auto_filter.ref = "A1:J1"
+    ws_risks.freeze_panes = "A2"
 
     # 바이트로 반환
     output = BytesIO()

@@ -96,6 +96,17 @@ const AssetDetailPage = () => {
     try {
       const data = await assetService.getAsset(assetId)
       setAsset(data)
+      // asset_to_response에 포함된 CIA 데이터로 valuation 초기값 설정
+      if (data.confidentiality && data.integrity && data.availability) {
+        setValuation((prev) => prev ?? {
+          id: 0,
+          assetId: data.id,
+          confidentiality: data.confidentiality!,
+          integrity: data.integrity!,
+          availability: data.availability!,
+          importanceLevel: data.importanceLevel,
+        } as any)
+      }
     } catch {
       message.error('자산 정보를 불러오는데 실패했습니다')
     } finally {

@@ -70,10 +70,80 @@ function subscribeTokenRefresh(): Promise<void> {
 }
 
 function forceLogout() {
+  cancelProactiveRefresh()
   const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
   axios.post(`${baseURL}/auth/logout`, {}, { withCredentials: true }).catch(() => {})
   try { localStorage.removeItem('auth-storage') } catch { /* ignore */ }
   window.location.href = '/login'
+}
+
+// 인증 관련 URL은 401 갱신 시도 대상에서 제외
+function isAuthUrl(url: string | undefined): boolean {
+  if (!url) return false
+  return /\/auth\/(refresh|logout|login)/.test(url)
+}
+
+// 재시도 가능한 토큰 갱신 (최대 2회 재시도, 지수 백오프)
+const MAX_REFRESH_RETRIES = 2
+async function refreshWithRetry(): Promise<void> {
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+  let lastError: unknown
+  for (let attempt = 0; attempt <= MAX_REFRESH_RETRIES; attempt++) {
+    try {
+      await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true })
+      return // 성공
+    } catch (err: any) {
+      lastError = err
+      // 서버가 명시적으로 401을 반환하면 재시도 불필요 (refresh token 자체가 무효)
+      if (err?.response?.status === 401) {
+        throw err
+      }
+      // 네트워크 에러 등 일시적 오류는 재시도
+      if (attempt < MAX_REFRESH_RETRIES) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)))
+      }
+    }
+  }
+  throw lastError
+}
+
+// 선제적 토큰 갱신: 로그인 응답의 expiresIn을 기반으로 만료 전에 갱신
+let proactiveRefreshTimer: ReturnType<typeof setTimeout> | null = null
+
+export function scheduleProactiveRefresh(expiresInSeconds: number) {
+  if (proactiveRefreshTimer) {
+    clearTimeout(proactiveRefreshTimer)
+  }
+  // 만료 2분 전에 선제적 갱신 (최소 30초 뒤)
+  const refreshAfterMs = Math.max((expiresInSeconds - 120) * 1000, 30_000)
+  proactiveRefreshTimer = setTimeout(async () => {
+    if (isRefreshing) return
+    isRefreshing = true
+    try {
+      const resp = await axios.post(
+        `${(import.meta.env.VITE_API_BASE_URL as string) || '/api/v1'}/auth/refresh`,
+        {},
+        { withCredentials: true },
+      )
+      // 갱신 성공 시 다음 선제적 갱신 예약
+      const data = resp.data?.data ?? resp.data
+      const nextExpiresIn = data?.expires_in ?? data?.expiresIn
+      if (nextExpiresIn && typeof nextExpiresIn === 'number') {
+        scheduleProactiveRefresh(nextExpiresIn)
+      }
+    } catch {
+      // 선제적 갱신 실패는 무시 — 다음 API 호출 시 401 인터셉터가 처리
+    } finally {
+      isRefreshing = false
+    }
+  }, refreshAfterMs)
+}
+
+export function cancelProactiveRefresh() {
+  if (proactiveRefreshTimer) {
+    clearTimeout(proactiveRefreshTimer)
+    proactiveRefreshTimer = null
+  }
 }
 
 // Response 인터셉터: snake_case → camelCase 변환 및 에러 처리
@@ -87,8 +157,8 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
 
-    // 401 에러이고 재시도하지 않은 경우 토큰 갱신 시도
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // 인증 엔드포인트 자체의 401은 갱신 시도하지 않음 (무한 루프 방지)
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthUrl(originalRequest.url)) {
       originalRequest._retry = true
 
       // 이미 갱신 중이면 완료를 기다린 후 원래 요청 재시도
@@ -105,12 +175,7 @@ apiClient.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
-        await axios.post(
-          `${baseURL}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        )
+        await refreshWithRetry()
 
         // 갱신 성공: 대기 중인 요청들 재시도
         onRefreshed()

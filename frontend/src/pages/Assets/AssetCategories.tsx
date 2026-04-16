@@ -217,6 +217,68 @@ const AssetCategoriesPage = () => {
     setSelectedKey(keys.length > 0 ? Number(keys[0]) : null)
   }
 
+  /** 드래그 앤 드롭으로 같은 부모 내 순서 변경 */
+  const handleTreeDrop = async (info: any) => {
+    const dragId = Number(info.dragNode.key)
+    const dropId = Number(info.node.key)
+    const dropPosition: number = info.dropPosition
+    const dropToGap: boolean = info.dropToGap
+
+    const dragCat = allCategories.find(c => c.id === dragId)
+    const dropCat = allCategories.find(c => c.id === dropId)
+    if (!dragCat || !dropCat) return
+
+    let targetParentId = dragCat.parentId
+    let insertIndex = 0
+
+    if (!dropToGap && dropCat.id === dragCat.parentId) {
+      // 부모 노드 위에 드롭 → 해당 부모의 첫 번째 자식으로 이동
+      targetParentId = dropCat.id
+      insertIndex = 0
+    } else if (dropToGap && dropCat.level === dragCat.level && dropCat.parentId === dragCat.parentId) {
+      // 같은 레벨 형제 사이에 드롭
+      targetParentId = dragCat.parentId
+    } else if (dropToGap && dropCat.level === dragCat.level - 1 && dropCat.id === dragCat.parentId) {
+      // 부모 노드 바로 아래 gap에 드롭 → 첫 번째 자식으로
+      targetParentId = dropCat.id
+      insertIndex = 0
+    } else {
+      message.warning('같은 부모 내에서만 순서를 변경할 수 있습니다')
+      return
+    }
+
+    // 같은 부모 아래의 형제 목록 (드래그 대상 제외)
+    const siblings = allCategories
+      .filter(c => c.parentId === targetParentId && c.level === dragCat.level)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+    const withoutDrag = siblings.filter(c => c.id !== dragId)
+
+    // 같은 레벨 형제 사이 드롭인 경우 삽입 위치 계산
+    if (dropToGap && dropCat.level === dragCat.level) {
+      const dropIndex = withoutDrag.findIndex(c => c.id === dropId)
+      if (dropIndex < 0) return
+      insertIndex = dropPosition === -1 ? dropIndex : dropIndex + 1
+    }
+
+    const reordered = [...withoutDrag]
+    reordered.splice(insertIndex, 0, dragCat)
+
+    const hasChange = reordered.some((c, i) => c.sortOrder !== i)
+    if (!hasChange) return
+
+    try {
+      await Promise.all(
+        reordered.map((c, i) =>
+          c.sortOrder !== i ? assetService.updateAssetCategory(c.id, { sortOrder: i }) : Promise.resolve()
+        )
+      )
+      await fetchCategories()
+    } catch {
+      message.error('정렬 순서 저장에 실패했습니다')
+      fetchCategories()
+    }
+  }
+
   return (
     <div>
       <style>{`
@@ -252,9 +314,11 @@ const AssetCategoriesPage = () => {
             <Tree
               showIcon
               defaultExpandAll
+              draggable
               treeData={treeData}
               selectedKeys={selectedKey ? [selectedKey] : []}
               onSelect={handleSelect}
+              onDrop={handleTreeDrop}
               style={{ fontSize: 14 }}
             />
           )}

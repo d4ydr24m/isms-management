@@ -393,9 +393,10 @@ class AuditLogService:
             ws.cell(row=row_idx, column=11, value=log.ip_address or "")
             ws.cell(row=row_idx, column=12, value=log.current_hash[:16] + "..." if log.current_hash else "")
 
-        # 자동 필터 적용
+        # 자동 필터 및 틀 고정
         if logs:
             ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{len(logs) + 1}"
+        ws.freeze_panes = "A2"
 
         output = BytesIO()
         wb.save(output)
