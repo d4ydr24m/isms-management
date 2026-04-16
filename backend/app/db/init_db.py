@@ -161,31 +161,71 @@ def create_default_roles(db: Session) -> None:
         {
             "name": "보안담당자",
             "description": "정보보호 업무 담당자",
-            "permissions": "evidence:*,audit:*,control:read,user:read,dashboard:read",
+            "permissions": (
+                "dashboard:read,"
+                "scope:read,scope:update,"
+                "control:read,control:update,"
+                "evidence:*,"
+                "asset:*,"
+                "risk:*,"
+                "audit:*,"
+                "user:read"
+            ),
             "is_system_role": True,
         },
         {
             "name": "부서담당자",
             "description": "각 부서의 정보보호 담당자",
-            "permissions": "evidence:create,evidence:read,evidence:update,control:read,dashboard:read",
+            "permissions": (
+                "dashboard:read,"
+                "scope:read,"
+                "control:read,"
+                "evidence:create,evidence:read,evidence:update,"
+                "asset:read,"
+                "risk:read"
+            ),
             "is_system_role": True,
         },
         {
             "name": "일반직원",
             "description": "일반 직원",
-            "permissions": "evidence:read,control:read,dashboard:read",
+            "permissions": (
+                "dashboard:read,"
+                "scope:read,"
+                "control:read,"
+                "evidence:read,"
+                "asset:read,"
+                "risk:read"
+            ),
             "is_system_role": True,
         },
         {
             "name": "내부감사인",
-            "description": "내부 감사 수행자",
-            "permissions": "audit:*,evidence:read,control:read,dashboard:read",
+            "description": "내부 감사 수행자 (전체 읽기 + 감사 관리)",
+            "permissions": (
+                "dashboard:read,"
+                "scope:read,"
+                "control:read,"
+                "evidence:read,"
+                "asset:read,"
+                "risk:read,"
+                "audit:*,"
+                "user:read"
+            ),
             "is_system_role": True,
         },
         {
             "name": "외부심사원",
             "description": "외부 인증심사원 (읽기 전용)",
-            "permissions": "evidence:read,control:read,audit:read,dashboard:read",
+            "permissions": (
+                "dashboard:read,"
+                "scope:read,"
+                "control:read,"
+                "evidence:read,"
+                "asset:read,"
+                "risk:read,"
+                "audit:read"
+            ),
             "is_system_role": True,
         },
     ]

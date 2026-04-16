@@ -9,7 +9,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.deps import get_current_active_user, get_db
+from app.core.deps import get_current_active_user, get_db, require_permission
 from app.models.department import Department
 from app.models.personnel import Personnel
 from app.models.user import User
@@ -146,7 +146,7 @@ def search_personnel(
     q: str = Query("", description="이름 또는 이메일 검색어"),
     limit: int = Query(200, ge=1, le=500, description="최대 결과 수"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),  # 담당자 검색은 공통 기능 (드롭다운용)
 ):
     """담당자 빠른 검색 (드롭다운 자동완성용)"""
     query = db.query(Personnel).options(
@@ -189,7 +189,7 @@ def list_personnel(
     department_id: Optional[int] = Query(None, description="부서 ID 필터"),
     is_active: Optional[bool] = Query(None, description="활성 상태 필터"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:read")),
 ):
     """담당자 목록 조회 (페이지네이션, 필터)"""
     query = db.query(Personnel).options(
@@ -230,7 +230,7 @@ def list_personnel(
 def get_personnel(
     personnel_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:read")),
 ):
     """담당자 상세 조회"""
     p = (
@@ -256,7 +256,7 @@ def get_personnel(
 def create_personnel(
     data: PersonnelCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:create")),
 ):
     """담당자 생성"""
     # 이메일 중복 검사
@@ -304,7 +304,7 @@ def update_personnel(
     personnel_id: int,
     data: PersonnelUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:update")),
 ):
     """담당자 수정"""
     p = db.query(Personnel).filter(Personnel.id == personnel_id).first()
@@ -360,7 +360,7 @@ def update_personnel(
 def delete_personnel(
     personnel_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:delete")),
 ):
     """담당자 삭제 (비활성화)"""
     p = db.query(Personnel).filter(Personnel.id == personnel_id).first()

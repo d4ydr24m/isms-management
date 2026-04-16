@@ -244,7 +244,7 @@ const AssetForm = ({
             {shouldShowField('ipAddress') && (
               <Col xs={24} sm={12} md={8}>
                 <Form.Item name="ipAddress" label="IP 주소">
-                  <Input placeholder="192.168.1.1" maxLength={50} />
+                  <Input placeholder="192.168.1.1 또는 192.168.1.0/24 또는 192.168.1.1-254" maxLength={200} />
                 </Form.Item>
               </Col>
             )}

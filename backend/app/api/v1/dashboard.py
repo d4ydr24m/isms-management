@@ -12,7 +12,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_db, get_current_user
+from app.core.deps import get_db, require_permission
 from app.models.user import User
 from app.services.dashboard_service import DashboardService
 from app.schemas.dashboard import (
@@ -34,7 +34,7 @@ router = APIRouter(prefix="/dashboard", tags=["대시보드"])
 @router.get("/summary", response_model=DashboardSummary)
 def get_dashboard_summary(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("dashboard:read")),
 ) -> DashboardSummary:
     """
     6.2.1 대시보드 전체 요약 조회
@@ -62,7 +62,7 @@ def get_dashboard_summary(
 @router.get("/progress", response_model=ProgressData)
 def get_dashboard_progress(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("dashboard:read")),
 ) -> ProgressData:
     """
     6.2.2 진척률 게이지 데이터 조회
@@ -81,7 +81,7 @@ def get_dashboard_progress(
 @router.get("/activities", response_model=ActivitiesData)
 def get_dashboard_activities(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("dashboard:read")),
 ) -> ActivitiesData:
     """
     6.2.3 금일/금주 예정 활동 조회
@@ -101,7 +101,7 @@ def get_dashboard_activities(
 def get_expiring_evidences(
     days: int = Query(default=30, ge=1, le=365, description="조회 기간 (일)"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("dashboard:read")),
 ) -> ExpiringEvidencesData:
     """
     6.2.4 만료 예정 증적 조회
@@ -124,7 +124,7 @@ def get_expiring_evidences(
 def get_expiring_assets(
     days: int = Query(default=90, ge=1, le=365, description="조회 기간 (일)"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("dashboard:read")),
 ) -> ExpiringAssetsData:
     """
     6.2.4.1 보증 만료 예정 자산 조회
@@ -147,7 +147,7 @@ def get_expiring_assets(
 def get_eol_assets(
     days: int = Query(default=90, ge=1, le=365, description="조회 기간 (일)"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("dashboard:read")),
 ) -> EolAssetsData:
     """
     EoL(End of Life) 만료 예정/만료 자산 조회
@@ -169,7 +169,7 @@ def get_eol_assets(
 @router.get("/pending-tasks", response_model=PendingTask)
 def get_pending_tasks(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("dashboard:read")),
 ) -> PendingTask:
     """
     6.2.5 미완료 업무 조회
@@ -188,7 +188,7 @@ def get_pending_tasks(
 @router.get("/nonconformities", response_model=NonConformitySummary)
 def get_nonconformities_summary(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("dashboard:read")),
 ) -> NonConformitySummary:
     """
     6.2.6 부적합 현황 조회

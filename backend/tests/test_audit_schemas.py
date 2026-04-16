@@ -232,13 +232,13 @@ class TestCorrectiveActionSchemas:
     def test_corrective_action_create_valid(self):
         """유효한 시정조치 생성"""
         schema = CorrectiveActionCreate(
-            action_plan="정보보호 정책 수립 및 승인",
+            action_plan="경영진의 참여 및 승인",
             root_cause="정보보호 조직 부재",
             preventive_measures="연간 정책 검토 프로세스 수립",
             responsible_person_id=5,
             planned_completion_date=date(2024, 4, 15),
         )
-        assert schema.action_plan == "정보보호 정책 수립 및 승인"
+        assert schema.action_plan == "경영진의 참여 및 승인"
 
     def test_corrective_action_create_minimal(self):
         """최소 필수 필드만으로 생성"""
@@ -254,7 +254,7 @@ class TestCorrectiveActionSchemas:
         """결과 포함 수정 검증"""
         schema = CorrectiveActionUpdate(
             actual_completion_date=date(2024, 4, 10),
-            result_description="정보보호 정책 수립 완료",
+            result_description="경영진의 참여 완료",
             result_evidence_id=100,
             status=CAStatus.COMPLETED,
         )

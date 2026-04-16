@@ -29,7 +29,7 @@ vi.mock('@/services/audits', () => ({
         controlItemId: 1,
         controlItem: {
           number: '1.1.1',
-          title: '정보보호 정책 수립',
+          title: '경영진의 참여',
           description: '조직의 정보보호 정책을 수립한다',
         },
         order: 1,
@@ -117,7 +117,7 @@ describe('Checklist', () => {
       await waitFor(
         () => {
           expect(screen.getByText('1.1.1')).toBeInTheDocument()
-          expect(screen.getByText('정보보호 정책 수립')).toBeInTheDocument()
+          expect(screen.getByText('경영진의 참여')).toBeInTheDocument()
         },
         { timeout: 15000 }
       )

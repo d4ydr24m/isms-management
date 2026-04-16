@@ -40,6 +40,8 @@ import AuditLogsPage from '@/pages/AuditLogs'
 // Controls Management
 import ControlsPage from '@/pages/Controls'
 import ControlDetail from '@/pages/Controls/ControlDetail'
+// Roles Management
+import RolePermissions from '@/pages/Roles'
 // Settings
 import SettingsPage from '@/pages/Settings'
 // Risk Management
@@ -145,6 +147,16 @@ const AppRouter = () => {
         element={
           <PrivateRoute>
             <PersonnelPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Role Permission Management route */}
+      <Route
+        path="/roles"
+        element={
+          <PrivateRoute>
+            <RolePermissions />
           </PrivateRoute>
         }
       />

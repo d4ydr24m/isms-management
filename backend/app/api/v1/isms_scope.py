@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.deps import get_current_active_user, get_db
+from app.core.deps import get_current_active_user, get_db, require_permission
 from app.models.asset import Asset
 from app.models.department import Department
 from app.models.isms_scope import IsmsScopeChange, ScopeEntityType
@@ -117,7 +117,7 @@ class ScopeListResponse(BaseModel):
 @router.get("/stats", response_model=ScopeSummaryResponse)
 def get_scope_stats(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("scope:read")),
 ):
     """ISMS 인증 범위 통계 조회"""
     # 자산 통계
@@ -171,7 +171,7 @@ def list_asset_scope(
     search: Optional[str] = Query(None, description="이름/코드 검색"),
     department_id: Optional[int] = Query(None, description="부서 필터"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("scope:read")),
 ):
     """자산 ISMS 범위 목록 조회"""
     query = db.query(Asset).options(
@@ -211,7 +211,7 @@ def update_asset_scope(
     asset_id: int,
     data: ScopeUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("scope:update")),
 ):
     """자산 ISMS 범위 변경"""
     asset = db.query(Asset).filter(Asset.id == asset_id).first()
@@ -245,7 +245,7 @@ def update_asset_scope(
 def bulk_update_asset_scope(
     data: BulkScopeUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("scope:update")),
 ):
     """자산 ISMS 범위 일괄 변경"""
     assets = db.query(Asset).filter(Asset.id.in_(data.ids), Asset.is_active == True).all()
@@ -286,7 +286,7 @@ def list_personnel_scope(
     search: Optional[str] = Query(None),
     department_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("scope:read")),
 ):
     """담당자 ISMS 범위 목록 조회"""
     query = db.query(Personnel).options(
@@ -325,7 +325,7 @@ def update_personnel_scope(
     personnel_id: int,
     data: ScopeUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("scope:update")),
 ):
     """담당자 ISMS 범위 변경"""
     person = db.query(Personnel).filter(Personnel.id == personnel_id).first()
@@ -358,7 +358,7 @@ def update_personnel_scope(
 def bulk_update_personnel_scope(
     data: BulkScopeUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("scope:update")),
 ):
     """담당자 ISMS 범위 일괄 변경"""
     persons = db.query(Personnel).filter(
@@ -400,7 +400,7 @@ def list_department_scope(
     in_isms_scope: Optional[bool] = Query(None),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("scope:read")),
 ):
     """부서 ISMS 범위 목록 조회"""
     query = db.query(Department).filter(Department.is_active == True)
@@ -434,7 +434,7 @@ def update_department_scope(
     department_id: int,
     data: ScopeUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("scope:update")),
 ):
     """부서 ISMS 범위 변경"""
     dept = db.query(Department).filter(Department.id == department_id).first()
@@ -467,7 +467,7 @@ def update_department_scope(
 def bulk_update_department_scope(
     data: BulkScopeUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("scope:update")),
 ):
     """부서 ISMS 범위 일괄 변경"""
     depts = db.query(Department).filter(
@@ -508,7 +508,7 @@ def list_scope_changes(
     page_size: int = Query(20, ge=1, le=100),
     entity_type: Optional[str] = Query(None, description="대상 유형 필터"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("scope:read")),
 ):
     """ISMS 범위 변경 이력 조회"""
     query = db.query(IsmsScopeChange).options(

@@ -50,8 +50,8 @@ class ControlCategory(Base):
 
 class ControlItem(Base):
     """
-    통제항목 모델 (80개 ISMS-P 통제항목)
-    예: 1.1.1 정보보호 정책 수립
+    통제항목 모델 (101개 ISMS-P 통제항목)
+    예: 1.1.1 경영진의 참여
     """
 
     __tablename__ = "control_items"

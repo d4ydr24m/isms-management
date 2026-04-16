@@ -13,7 +13,7 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.worksheet.datavalidation import DataValidation
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_active_user, get_db
+from app.core.deps import get_current_active_user, get_db, require_permission
 from app.core.security import get_password_hash, validate_password_policy
 from app.models.department import Department
 from app.models.personnel import Personnel
@@ -106,7 +106,7 @@ def _workbook_to_streaming_response(wb: Workbook, filename: str) -> StreamingRes
 def download_user_template(
     include_data: bool = Query(False, description="기존 데이터 포함 여부"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:create")),
 ):
     """사용자 일괄 등록용 Excel 템플릿 다운로드"""
     wb = Workbook()
@@ -147,6 +147,8 @@ def download_user_template(
     for col, w in enumerate([25, 18, 15, 18, 25], 1):
         ws.column_dimensions[chr(64 + col)].width = w
 
+    ws.auto_filter.ref = "A1:E1"
+
     filename = "user_bulk_data.xlsx" if include_data else "user_bulk_template.xlsx"
     return _workbook_to_streaming_response(wb, filename)
 
@@ -156,7 +158,7 @@ def upload_users(
     file: UploadFile = File(...),
     update_existing: bool = Query(False, description="기존 데이터 업데이트 여부"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:create")),
 ):
     """Excel 파일로 사용자 일괄 등록 (update_existing=true 시 기존 사용자 업데이트)"""
     # 파일 유효성 검사
@@ -305,7 +307,7 @@ def upload_users(
 def download_department_template(
     include_data: bool = Query(False, description="기존 데이터 포함 여부"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:create")),
 ):
     """부서 일괄 등록용 Excel 템플릿 다운로드"""
     wb = Workbook()
@@ -344,6 +346,8 @@ def download_department_template(
     for col, w in enumerate([20, 15, 30, 25], 1):
         ws.column_dimensions[chr(64 + col)].width = w
 
+    ws.auto_filter.ref = "A1:D1"
+
     filename = "department_bulk_data.xlsx" if include_data else "department_bulk_template.xlsx"
     return _workbook_to_streaming_response(wb, filename)
 
@@ -353,7 +357,7 @@ def upload_departments(
     file: UploadFile = File(...),
     update_existing: bool = Query(False, description="기존 데이터 업데이트 여부"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:create")),
 ):
     """Excel 파일로 부서 일괄 등록 (update_existing=true 시 기존 부서 업데이트)"""
     # 파일 유효성 검사
@@ -472,7 +476,7 @@ def upload_departments(
 def download_personnel_template(
     include_data: bool = Query(False, description="기존 데이터 포함 여부"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:create")),
 ):
     """담당자 일괄 등록용 Excel 템플릿 다운로드"""
     wb = Workbook()
@@ -515,6 +519,8 @@ def download_personnel_template(
     for col, w in enumerate([15, 25, 18, 12, 25, 20], 1):
         ws.column_dimensions[chr(64 + col)].width = w
 
+    ws.auto_filter.ref = "A1:F1"
+
     filename = "personnel_bulk_data.xlsx" if include_data else "personnel_bulk_template.xlsx"
     return _workbook_to_streaming_response(wb, filename)
 
@@ -524,7 +530,7 @@ def upload_personnel(
     file: UploadFile = File(...),
     update_existing: bool = Query(False, description="기존 데이터 업데이트 여부 (이메일 기준)"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("user:create")),
 ):
     """Excel 파일로 담당자 일괄 등록 (update_existing=true 시 이메일 기준 기존 담당자 업데이트)"""
     # 파일 유효성 검사

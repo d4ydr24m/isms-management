@@ -131,6 +131,16 @@ def create_user(
                 detail="부서를 찾을 수 없습니다.",
             )
 
+    # 역할 조회
+    roles = []
+    if user_data.role_ids:
+        roles = db.query(Role).filter(Role.id.in_(user_data.role_ids)).all()
+        if len(roles) != len(user_data.role_ids):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="일부 역할을 찾을 수 없습니다.",
+            )
+
     # 사용자 생성
     user = User(
         email=user_data.email,
@@ -142,6 +152,8 @@ def create_user(
         is_superuser=False,
         is_mfa_enabled=False,
     )
+    if roles:
+        user.roles = roles
     db.add(user)
     db.commit()
     db.refresh(user)

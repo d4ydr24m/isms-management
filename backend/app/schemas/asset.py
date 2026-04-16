@@ -112,7 +112,7 @@ class AssetBase(BaseModel):
     department_id: Optional[int] = Field(None, description="담당 부서 ID")
     owner_id: Optional[int] = Field(None, description="자산 소유자 ID (사용자)")
     personnel_owner_id: Optional[int] = Field(None, description="자산 소유자 ID (담당자)")
-    ip_address: Optional[str] = Field(None, max_length=50, description="IP 주소")
+    ip_address: Optional[str] = Field(None, max_length=200, description="IP 주소 (단일, 범위, CIDR 지원)")
     mac_address: Optional[str] = Field(None, max_length=50, description="MAC 주소")
     hostname: Optional[str] = Field(None, max_length=100, description="호스트명")
     os_version: Optional[str] = Field(None, max_length=100, description="OS 버전")
@@ -154,7 +154,7 @@ class AssetUpdate(BaseModel):
     department_id: Optional[int] = None
     owner_id: Optional[int] = None
     personnel_owner_id: Optional[int] = None
-    ip_address: Optional[str] = Field(None, max_length=50)
+    ip_address: Optional[str] = Field(None, max_length=200)
     mac_address: Optional[str] = Field(None, max_length=50)
     hostname: Optional[str] = Field(None, max_length=100)
     os_version: Optional[str] = Field(None, max_length=100)
@@ -436,6 +436,7 @@ class AssetImportResult(BaseModel):
     total: int
     success: int
     failed: int
+    deactivated: int = 0
     errors: List[Dict[str, Any]]
 
 

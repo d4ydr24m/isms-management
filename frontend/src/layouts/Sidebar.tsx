@@ -48,28 +48,47 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
   }
 
   const menuItems = useMemo(() => {
-    const items: any[] = [
-      {
+    const items: any[] = []
+
+    // 대시보드: dashboard:read
+    if (hasPermission('dashboard:read')) {
+      items.push({
         key: '/dashboard',
         icon: <DashboardOutlined />,
         label: '대시보드',
-      },
-      {
+      })
+    }
+
+    // 인증 범위: scope:read
+    if (hasPermission('scope:read')) {
+      items.push({
         key: '/isms-scope',
         icon: <GlobalOutlined />,
         label: '인증 범위',
-      },
-      {
+      })
+    }
+
+    // 통제항목: control:read
+    if (hasPermission('control:read')) {
+      items.push({
         key: '/controls',
         icon: <SafetyCertificateOutlined />,
         label: '통제항목',
-      },
-      {
+      })
+    }
+
+    // 증적 관리: evidence:read
+    if (hasPermission('evidence:read')) {
+      items.push({
         key: '/evidence',
         icon: <FileTextOutlined />,
         label: '증적 관리',
-      },
-      {
+      })
+    }
+
+    // 자산 관리: asset:read
+    if (hasPermission('asset:read')) {
+      items.push({
         key: 'assets-group',
         icon: <DatabaseOutlined />,
         label: '자산 관리',
@@ -77,8 +96,12 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
           { key: '/assets', label: '자산 목록' },
           { key: '/assets/categories', label: '분류 관리' },
         ],
-      },
-      {
+      })
+    }
+
+    // 위험 관리: risk:read
+    if (hasPermission('risk:read')) {
+      items.push({
         key: 'risk-group',
         icon: <WarningOutlined />,
         label: '위험 관리',
@@ -92,8 +115,12 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
           { key: '/risk/vulnerabilities', label: '취약점 DB' },
           { key: '/risk/vuln-check', label: '취약점 점검' },
         ],
-      },
-      {
+      })
+    }
+
+    // 감사 관리: audit:read
+    if (hasPermission('audit:read')) {
+      items.push({
         key: 'audit-group',
         icon: <AuditOutlined />,
         label: '감사 관리',
@@ -102,20 +129,23 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
           { key: '/non-conformities', label: '부적합 관리' },
           { key: '/auditor-accounts', label: '외부 심사원' },
         ],
-      },
-    ]
+      })
+    }
 
     // 조직 관리: user:read 권한 필요
     if (hasPermission('user:read')) {
+      const orgChildren: any[] = [
+        { key: '/users', label: '사용자 관리' },
+        { key: '/departments', label: '부서 관리' },
+        { key: '/personnel', label: '담당자 관리' },
+      ]
+      // 역할 권한 관리
+      orgChildren.push({ key: '/roles', label: '역할 권한 관리' })
       items.push({
         key: 'org-group',
         icon: <TeamOutlined />,
         label: '조직 관리',
-        children: [
-          { key: '/users', label: '사용자 관리' },
-          { key: '/departments', label: '부서 관리' },
-          { key: '/personnel', label: '담당자 관리' },
-        ],
+        children: orgChildren,
       })
     }
 
@@ -159,7 +189,7 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
     if (location.pathname.startsWith('/assets')) keys.push('assets-group')
     if (location.pathname.startsWith('/risk')) keys.push('risk-group')
     if (location.pathname.startsWith('/audits') || location.pathname.startsWith('/auditor-accounts')) keys.push('audit-group')
-    if (location.pathname.startsWith('/users') || location.pathname.startsWith('/departments') || location.pathname.startsWith('/personnel')) keys.push('org-group')
+    if (location.pathname.startsWith('/users') || location.pathname.startsWith('/departments') || location.pathname.startsWith('/personnel') || location.pathname.startsWith('/roles')) keys.push('org-group')
     return keys
   }, [location.pathname])
 

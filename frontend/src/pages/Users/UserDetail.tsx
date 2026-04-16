@@ -46,11 +46,6 @@ function UserDetail() {
     try {
       const userData = await userService.getUser(parseInt(id))
       setUser(userData)
-      form.setFieldsValue({
-        name: userData.name,
-        departmentId: userData.departmentId,
-        isActive: userData.isActive,
-      })
     } catch (error) {
       message.error('사용자 정보를 불러오는데 실패했습니다')
     } finally {
@@ -315,6 +310,15 @@ function UserDetail() {
         title="사용자 정보 수정"
         open={editModalVisible}
         onCancel={() => setEditModalVisible(false)}
+        afterOpenChange={(open) => {
+          if (open && user) {
+            form.setFieldsValue({
+              name: user.name,
+              departmentId: user.departmentId,
+              isActive: user.isActive,
+            })
+          }
+        }}
         footer={null}
       >
         <Form form={form} onFinish={handleUpdate} layout="vertical">

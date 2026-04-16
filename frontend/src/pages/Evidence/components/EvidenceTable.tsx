@@ -1,5 +1,5 @@
 import { Table, Space, Button, Tooltip, Tag } from 'antd'
-import { EyeOutlined, DeleteOutlined, DownloadOutlined, InboxOutlined } from '@ant-design/icons'
+import { DeleteOutlined, DownloadOutlined, InboxOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import type { EvidenceListItem, EvidenceStatus } from '@/types'
@@ -111,15 +111,10 @@ const EvidenceTable = ({
     {
       title: '작업',
       key: 'actions',
-      width: 180,
+      width: 140,
       render: (_: unknown, record: EvidenceListItem) => (
         <Space size="small">
-          <Tooltip title="보기">
-            <Link to={`/evidence/${record.id}`}>
-              <Button type="text" size="small" icon={<EyeOutlined />} />
-            </Link>
-          </Tooltip>
-          {onDownload && (
+{onDownload && (
             <Tooltip title="다운로드">
               <Button
                 type="text"

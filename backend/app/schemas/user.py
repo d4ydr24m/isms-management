@@ -31,6 +31,7 @@ class UserCreate(UserBase):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
     name: str = Field(..., min_length=1, max_length=100)
+    role_ids: Optional[List[int]] = None
 
     @field_validator("password")
     @classmethod

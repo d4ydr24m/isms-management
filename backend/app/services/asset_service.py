@@ -537,7 +537,15 @@ class AssetService:
         if department_id is not None:
             query = query.filter(Asset.department_id == department_id)
         if status is not None:
-            query = query.filter(Asset.status == status)
+            # 영문 상태값 → 한글 매핑 (프론트엔드 호환)
+            status_map = {
+                "introduced": AssetStatus.INTRODUCED.value,
+                "operating": AssetStatus.OPERATING.value,
+                "changed": AssetStatus.CHANGED.value,
+                "disposed": AssetStatus.DISPOSED.value,
+            }
+            mapped_status = status_map.get(status, status)
+            query = query.filter(Asset.status == mapped_status)
         if is_active is not None:
             query = query.filter(Asset.is_active == is_active)
 
@@ -1217,9 +1225,9 @@ class AssetService:
         for i, s in enumerate(statuses, 2):
             ref_ws.cell(row=i, column=5, value=s)
 
-        # 중요도 목록
-        ref_ws.cell(row=1, column=6, value="중요도")
-        for i, v in enumerate(["1", "2", "3", "4", "5"], 2):
+        # CIA 평가 목록 (1:하, 2:중, 3:상)
+        ref_ws.cell(row=1, column=6, value="CIA")
+        for i, v in enumerate(["1 (하)", "2 (중)", "3 (상)"], 2):
             ref_ws.cell(row=i, column=6, value=v)
 
         # 소유자(담당자/Personnel) 목록
@@ -1255,10 +1263,13 @@ class AssetService:
             ("OS 버전", False),       # M(13)
             ("서비스 버전", False),   # N(14)
             ("상태", False),          # O(15)
-            ("중요도", False),        # P(16)
-            ("취득일", False),        # Q(17)
-            ("취득비용", False),      # R(18)
-            ("EoL 만료일", False),    # S(19)
+            ("기밀성(C)", False),     # P(16)
+            ("무결성(I)", False),     # Q(17)
+            ("가용성(A)", False),     # R(18)
+            ("취득일", False),        # S(19)
+            ("취득비용", False),      # T(20)
+            ("EoL 만료일", False),    # U(21)
+            ("설명", False),          # V(22)
         ]
         for col, (header, required) in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
@@ -1340,18 +1351,44 @@ class AssetService:
         ws.add_data_validation(dv_status)
         dv_status.add(f"O2:O{max_data_row}")
 
-        # 중요도 (P열)
-        dv_importance = DataValidation(
+        # 기밀성(C) (P열) - 참조시트 F열
+        dv_cia_c = DataValidation(
             type="list",
-            formula1=f"참조데이터!$F$2:$F$6",
+            formula1=f"참조데이터!$F$2:$F$4",
             allow_blank=True,
         )
-        dv_importance.error = "1~5 중 선택하세요."
-        dv_importance.errorTitle = "중요도 오류"
-        dv_importance.prompt = "중요도를 선택하세요 (1~5)"
-        dv_importance.promptTitle = "중요도"
-        ws.add_data_validation(dv_importance)
-        dv_importance.add(f"P2:P{max_data_row}")
+        dv_cia_c.error = "1(하)/2(중)/3(상) 중 선택하세요."
+        dv_cia_c.errorTitle = "기밀성 오류"
+        dv_cia_c.prompt = "기밀성 등급을 선택하세요 (1:하, 2:중, 3:상)"
+        dv_cia_c.promptTitle = "기밀성(C)"
+        ws.add_data_validation(dv_cia_c)
+        dv_cia_c.add(f"P2:P{max_data_row}")
+
+        # 무결성(I) (Q열)
+        dv_cia_i = DataValidation(
+            type="list",
+            formula1=f"참조데이터!$F$2:$F$4",
+            allow_blank=True,
+        )
+        dv_cia_i.error = "1(하)/2(중)/3(상) 중 선택하세요."
+        dv_cia_i.errorTitle = "무결성 오류"
+        dv_cia_i.prompt = "무결성 등급을 선택하세요 (1:하, 2:중, 3:상)"
+        dv_cia_i.promptTitle = "무결성(I)"
+        ws.add_data_validation(dv_cia_i)
+        dv_cia_i.add(f"Q2:Q{max_data_row}")
+
+        # 가용성(A) (R열)
+        dv_cia_a = DataValidation(
+            type="list",
+            formula1=f"참조데이터!$F$2:$F$4",
+            allow_blank=True,
+        )
+        dv_cia_a.error = "1(하)/2(중)/3(상) 중 선택하세요."
+        dv_cia_a.errorTitle = "가용성 오류"
+        dv_cia_a.prompt = "가용성 등급을 선택하세요 (1:하, 2:중, 3:상)"
+        dv_cia_a.promptTitle = "가용성(A)"
+        ws.add_data_validation(dv_cia_a)
+        dv_cia_a.add(f"R2:R{max_data_row}")
 
         # ── 예시 행 (빈 템플릿일 때만) ──
         data_start_row = 2
@@ -1381,10 +1418,13 @@ class AssetService:
                 "Ubuntu 22.04",                              # M: OS 버전
                 "Apache 2.4",                                # N: 서비스 버전
                 "운영",                                      # O: 상태
-                "3",                                         # P: 중요도
-                "2025-01-15",                                # Q: 취득일
-                "5000000",                                   # R: 취득비용
-                "2028-01-10",                                # S: EoL 만료일
+                "3 (상)",                                    # P: 기밀성(C)
+                "2 (중)",                                    # Q: 무결성(I)
+                "3 (상)",                                    # R: 가용성(A)
+                "2025-01-15",                                # S: 취득일
+                "5000000",                                   # T: 취득비용
+                "2028-01-10",                                # U: EoL 만료일
+                "메인 웹 서비스 운영 서버",                  # V: 설명
             ]
             for col, val in enumerate(example_data, 1):
                 cell = ws.cell(row=2, column=col, value=val)
@@ -1421,15 +1461,23 @@ class AssetService:
             ws.cell(row=row, column=13, value=asset.os_version or "")
             ws.cell(row=row, column=14, value=asset.service_version or "")
             ws.cell(row=row, column=15, value=asset.status)
-            ws.cell(row=row, column=16, value=str(valuation.importance_level) if valuation and valuation.importance_level else "")
-            ws.cell(row=row, column=17, value=str(asset.acquisition_date) if asset.acquisition_date else "")
-            ws.cell(row=row, column=18, value=asset.acquisition_cost or "")
-            ws.cell(row=row, column=19, value=str(asset.eol_date) if asset.eol_date else "")
+            cia_label = {1: "1 (하)", 2: "2 (중)", 3: "3 (상)"}
+            ws.cell(row=row, column=16, value=cia_label.get(valuation.confidentiality, "") if valuation else "")
+            ws.cell(row=row, column=17, value=cia_label.get(valuation.integrity, "") if valuation else "")
+            ws.cell(row=row, column=18, value=cia_label.get(valuation.availability, "") if valuation else "")
+            ws.cell(row=row, column=19, value=str(asset.acquisition_date) if asset.acquisition_date else "")
+            ws.cell(row=row, column=20, value=asset.acquisition_cost or "")
+            ws.cell(row=row, column=21, value=str(asset.eol_date) if asset.eol_date else "")
+            ws.cell(row=row, column=22, value=asset.description or "")
 
         # 열 너비 조정
-        column_widths = [22, 18, 22, 22, 15, 22, 22, 18, 18, 18, 12, 12, 15, 15, 10, 10, 12, 12, 14]
+        column_widths = [22, 18, 22, 22, 15, 22, 22, 18, 18, 18, 12, 12, 15, 15, 10, 10, 10, 10, 12, 12, 14, 30]
         for col, width in enumerate(column_widths, 1):
             ws.column_dimensions[get_column_letter(col)].width = width
+
+        # 헤더 자동 필터
+        last_col_letter = get_column_letter(len(headers))
+        ws.auto_filter.ref = f"A1:{last_col_letter}1"
 
         # 바이트로 반환
         output = BytesIO()
@@ -1497,6 +1545,7 @@ class AssetService:
         self,
         file_content: bytes,
         user_id: int,
+        deactivate_missing: bool = False,
     ) -> Dict:
         """자산 엑셀 임포트"""
         try:
@@ -1511,8 +1560,10 @@ class AssetService:
             "total": 0,
             "success": 0,
             "failed": 0,
+            "deactivated": 0,
             "errors": [],
         }
+        processed_asset_ids: set = set()
 
         # 헤더 행 찾기: 첫 번째 열이 "자산코드"인 행을 찾아 데이터 시작 행 결정
         data_start_row = 2  # 기본값
@@ -1592,7 +1643,8 @@ class AssetService:
                 # 1:자산코드, 2:자산명, 3:자산유형, 4:분류, 5:위치, 6:부서,
                 # 7:소유자(Personnel), 8:담당자(쉼표구분), 9:IP주소, 10:호스트명,
                 # 11:제조사, 12:모델, 13:OS버전, 14:서비스버전, 15:상태,
-                # 16:중요도, 17:취득일, 18:취득비용, 19:EoL 만료일
+                # 16:기밀성(C), 17:무결성(I), 18:가용성(A),
+                # 19:취득일, 20:취득비용, 21:EoL 만료일, 22:설명
                 location_val = ws.cell(row=row_num, column=5).value
                 owner_raw = ws.cell(row=row_num, column=7).value
                 assignee_raw = ws.cell(row=row_num, column=8).value
@@ -1603,9 +1655,13 @@ class AssetService:
                 os_version_val = ws.cell(row=row_num, column=13).value
                 service_version_val = ws.cell(row=row_num, column=14).value
                 status_val = ws.cell(row=row_num, column=15).value
-                acquisition_date_val = ws.cell(row=row_num, column=17).value
-                acquisition_cost_val = ws.cell(row=row_num, column=18).value
-                eol_date_val = ws.cell(row=row_num, column=19).value
+                cia_c_raw = ws.cell(row=row_num, column=16).value
+                cia_i_raw = ws.cell(row=row_num, column=17).value
+                cia_a_raw = ws.cell(row=row_num, column=18).value
+                acquisition_date_val = ws.cell(row=row_num, column=19).value
+                acquisition_cost_val = ws.cell(row=row_num, column=20).value
+                eol_date_val = ws.cell(row=row_num, column=21).value
+                description_val = ws.cell(row=row_num, column=22).value
 
                 # 소유자 조회 ("name (dept)" 형식에서 name 추출)
                 personnel_owner_id = None
@@ -1677,6 +1733,23 @@ class AssetService:
                         except ValueError:
                             pass
 
+                # CIA 파싱 ("N (label)" 형식에서 숫자 추출)
+                def parse_cia(val) -> Optional[int]:
+                    if val is None:
+                        return None
+                    s = str(val).strip()
+                    if not s:
+                        return None
+                    # "3 (상)" → 3, "2" → 2
+                    try:
+                        return int(s[0])
+                    except (ValueError, IndexError):
+                        return None
+
+                cia_c = parse_cia(cia_c_raw)
+                cia_i = parse_cia(cia_i_raw)
+                cia_a = parse_cia(cia_a_raw)
+
                 # 자산코드가 있으면 기존 자산 업데이트 시도
                 if asset_code:
                     existing = self.db.query(Asset).filter(Asset.asset_code == str(asset_code).strip()).first()
@@ -1707,6 +1780,7 @@ class AssetService:
                         existing.acquisition_date = acquisition_date
                         existing.acquisition_cost = acquisition_cost
                         existing.eol_date = eol_date
+                        existing.description = str(description_val) if description_val else None
                         self.db.commit()
 
                         # 담당자 할당 동기화 (소유자 제외한 나머지)
@@ -1715,6 +1789,18 @@ class AssetService:
                                 existing.id, assignee_list, user_id
                             )
 
+                        # CIA 평가 생성/업데이트
+                        if cia_c is not None and cia_i is not None and cia_a is not None:
+                            self.create_valuation(
+                                asset_id=existing.id,
+                                confidentiality=cia_c,
+                                integrity=cia_i,
+                                availability=cia_a,
+                                user_id=user_id,
+                                evaluation_reason="엑셀 일괄 등록",
+                            )
+
+                        processed_asset_ids.add(existing.id)
                         results["success"] += 1
                         continue
 
@@ -1732,6 +1818,7 @@ class AssetService:
                     "model": str(model_val) if model_val else None,
                     "os_version": str(os_version_val) if os_version_val else None,
                     "service_version": str(service_version_val) if service_version_val else None,
+                    "description": str(description_val) if description_val else None,
                 }
                 if personnel_owner_id:
                     create_kwargs["personnel_owner_id"] = personnel_owner_id
@@ -1751,6 +1838,18 @@ class AssetService:
                         new_asset.id, assignee_list, user_id
                     )
 
+                # CIA 평가 생성
+                if cia_c is not None and cia_i is not None and cia_a is not None:
+                    self.create_valuation(
+                        asset_id=new_asset.id,
+                        confidentiality=cia_c,
+                        integrity=cia_i,
+                        availability=cia_a,
+                        user_id=user_id,
+                        evaluation_reason="엑셀 일괄 등록",
+                    )
+
+                processed_asset_ids.add(new_asset.id)
                 results["success"] += 1
 
             except Exception as e:
@@ -1759,6 +1858,24 @@ class AssetService:
                     "row": row_num,
                     "error": str(e)
                 })
+
+        # 템플릿에 없는 기존 활성 자산 비활성화
+        if deactivate_missing and processed_asset_ids:
+            active_assets = (
+                self.db.query(Asset)
+                .filter(Asset.is_active == True, Asset.id.notin_(processed_asset_ids))
+                .all()
+            )
+            for asset in active_assets:
+                asset.is_active = False
+                self._record_history(
+                    asset_id=asset.id,
+                    change_type=AssetChangeType.DELETE.value,
+                    changed_by=user_id,
+                    new_value="엑셀 임포트 동기화로 비활성화",
+                )
+                results["deactivated"] += 1
+            self.db.commit()
 
         return results
 

@@ -178,6 +178,18 @@ export const assetService = {
     }
   },
 
+  /**
+   * 자산 일괄 삭제 (비활성화)
+   */
+  async bulkDeleteAssets(ids: number[]): Promise<{ deleted: number; failed: number; errors: Array<{ id: number; error: string }> }> {
+    try {
+      const response = await apiClient.post('/assets/bulk-delete', ids)
+      return response.data
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
   // ==========================================================================
   // 자산 가치 평가 API (FR-503)
   // ==========================================================================
@@ -340,9 +352,10 @@ export const assetService = {
   /**
    * 자산 엑셀 임포트
    */
-  async importAssets(file: File, onProgress?: (progress: number) => void): Promise<AssetImportResult> {
+  async importAssets(file: File, options?: { deactivateMissing?: boolean }, onProgress?: (progress: number) => void): Promise<AssetImportResult> {
     try {
-      const response = await uploadFile('/assets/import', file, undefined, (progressEvent) => {
+      const params = options?.deactivateMissing ? '?deactivate_missing=true' : ''
+      const response = await uploadFile(`/assets/import${params}`, file, undefined, (progressEvent) => {
         if (onProgress && progressEvent.total) {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
           onProgress(progress)

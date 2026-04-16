@@ -264,7 +264,7 @@ describe('SOA 관련 타입', () => {
       id: 1,
       control_item_id: 1,
       control_code: '1.1.1',
-      control_title: '정보보호 정책 수립',
+      control_title: '경영진의 참여',
       control_description: '정보보호 최고책임자 지정 및 조직 구성',
       is_applicable: true,
       exclusion_reason: null,

@@ -937,9 +937,15 @@ class RiskService:
     # =========================================================================
 
     def get_soa_records(self) -> Tuple[List[SOARecord], int]:
-        """SOA 레코드 목록 조회"""
+        """SOA 레코드 목록 조회 (통제항목 sort_order 기준 정렬)"""
         from sqlalchemy.orm import joinedload
-        items = self.db.query(SOARecord).options(joinedload(SOARecord.control_item)).all()
+        items = (
+            self.db.query(SOARecord)
+            .join(SOARecord.control_item)
+            .options(joinedload(SOARecord.control_item))
+            .order_by(ControlItem.sort_order)
+            .all()
+        )
         return items, len(items)
 
     def get_soa_record_by_control(self, control_item_id: int) -> Optional[SOARecord]:
@@ -968,8 +974,8 @@ class RiskService:
 
     def generate_soa(self) -> int:
         """SOA 자동 생성"""
-        # 모든 통제항목 조회 (ControlItem 모델에는 is_active가 없음)
-        control_items = self.db.query(ControlItem).all()
+        # 모든 통제항목 조회 (sort_order 기준 정렬)
+        control_items = self.db.query(ControlItem).order_by(ControlItem.sort_order).all()
 
         count = 0
         for item in control_items:

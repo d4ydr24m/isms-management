@@ -46,8 +46,8 @@ def test_control_item(db: Session, test_control_category: ControlCategory) -> Co
     item = ControlItem(
         category_id=test_control_category.id,
         code="1.1.1",
-        title="정보보호 정책 수립",
-        description="정보보호 정책 수립",
+        title="경영진의 참여",
+        description="경영진의 참여",
         is_required=True,
         sort_order=1,
     )

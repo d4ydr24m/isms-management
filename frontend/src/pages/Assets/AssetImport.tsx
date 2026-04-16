@@ -46,6 +46,7 @@ const AssetImportPage = () => {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [importResult, setImportResult] = useState<AssetImportResult | null>(null)
   const [updateExisting, setUpdateExisting] = useState(false)
+  const [deactivateMissing, setDeactivateMissing] = useState(false)
 
   // 빈 템플릿 다운로드
   const handleDownloadTemplate = async () => {
@@ -115,7 +116,7 @@ const AssetImportPage = () => {
     setCurrentStep('preview')
 
     try {
-      const result = await assetService.importAssets(file, (progress) => {
+      const result = await assetService.importAssets(file, { deactivateMissing }, (progress) => {
         setUploadProgress(progress)
       })
       setImportResult(result)
@@ -235,12 +236,20 @@ const AssetImportPage = () => {
             </div>
 
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <Checkbox
-                checked={updateExisting}
-                onChange={(e) => setUpdateExisting(e.target.checked)}
-              >
-                기존 데이터 업데이트 (자산코드가 동일한 자산이 있으면 정보를 업데이트합니다)
-              </Checkbox>
+              <Space direction="vertical">
+                <Checkbox
+                  checked={updateExisting}
+                  onChange={(e) => setUpdateExisting(e.target.checked)}
+                >
+                  기존 데이터 업데이트 (자산코드가 동일한 자산이 있으면 정보를 업데이트합니다)
+                </Checkbox>
+                <Checkbox
+                  checked={deactivateMissing}
+                  onChange={(e) => setDeactivateMissing(e.target.checked)}
+                >
+                  템플릿에 없는 자산 비활성화 (템플릿에 포함되지 않은 기존 활성 자산을 비활성화합니다)
+                </Checkbox>
+              </Space>
             </div>
 
             <Dragger {...uploadProps} style={{ padding: '40px 0' }}>
@@ -305,6 +314,9 @@ const AssetImportPage = () => {
                   <Text type="success">성공: {importResult.success}건</Text>
                   {importResult.failed > 0 && (
                     <Text type="danger">실패: {importResult.failed}건</Text>
+                  )}
+                  {(importResult.deactivated ?? 0) > 0 && (
+                    <Text type="warning">비활성화: {importResult.deactivated}건</Text>
                   )}
                 </Space>
               }

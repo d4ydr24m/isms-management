@@ -238,6 +238,8 @@ def _generate_soa_excel(items, template_type: str) -> bytes:
     for col, width in enumerate(column_widths, 1):
         ws.column_dimensions[chr(64 + col)].width = width
 
+    ws.auto_filter.ref = "A1:I1"
+
     # 바이트로 반환
     output = BytesIO()
     wb.save(output)

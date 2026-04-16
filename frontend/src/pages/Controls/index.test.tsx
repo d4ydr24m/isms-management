@@ -22,7 +22,7 @@ vi.mock('@/services/controls', () => ({
           id: 1,
           categoryId: 1,
           number: '1.1.1',
-          title: '정보보호 정책 수립',
+          title: '경영진의 참여',
           description: '조직의 정보보호 정책을 수립한다',
           isRequired: true,
           evidenceCount: 3,
@@ -111,7 +111,7 @@ describe('ControlListPage', () => {
       await waitFor(
         () => {
           expect(screen.getByText('1.1.1')).toBeInTheDocument()
-          expect(screen.getByText('정보보호 정책 수립')).toBeInTheDocument()
+          expect(screen.getByText('경영진의 참여')).toBeInTheDocument()
         },
         { timeout: 10000 }
       )
@@ -149,7 +149,7 @@ describe('ControlListPage', () => {
 
       await waitFor(
         () => {
-          expect(screen.getByText('정보보호 정책 수립')).toBeInTheDocument()
+          expect(screen.getByText('경영진의 참여')).toBeInTheDocument()
         },
         { timeout: 10000 }
       )
@@ -188,7 +188,7 @@ describe('ControlListPage', () => {
 
       await waitFor(
         () => {
-          expect(screen.getByText('정보보호 정책 수립')).toBeInTheDocument()
+          expect(screen.getByText('경영진의 참여')).toBeInTheDocument()
         },
         { timeout: 10000 }
       )

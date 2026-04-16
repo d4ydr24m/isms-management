@@ -78,7 +78,7 @@ vi.mock('@/services/controls', () => ({
   controlService: {
     getControls: vi.fn().mockResolvedValue({
       data: [
-        { id: 1, number: '1.1.1', title: '정보보호 정책 수립', isRequired: true },
+        { id: 1, number: '1.1.1', title: '경영진의 참여', isRequired: true },
         { id: 2, number: '1.1.2', title: '정책의 승인', isRequired: true },
         { id: 3, number: '1.1.3', title: '정책의 공표', isRequired: false },
       ],

@@ -473,7 +473,7 @@ class TestCorrectiveActionService:
 
         service = AuditService(db)
         ca_data = CorrectiveActionCreate(
-            action_plan="정보보호 정책 수립 및 승인",
+            action_plan="경영진의 참여 및 승인",
             root_cause="정보보호 조직 부재",
             preventive_measures="연간 정책 검토 프로세스 수립",
             responsible_person_id=test_user.id,
@@ -495,7 +495,7 @@ class TestCorrectiveActionService:
         service = AuditService(db)
         # 시정조치 생성
         ca_data = CorrectiveActionCreate(
-            action_plan="정보보호 정책 수립",
+            action_plan="경영진의 참여",
             responsible_person_id=test_user.id,
             planned_completion_date=date(2024, 4, 15),
         )
@@ -504,13 +504,13 @@ class TestCorrectiveActionService:
         # 시정조치 결과 등록
         update_data = CorrectiveActionUpdate(
             actual_completion_date=date(2024, 4, 10),
-            result_description="정보보호 정책 수립 완료",
+            result_description="경영진의 참여 완료",
             status=CAStatus.COMPLETED,
         )
         updated_ca = service.update_corrective_action(ca.id, update_data)
 
         assert updated_ca.status == "completed"
-        assert updated_ca.result_description == "정보보호 정책 수립 완료"
+        assert updated_ca.result_description == "경영진의 참여 완료"
 
     def test_verify_corrective_action(
         self, db: Session, sample_non_conformity: NonConformity,
@@ -522,7 +522,7 @@ class TestCorrectiveActionService:
         service = AuditService(db)
         # 시정조치 생성 및 완료
         ca_data = CorrectiveActionCreate(
-            action_plan="정보보호 정책 수립",
+            action_plan="경영진의 참여",
             responsible_person_id=test_user.id,
             planned_completion_date=date(2024, 4, 15),
         )
@@ -554,7 +554,7 @@ class TestCorrectiveActionService:
 
         service = AuditService(db)
         ca_data = CorrectiveActionCreate(
-            action_plan="정보보호 정책 수립",
+            action_plan="경영진의 참여",
             responsible_person_id=test_user.id,
             planned_completion_date=date(2024, 4, 15),
         )

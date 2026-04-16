@@ -207,6 +207,19 @@ class AuditLogService:
             "first_invalid_id": None,
         }
 
+    def _query_logs_for_export(
+        self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> List[AuditLog]:
+        """내보내기용 로그 조회"""
+        query = self.db.query(AuditLog)
+        if start_date:
+            query = query.filter(AuditLog.created_at >= start_date)
+        if end_date:
+            query = query.filter(AuditLog.created_at <= end_date)
+        return query.order_by(AuditLog.created_at).all()
+
     def export_logs(
         self,
         format: str = "csv",
@@ -224,14 +237,7 @@ class AuditLogService:
         Returns:
             str: CSV 또는 JSON 문자열
         """
-        query = self.db.query(AuditLog)
-
-        if start_date:
-            query = query.filter(AuditLog.created_at >= start_date)
-        if end_date:
-            query = query.filter(AuditLog.created_at <= end_date)
-
-        logs = query.order_by(AuditLog.created_at).all()
+        logs = self._query_logs_for_export(start_date, end_date)
 
         if format == "json":
             data = []
@@ -289,6 +295,112 @@ class AuditLogService:
                 ])
 
             return output.getvalue()
+
+    def export_logs_excel(
+        self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> bytes:
+        """
+        감사 로그 엑셀 내보내기
+
+        Args:
+            start_date: 시작일
+            end_date: 종료일
+
+        Returns:
+            bytes: XLSX 파일 바이트
+        """
+        from io import BytesIO
+        try:
+            from openpyxl import Workbook
+            from openpyxl.styles import Font, PatternFill, Alignment
+        except ImportError:
+            raise ImportError("openpyxl 패키지가 필요합니다.")
+
+        logs = self._query_logs_for_export(start_date, end_date)
+
+        ACTION_LABELS = {
+            "create": "생성", "update": "수정", "delete": "삭제",
+            "view": "조회", "download": "다운로드",
+            "login": "로그인", "logout": "로그아웃",
+        }
+        RESOURCE_LABELS = {
+            "auth": "인증", "users": "사용자", "roles": "역할",
+            "departments": "부서", "evidence": "증적", "evidences": "증적",
+            "controls": "통제항목", "assets": "자산", "audits": "감사",
+            "notifications": "알림", "system-settings": "시스템 설정",
+            "nonconformities": "부적합", "audit-logs": "감사 로그",
+            "risks": "위험", "soa": "SOA", "bulk": "일괄 등록",
+            "personnel": "담당자", "auditor-accounts": "외부 심사원",
+            "risk-control-linkage": "위험-통제 연계",
+            "vuln-check": "취약점 점검", "backup": "백업/복원",
+            "dashboard": "대시보드", "search": "검색",
+        }
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "감사 로그"
+
+        # 헤더 스타일
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+
+        headers = [
+            ("No", 8),
+            ("시간", 20),
+            ("사용자", 15),
+            ("이메일", 25),
+            ("액션", 10),
+            ("대상", 15),
+            ("리소스 ID", 10),
+            ("메서드", 10),
+            ("경로", 40),
+            ("상태코드", 10),
+            ("IP 주소", 18),
+            ("해시", 20),
+        ]
+
+        for col, (header, width) in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            ws.column_dimensions[chr(64 + col) if col <= 26 else ""].width = width
+
+        # 열 너비 설정 (openpyxl 방식)
+        from openpyxl.utils import get_column_letter
+        for col, (_, width) in enumerate(headers, 1):
+            ws.column_dimensions[get_column_letter(col)].width = width
+
+        # 데이터 행
+        date_alignment = Alignment(horizontal="center")
+        for row_idx, log in enumerate(logs, 2):
+            ws.cell(row=row_idx, column=1, value=row_idx - 1)
+            ws.cell(
+                row=row_idx, column=2,
+                value=log.created_at.strftime("%Y-%m-%d %H:%M:%S") if log.created_at else "",
+            ).alignment = date_alignment
+            ws.cell(row=row_idx, column=3, value=log.user_name or "")
+            ws.cell(row=row_idx, column=4, value=log.user_email or "")
+            ws.cell(row=row_idx, column=5, value=ACTION_LABELS.get(log.action, log.action))
+            ws.cell(row=row_idx, column=6, value=RESOURCE_LABELS.get(log.resource_type, log.resource_type))
+            ws.cell(row=row_idx, column=7, value=log.resource_id or "")
+            ws.cell(row=row_idx, column=8, value=log.request_method or "")
+            ws.cell(row=row_idx, column=9, value=log.request_path or "")
+            ws.cell(row=row_idx, column=10, value=log.status_code or "")
+            ws.cell(row=row_idx, column=11, value=log.ip_address or "")
+            ws.cell(row=row_idx, column=12, value=log.current_hash[:16] + "..." if log.current_hash else "")
+
+        # 자동 필터 적용
+        if logs:
+            ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{len(logs) + 1}"
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return output.read()
 
 
 def log_user_activity(

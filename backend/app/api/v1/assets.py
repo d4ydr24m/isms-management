@@ -506,6 +506,7 @@ def export_assets(
 @router.post("/import", response_model=AssetImportResult)
 async def import_assets(
     file: UploadFile = File(...),
+    deactivate_missing: bool = Query(False, description="템플릿에 없는 자산 비활성화"),
     service: AssetService = Depends(get_asset_service),
     current_user: User = Depends(require_permission("asset:create")),
 ) -> AssetImportResult:
@@ -513,10 +514,11 @@ async def import_assets(
     자산 엑셀 대량 등록
 
     엑셀 파일을 업로드하여 자산을 일괄 등록합니다.
+    - **deactivate_missing**: true이면 템플릿에 없는 기존 활성 자산을 비활성화합니다.
     """
     try:
         file_content = await file.read()
-        result = service.import_assets(file_content, current_user.id)
+        result = service.import_assets(file_content, current_user.id, deactivate_missing=deactivate_missing)
         return AssetImportResult(**result)
     except ImportError as e:
         raise HTTPException(
@@ -566,6 +568,24 @@ def update_asset(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
+
+
+@router.post("/bulk-delete", status_code=status.HTTP_200_OK)
+def bulk_delete_assets(
+    asset_ids: List[int],
+    service: AssetService = Depends(get_asset_service),
+    current_user: User = Depends(require_permission("asset:delete")),
+):
+    """자산 일괄 비활성화 (소프트 삭제)"""
+    deleted = 0
+    errors = []
+    for asset_id in asset_ids:
+        try:
+            service.delete_asset(asset_id, current_user.id)
+            deleted += 1
+        except ValueError as e:
+            errors.append({"id": asset_id, "error": str(e)})
+    return {"deleted": deleted, "failed": len(errors), "errors": errors}
 
 
 @router.delete("/{asset_id}", status_code=status.HTTP_204_NO_CONTENT)

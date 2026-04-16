@@ -75,13 +75,6 @@ const AssetCategoriesPage = () => {
   const handleAdd = (parent?: AssetCategory) => {
     setEditingCategory(null)
     setParentCategory(parent || null)
-    const newLevel = parent ? (parent.level + 1) as 1 | 2 | 3 : 1
-    form.resetFields()
-    form.setFieldsValue({
-      level: newLevel,
-      parentId: parent?.id || null,
-      sortOrder: 0,
-    })
     setModalVisible(true)
   }
 
@@ -89,15 +82,30 @@ const AssetCategoriesPage = () => {
   const handleEdit = (cat: AssetCategory) => {
     setEditingCategory(cat)
     setParentCategory(null)
-    form.resetFields()
-    form.setFieldsValue({
-      code: cat.code,
-      name: cat.name,
-      description: cat.description || '',
-      sortOrder: cat.sortOrder,
-      isActive: cat.isActive,
-    })
     setModalVisible(true)
+  }
+
+  /** 모달 열림 후 폼 초기화 (Form이 mount된 뒤 실행) */
+  const handleModalOpenChange = (open: boolean) => {
+    if (open) {
+      form.resetFields()
+      if (editingCategory) {
+        form.setFieldsValue({
+          code: editingCategory.code,
+          name: editingCategory.name,
+          description: editingCategory.description || '',
+          sortOrder: editingCategory.sortOrder,
+          isActive: editingCategory.isActive,
+        })
+      } else {
+        const newLevel = parentCategory ? (parentCategory.level + 1) as 1 | 2 | 3 : 1
+        form.setFieldsValue({
+          level: newLevel,
+          parentId: parentCategory?.id || null,
+          sortOrder: 0,
+        })
+      }
+    }
   }
 
   /** 삭제 */
@@ -327,8 +335,8 @@ const AssetCategoriesPage = () => {
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false)
-          form.resetFields()
         }}
+        afterOpenChange={handleModalOpenChange}
         footer={null}
         destroyOnHidden
       >
@@ -345,11 +353,14 @@ const AssetCategoriesPage = () => {
                 ? `최종 코드: ${parentCategory.code}-{입력값}`
                 : '예: HW (영문 대문자, 숫자, 하이픈)'}
             >
-              <Input
-                addonBefore={parentCategory ? `${parentCategory.code}-` : undefined}
-                placeholder={parentCategory ? 'NAC' : 'HW'}
-                maxLength={20}
-              />
+              {parentCategory ? (
+                <Space.Compact style={{ width: '100%' }}>
+                  <Button disabled style={{ cursor: 'default' }}>{parentCategory.code}-</Button>
+                  <Input placeholder="NAC" maxLength={20} />
+                </Space.Compact>
+              ) : (
+                <Input placeholder="HW" maxLength={20} />
+              )}
             </Form.Item>
           )}
 

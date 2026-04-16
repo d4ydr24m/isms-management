@@ -387,6 +387,7 @@ export interface AssetImportResult {
   total: number
   success: number
   failed: number
+  deactivated?: number
   errors: Array<{
     row: number
     field?: string

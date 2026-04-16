@@ -28,7 +28,7 @@ vi.mock('@/services/controls', () => ({
         order: 1,
       },
       number: '1.1.1',
-      title: '정보보호 정책 수립',
+      title: '경영진의 참여',
       description:
         '조직의 정보보호 정책을 수립하고, 정보보호 및 개인정보보호 관련 최상위 수준의 목표, 방향을 명확히 하여야 한다.',
       isRequired: true,
@@ -103,7 +103,7 @@ describe('ControlDetailPage', () => {
       await waitFor(
         () => {
           expect(screen.getByText('1.1.1')).toBeInTheDocument()
-          expect(screen.getByText('정보보호 정책 수립')).toBeInTheDocument()
+          expect(screen.getByText('경영진의 참여')).toBeInTheDocument()
         },
         { timeout: 10000 }
       )

@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_db, require_permission
@@ -94,7 +95,7 @@ def list_audit_logs(
 
 @router.get("/export")
 def export_audit_logs(
-    format: str = Query("csv", regex="^(csv|json)$"),
+    format: str = Query("csv", regex="^(csv|json|xlsx)$"),
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     db: Session = Depends(get_db),
@@ -103,11 +104,33 @@ def export_audit_logs(
     """
     감사 로그 내보내기
 
-    - **format**: 출력 형식 (csv 또는 json)
+    - **format**: 출력 형식 (csv, json, xlsx)
     - **start_date**: 시작일
     - **end_date**: 종료일
     """
     service = AuditLogService(db)
+    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+
+    if format == "xlsx":
+        from io import BytesIO
+        try:
+            content = service.export_logs_excel(
+                start_date=start_date,
+                end_date=end_date,
+            )
+        except ImportError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e),
+            )
+        return StreamingResponse(
+            BytesIO(content),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename=audit_logs_{timestamp}.xlsx"
+            },
+        )
+
     content = service.export_logs(
         format=format,
         start_date=start_date,
@@ -119,7 +142,7 @@ def export_audit_logs(
             content=content,
             media_type="application/json",
             headers={
-                "Content-Disposition": f"attachment; filename=audit_logs_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+                "Content-Disposition": f"attachment; filename=audit_logs_{timestamp}.json"
             },
         )
     else:
@@ -127,7 +150,7 @@ def export_audit_logs(
             content=content,
             media_type="text/csv",
             headers={
-                "Content-Disposition": f"attachment; filename=audit_logs_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+                "Content-Disposition": f"attachment; filename=audit_logs_{timestamp}.csv"
             },
         )
 

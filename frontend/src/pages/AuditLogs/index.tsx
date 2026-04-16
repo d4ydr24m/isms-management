@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { App, Button, Card, Table, Tag, Space, Input, Select, DatePicker, Typography, Tooltip } from 'antd'
-import { FileSearchOutlined } from '@ant-design/icons'
+import { FileSearchOutlined, DownloadOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { apiClient } from '@/services/api'
 import dayjs from 'dayjs'
@@ -89,9 +89,10 @@ const methodColors: Record<string, string> = {
 }
 
 function AuditLogsPage() {
-  const { modal } = App.useApp()
+  const { modal, message } = App.useApp()
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -121,6 +122,33 @@ function AuditLogsPage() {
   useEffect(() => {
     loadLogs()
   }, [loadLogs])
+
+  const handleExportExcel = async () => {
+    setExporting(true)
+    try {
+      const params: Record<string, string> = { format: 'xlsx' }
+      if (filters.startDate) params.start_date = filters.startDate
+      if (filters.endDate) params.end_date = filters.endDate
+
+      const response = await apiClient.get('/audit-logs/export', {
+        params,
+        responseType: 'blob',
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `감사로그_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      message.success('엑셀 다운로드가 완료되었습니다')
+    } catch {
+      message.error('엑셀 다운로드에 실패했습니다')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const columns: ColumnsType<AuditLog> = [
     {
@@ -246,6 +274,15 @@ function AuditLogsPage() {
               관리자 활동 기록
             </Text>
           </Space>
+        }
+        extra={
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExportExcel}
+            loading={exporting}
+          >
+            엑셀 다운로드
+          </Button>
         }
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>

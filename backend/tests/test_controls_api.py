@@ -31,7 +31,7 @@ def test_control_category(db: Session, test_control_domain: ControlDomain) -> Co
         domain_id=test_control_domain.id,
         code="1.1",
         name="정보보호 정책",
-        description="정보보호 정책 수립",
+        description="경영진의 참여",
         sort_order=1,
     )
     db.add(category)
@@ -46,7 +46,7 @@ def test_control_item(db: Session, test_control_category: ControlCategory) -> Co
     item = ControlItem(
         category_id=test_control_category.id,
         code="1.1.1",
-        title="정보보호 정책 수립",
+        title="경영진의 참여",
         description="조직의 정보보호 정책을 수립해야 한다",
         objective="정보보호 목적 명시",
         requirements="정책 요구사항",
@@ -177,7 +177,7 @@ class TestGetControlDetail:
         data = response.json()
         assert data["id"] == test_control_item.id
         assert data["code"] == "1.1.1"
-        assert data["title"] == "정보보호 정책 수립"
+        assert data["title"] == "경영진의 참여"
 
     def test_get_control_detail_not_found(
         self,

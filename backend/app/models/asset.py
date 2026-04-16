@@ -170,7 +170,7 @@ class Asset(Base):
     )
 
     # 상세 정보
-    ip_address = Column(String(50), nullable=True, comment="IP 주소")
+    ip_address = Column(String(200), nullable=True, comment="IP 주소 (단일, 범위, CIDR 지원)")
     mac_address = Column(String(50), nullable=True, comment="MAC 주소")
     hostname = Column(String(100), nullable=True, comment="호스트명")
     os_version = Column(String(100), nullable=True, comment="OS 버전")

@@ -15,14 +15,17 @@ from app.models.control_evidence_link import ControlEvidenceLink
 # 통제항목 코드 → 증적출처 매핑
 # (control_code, source_type, source_label, source_url, description)
 DEFAULT_LINKS = [
-    # 1.1.2 정보보호 조직 및 역할
-    ("1.1.2", "departments", "부서 관리", "/departments", "정보보호 조직 구성 현황"),
-    ("1.1.2", "personnel", "담당자 관리", "/personnel", "정보보호 역할 및 책임자 현황"),
+    # 1.1.2 최고책임자의 지정
+    ("1.1.2", "personnel", "담당자 관리", "/personnel", "정보보호 최고책임자 및 개인정보 보호책임자 지정 현황"),
 
-    # 1.1.3 정보보호 범위 설정
-    ("1.1.3", "isms_scope", "인증 범위 관리", "/isms-scope", "ISMS 인증 범위 설정 및 변경 이력"),
+    # 1.1.3 조직 구성
+    ("1.1.3", "departments", "부서 관리", "/departments", "정보보호 조직 구성 현황"),
+    ("1.1.3", "personnel", "담당자 관리", "/personnel", "정보보호 역할 및 책임자 현황"),
 
-    # 1.1.6 관리체계 범위 내 자원 관리
+    # 1.1.4 범위 설정
+    ("1.1.4", "isms_scope", "인증 범위 관리", "/isms-scope", "ISMS 인증 범위 설정 및 변경 이력"),
+
+    # 1.1.6 자원 할당
     ("1.1.6", "assets", "자산 목록", "/assets", "관리체계 범위 내 정보자산 현황"),
     ("1.1.6", "personnel", "담당자 관리", "/personnel", "인력 자원 관리 현황"),
 
@@ -30,27 +33,25 @@ DEFAULT_LINKS = [
     ("1.2.1", "assets", "자산 목록", "/assets", "정보자산 식별 및 분류 현황"),
     ("1.2.1", "assets", "자산 분류 관리", "/assets/categories", "자산 분류 체계"),
 
-    # 1.2.2 위험 평가
-    ("1.2.2", "risks", "위험 시나리오", "/risk", "위험 평가 시나리오 및 결과"),
-
-    # 1.2.3 위험 처리
-    ("1.2.3", "risks", "위험 처리 계획", "/risk/treatments", "위험 처리 계획 및 이행 현황"),
+    # 1.2.3 위험 평가
+    ("1.2.3", "risks", "위험 시나리오", "/risk", "위험 평가 시나리오 및 결과"),
 
     # 1.2.4 보호대책 선정
+    ("1.2.4", "risks", "위험 처리 계획", "/risk/treatments", "위험 처리 계획 및 이행 현황"),
     ("1.2.4", "risks", "SOA 관리", "/risk/soa", "적용성 보고서 (Statement of Applicability)"),
 
-    # 1.3.1 보호대책 선정 및 이행
+    # 1.3.1 보호대책 구현
     ("1.3.1", "risks", "위험 처리 계획", "/risk/treatments", "보호대책 이행 계획 및 진행 현황"),
     ("1.3.1", "risks", "SOA 관리", "/risk/soa", "보호대책 적용 현황"),
 
     # 1.3.3 운영현황 관리
     ("1.3.3", "evidence", "증적 관리", "/evidence", "관리체계 운영 활동 기록"),
 
-    # 1.4.1 내부 점검
-    ("1.4.1", "audits", "감사 계획", "/audits", "내부 감사 계획 및 결과"),
-    ("1.4.1", "audits", "부적합 관리", "/non-conformities", "점검 발견사항 및 부적합 사항"),
+    # 1.4.2 관리체계 점검
+    ("1.4.2", "audits", "감사 계획", "/audits", "내부 감사 계획 및 결과"),
+    ("1.4.2", "audits", "부적합 관리", "/non-conformities", "점검 발견사항 및 부적합 사항"),
 
-    # 1.4.3 개선 조치
+    # 1.4.3 관리체계 개선
     ("1.4.3", "audits", "부적합 관리", "/non-conformities", "부적합 사항 시정 조치 및 재발방지 대책"),
 
     # 2.1.1 정책의 유지관리

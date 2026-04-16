@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import io
 
-from app.core.deps import get_db, get_current_active_user, require_role
+from app.core.deps import get_db, require_permission
 from app.models.control import ControlItem
 from app.models.evidence import Evidence, control_item_evidences
 from app.models.user import User
@@ -101,7 +101,7 @@ def get_evidence_simple_response(evidence: Evidence) -> dict:
 def get_expiring_evidences(
     days: int = Query(30, ge=1, le=365, description="만료 임계일 수"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:read")),
 ):
     """
     만료 예정 증적 목록 조회
@@ -147,7 +147,7 @@ def get_evidences(
     control_id: Optional[int] = Query(None, description="통제항목 ID 필터"),
     evidence_type: Optional[str] = Query(None, description="증적 유형 필터"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:read")),
 ):
     """
     증적 목록 조회
@@ -186,7 +186,7 @@ def create_evidence(
     control_ids: Optional[str] = Form(None, description="통제항목 ID 목록 (쉼표 구분)"),
     author: Optional[str] = Form(None, description="작성자"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:create")),
 ):
     """
     증적 생성 (파일 업로드)
@@ -255,7 +255,7 @@ def create_evidence(
 def get_evidence(
     evidence_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:read")),
 ):
     """
     증적 상세 조회
@@ -277,7 +277,7 @@ def update_evidence(
     evidence_id: int,
     evidence_update: EvidenceUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:update")),
 ):
     """
     증적 정보 수정
@@ -307,7 +307,7 @@ def update_evidence(
 def delete_evidence(
     evidence_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(["CISO", "보안담당자"])),
+    current_user: User = Depends(require_permission("evidence:delete")),
 ):
     """
     증적 삭제 (완전 삭제)
@@ -334,7 +334,7 @@ def create_evidence_version(
     file: UploadFile = File(..., description="새 버전 파일"),
     change_description: Optional[str] = Form(None, description="변경 설명"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:update")),
 ):
     """
     새 버전 업로드
@@ -368,7 +368,7 @@ def create_evidence_version(
 def get_evidence_versions(
     evidence_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:read")),
 ):
     """
     버전 히스토리 조회
@@ -407,7 +407,7 @@ def get_evidence_versions(
 def download_evidence(
     evidence_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:read")),
 ):
     """
     파일 다운로드
@@ -468,7 +468,7 @@ def download_evidence_version(
     evidence_id: int,
     version_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:read")),
 ):
     """
     특정 버전 파일 다운로드
@@ -512,7 +512,7 @@ def get_preview_url(
     evidence_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:read")),
 ):
     """
     파일 미리보기 (백엔드를 통한 프록시 스트리밍)
@@ -581,7 +581,7 @@ def set_control_mapping(
     evidence_id: int,
     mapping_request: EvidenceMappingRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:update")),
 ):
     """
     통제항목 매핑 설정 (기존 매핑을 대체)
@@ -607,7 +607,7 @@ def remove_control_mapping(
     evidence_id: int,
     control_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("evidence:update")),
 ):
     """
     통제항목 매핑 해제

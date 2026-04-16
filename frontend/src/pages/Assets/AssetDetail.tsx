@@ -50,18 +50,26 @@ import type {
 } from '@/types'
 
 /** 상태 태그 색상 */
-const statusColorMap: Record<AssetStatus, string> = {
+const statusColorMap: Record<string, string> = {
   introduced: 'blue',
   operating: 'green',
   changed: 'orange',
   disposed: 'default',
+  '도입': 'blue',
+  '운영': 'green',
+  '변경': 'orange',
+  '폐기': 'default',
 }
 
-const statusLabelMap: Record<AssetStatus, string> = {
+const statusLabelMap: Record<string, string> = {
   introduced: '도입',
   operating: '운영',
   changed: '변경',
   disposed: '폐기',
+  '도입': '도입',
+  '운영': '운영',
+  '변경': '변경',
+  '폐기': '폐기',
 }
 
 const AssetDetailPage = () => {

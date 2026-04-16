@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { App, Card, Button, Space, Modal } from 'antd'
-import { PlusOutlined, UploadOutlined, DownloadOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
+import { PlusOutlined, UploadOutlined, DownloadOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { AssetTable, AssetFilter } from './components'
 import { assetService } from '@/services/assets'
 import type { Asset, AssetType, AssetStatus, AssetFilterParams } from '@/types'
@@ -27,6 +27,7 @@ const AssetListPage = () => {
     status: undefined,
     importanceLevel: undefined,
   })
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   // 자산 유형 목록 조회
   const fetchAssetTypes = useCallback(async () => {
@@ -140,6 +141,30 @@ const AssetListPage = () => {
     })
   }
 
+  // 일괄 삭제 핸들러
+  const handleBulkDelete = () => {
+    if (selectedRowKeys.length === 0) return
+    modal.confirm({
+      title: '자산 일괄 삭제',
+      icon: <ExclamationCircleOutlined />,
+      content: `선택한 ${selectedRowKeys.length}건의 자산을 삭제하시겠습니까?`,
+      okText: '삭제',
+      okType: 'danger',
+      cancelText: '취소',
+      onOk: async () => {
+        try {
+          const result = await assetService.bulkDeleteAssets(selectedRowKeys as number[])
+          message.success(`${result.deleted}건의 자산이 삭제되었습니다`)
+          setSelectedRowKeys([])
+          fetchAssets()
+        } catch (err: any) {
+          const detail = err?.response?.data?.detail || err?.message
+          message.error(detail || '일괄 삭제에 실패했습니다')
+        }
+      },
+    })
+  }
+
   // 내보내기 핸들러
   const handleExport = async () => {
     try {
@@ -157,6 +182,11 @@ const AssetListPage = () => {
         title="정보자산 관리"
         extra={
           <Space>
+            {selectedRowKeys.length > 0 && (
+              <Button danger icon={<DeleteOutlined />} onClick={handleBulkDelete}>
+                선택 삭제 ({selectedRowKeys.length})
+              </Button>
+            )}
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
               내보내기
             </Button>
@@ -189,6 +219,8 @@ const AssetListPage = () => {
             onTableChange={handleTableChange}
             onDelete={handleDelete}
             onStatusChange={handleAssetStatusChange}
+            selectedRowKeys={selectedRowKeys}
+            onSelectionChange={setSelectedRowKeys}
           />
         </Space>
       </Card>

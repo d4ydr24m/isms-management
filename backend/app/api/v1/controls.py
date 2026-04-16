@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.deps import get_db, get_current_active_user
+from app.core.deps import get_db, get_current_active_user, require_permission
 from app.models.control import ControlDomain, ControlCategory, ControlItem
 from app.models.evidence import control_item_evidences
 from app.models.user import User
@@ -49,7 +49,7 @@ router = APIRouter()
 @router.get("/domains", response_model=List[ControlDomainResponse])
 def get_control_domains(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("control:read")),
 ):
     """
     통제영역 목록 조회
@@ -112,7 +112,7 @@ def get_control_domains(
 @router.get("/progress", response_model=ControlProgressResponse)
 def get_control_progress(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("control:read")),
 ):
     """
     증적 확보율 통계 조회
@@ -201,7 +201,7 @@ def get_control_progress(
     response_model=list,
 )
 def get_available_sources(
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("control:read")),
 ):
     """
     연결 가능한 증적출처 모듈 목록 반환
@@ -300,7 +300,7 @@ def get_controls(
     search: Optional[str] = Query(None, description="검색어 (제목, 설명)"),
     is_required: Optional[bool] = Query(None, description="필수 여부"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("control:read")),
 ):
     """
     통제항목 목록 조회
@@ -394,7 +394,7 @@ def get_controls(
 def get_control(
     control_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("control:read")),
 ):
     """
     통제항목 상세 조회
@@ -439,7 +439,7 @@ def get_control_evidences(
     page: int = Query(1, ge=1, description="페이지 번호"),
     page_size: int = Query(20, ge=1, le=200, description="페이지 크기"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("control:read")),
 ):
     """
     통제항목별 증적 목록 조회
@@ -521,7 +521,7 @@ def get_control_evidences(
 def get_control_evidence_links(
     control_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("control:read")),
 ):
     """통제항목의 증적출처 연결 목록 조회"""
     item = db.query(ControlItem).filter(ControlItem.id == control_id).first()
@@ -553,7 +553,7 @@ def create_control_evidence_link(
     control_id: int,
     data: ControlEvidenceLinkCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("control:update")),
 ):
     """통제항목에 증적출처 연결 추가"""
     # 통제항목 존재 확인
@@ -611,7 +611,7 @@ def update_control_evidence_link(
     link_id: int,
     data: ControlEvidenceLinkUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("control:update")),
 ):
     """증적출처 연결 수정"""
     link = (
@@ -645,7 +645,7 @@ def delete_control_evidence_link(
     control_id: int,
     link_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_permission("control:update")),
 ):
     """증적출처 연결 삭제"""
     link = (

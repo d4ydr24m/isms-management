@@ -4,7 +4,7 @@
  */
 import { Link } from 'react-router-dom'
 import { Table, Tag, Button, Space, Tooltip, Select } from 'antd'
-import { EditOutlined, DeleteOutlined, EyeOutlined, WarningOutlined } from '@ant-design/icons'
+import { EditOutlined, DeleteOutlined, WarningOutlined } from '@ant-design/icons'
 import type { TableProps, TablePaginationConfig } from 'antd'
 import type { Asset, AssetStatus } from '@/types'
 
@@ -19,6 +19,8 @@ interface AssetTableProps {
   onTableChange: TableProps<Asset>['onChange']
   onDelete: (id: number) => void
   onStatusChange?: (id: number, status: string) => void
+  selectedRowKeys?: React.Key[]
+  onSelectionChange?: (keys: React.Key[]) => void
 }
 
 /** 자산 상태 태그 색상 매핑 (DB에 한국어로 저장됨) */
@@ -67,6 +69,8 @@ const AssetTable = ({
   onTableChange,
   onDelete,
   onStatusChange,
+  selectedRowKeys,
+  onSelectionChange,
 }: AssetTableProps) => {
   const columns: TableProps<Asset>['columns'] = [
     {
@@ -166,15 +170,10 @@ const AssetTable = ({
     {
       title: '액션',
       key: 'actions',
-      width: 120,
+      width: 90,
       align: 'center',
       render: (_: unknown, record: Asset) => (
         <Space size="small">
-          <Tooltip title="상세보기">
-            <Link to={`/assets/${record.id}`}>
-              <Button type="text" icon={<EyeOutlined />} size="small" />
-            </Link>
-          </Tooltip>
           <Tooltip title="수정">
             <Link to={`/assets/${record.id}/edit`}>
               <Button type="text" icon={<EditOutlined />} size="small" />
@@ -212,6 +211,10 @@ const AssetTable = ({
       onChange={onTableChange}
       scroll={{ x: 900 }}
       size="middle"
+      rowSelection={onSelectionChange ? {
+        selectedRowKeys,
+        onChange: onSelectionChange,
+      } : undefined}
     />
   )
 }

@@ -43,7 +43,7 @@ vi.mock('@/services/audits', () => ({
         id: 1,
         auditId: 1,
         controlItemId: 1,
-        controlItem: { number: '1.1.1', title: '정보보호 정책 수립', description: '' },
+        controlItem: { number: '1.1.1', title: '경영진의 참여', description: '' },
         order: 1,
         result: 'conforming',
         findings: null,

@@ -138,15 +138,6 @@ const SOAManagement = () => {
   // 편집 모달 열기
   const openEditModal = (record: SOARecord) => {
     setEditingRecord(record)
-    editForm.setFieldsValue({
-      isApplicable: record.isApplicable,
-      exclusionReason: record.exclusionReason,
-      implementationStatus: record.implementationStatus,
-      implementationEvidence: record.implementationEvidence,
-      relatedAssets: record.relatedAssets,
-      relatedRisks: record.relatedRisks,
-      remarks: record.remarks,
-    })
     setEditModalOpen(true)
   }
 
@@ -537,6 +528,19 @@ const SOAManagement = () => {
         cancelText="취소"
         width={640}
         destroyOnHidden
+        afterOpenChange={(open) => {
+          if (open && editingRecord) {
+            editForm.setFieldsValue({
+              isApplicable: editingRecord.isApplicable,
+              exclusionReason: editingRecord.exclusionReason,
+              implementationStatus: editingRecord.implementationStatus,
+              implementationEvidence: editingRecord.implementationEvidence,
+              relatedAssets: editingRecord.relatedAssets,
+              relatedRisks: editingRecord.relatedRisks,
+              remarks: editingRecord.remarks,
+            })
+          }
+        }}
       >
         {editingRecord && (
           <>

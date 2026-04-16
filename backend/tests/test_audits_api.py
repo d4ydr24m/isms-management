@@ -369,7 +369,7 @@ class TestCorrectiveActionAPI:
             f"/api/v1/nonconformities/{sample_non_conformity.id}/corrective-actions",
             headers=admin_auth_headers,
             json={
-                "action_plan": "정보보호 정책 수립 및 승인",
+                "action_plan": "경영진의 참여 및 승인",
                 "root_cause": "정보보호 조직 부재",
                 "preventive_measures": "연간 정책 검토 프로세스 수립",
                 "responsible_person_id": test_user.id,
@@ -379,7 +379,7 @@ class TestCorrectiveActionAPI:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["action_plan"] == "정보보호 정책 수립 및 승인"
+        assert data["action_plan"] == "경영진의 참여 및 승인"
         assert data["status"] == "planned"
 
     def test_update_corrective_action(
@@ -392,7 +392,7 @@ class TestCorrectiveActionAPI:
             f"/api/v1/nonconformities/{sample_non_conformity.id}/corrective-actions",
             headers=admin_auth_headers,
             json={
-                "action_plan": "정보보호 정책 수립",
+                "action_plan": "경영진의 참여",
                 "responsible_person_id": test_user.id,
                 "planned_completion_date": "2024-04-15",
             },
@@ -405,7 +405,7 @@ class TestCorrectiveActionAPI:
             headers=admin_auth_headers,
             json={
                 "actual_completion_date": "2024-04-10",
-                "result_description": "정보보호 정책 수립 완료",
+                "result_description": "경영진의 참여 완료",
                 "status": "completed",
             },
         )
@@ -424,7 +424,7 @@ class TestCorrectiveActionAPI:
             f"/api/v1/nonconformities/{sample_non_conformity.id}/corrective-actions",
             headers=admin_auth_headers,
             json={
-                "action_plan": "정보보호 정책 수립",
+                "action_plan": "경영진의 참여",
                 "responsible_person_id": test_user.id,
                 "planned_completion_date": "2024-04-15",
             },

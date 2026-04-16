@@ -49,7 +49,7 @@ class TestControlSchemas:
             "domain_id": 1,
             "code": "1.1",
             "name": "정보보호 정책",
-            "description": "정보보호 정책 수립",
+            "description": "경영진의 참여",
             "sort_order": 1,
             "control_items": [],
         }
@@ -63,7 +63,7 @@ class TestControlSchemas:
             "id": 1,
             "category_id": 1,
             "code": "1.1.1",
-            "title": "정보보호 정책 수립",
+            "title": "경영진의 참여",
             "description": "정보보호 정책을 수립해야 한다",
             "objective": "정보보호 목적",
             "requirements": "요구사항 내용",
@@ -76,7 +76,7 @@ class TestControlSchemas:
         schema = ControlItemResponse(**data)
         assert schema.id == 1
         assert schema.code == "1.1.1"
-        assert schema.title == "정보보호 정책 수립"
+        assert schema.title == "경영진의 참여"
         assert schema.evidence_count == 5
 
     def test_control_item_list(self):
@@ -87,7 +87,7 @@ class TestControlSchemas:
                     "id": 1,
                     "category_id": 1,
                     "code": "1.1.1",
-                    "title": "정보보호 정책 수립",
+                    "title": "경영진의 참여",
                     "description": "정보보호 정책을 수립해야 한다",
                     "is_required": True,
                     "is_personal_info": False,
