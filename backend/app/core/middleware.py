@@ -267,52 +267,80 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         parts = path.replace("/api/v1/", "").split("/")
         return parts[0] if parts else "unknown"
 
-    def _capture_delete_target(self, path: str) -> dict | None:
-        """DELETE 요청 전 삭제 대상 리소스 정보를 캡처"""
+    # 리소스별 이름/식별 필드 매핑 (PUT/PATCH/DELETE 대상 정보 표시용)
+    _TARGET_MODEL_MAP = {
+        "departments": ("app.models.department", "Department", ["name", "code"]),
+        "users": ("app.models.user", "User", ["name", "email"]),
+        "assets": ("app.models.asset", "Asset", ["name", "asset_code"]),
+        "personnel": ("app.models.personnel", "Personnel", ["name", "email"]),
+        "roles": ("app.models.user", "Role", ["name"]),
+        "controls": ("app.models.control", "ControlItem", ["code", "title"]),
+        "evidences": ("app.models.evidence", "Evidence", ["title"]),
+        "audits": ("app.models.audit", "AuditPlan", ["title"]),
+        "nonconformities": ("app.models.audit", "NonConformity", ["title"]),
+    }
+
+    @staticmethod
+    def _parse_resource_and_id(path: str) -> tuple[Optional[str], Optional[int]]:
+        """
+        경로에서 (리소스 타입, 리소스 ID) 추출.
+
+        숫자 ID가 나오는 마지막 세그먼트의 바로 앞 세그먼트를 리소스 타입으로 사용한다.
+        예) /api/v1/isms-scope/personnel/54 → ("personnel", 54)
+            /api/v1/departments/27 → ("departments", 27)
+            /api/v1/audits/3/nonconformities/12 → ("nonconformities", 12)
+        """
+        import re
+
+        api_match = re.match(r"/api/v1/(.+)$", path)
+        if not api_match:
+            return None, None
+
+        segments = [s for s in api_match.group(1).split("/") if s]
+        for idx in range(len(segments) - 1, -1, -1):
+            seg = segments[idx]
+            if seg.isdigit() and idx > 0:
+                return segments[idx - 1], int(seg)
+        return None, None
+
+    def _lookup_target_info(self, resource_type: str, resource_id: int) -> Optional[dict]:
+        """resource_type + id에 해당하는 엔티티의 표시용 필드 조회"""
+        mapping = self._TARGET_MODEL_MAP.get(resource_type)
+        if not mapping:
+            return None
+
+        module_path, class_name, fields = mapping
         try:
-            import re
+            import importlib
             from app.core.deps import SessionLocal
 
-            # 경로에서 리소스 타입과 ID 추출 (예: /api/v1/departments/27)
-            match = re.match(r"/api/v1/(\w[\w-]*)/(\d+)(?:/.*)?$", path)
-            if not match:
-                return None
-
-            resource_type = match.group(1)
-            resource_id = int(match.group(2))
-
+            mod = importlib.import_module(module_path)
+            model_class = getattr(mod, class_name)
             db = SessionLocal()
             try:
+                obj = db.query(model_class).filter(model_class.id == resource_id).first()
+                if not obj:
+                    return None
                 info = {"id": resource_id}
-
-                # 리소스 타입별 정보 조회
-                model_map = {
-                    "departments": ("app.models.department", "Department", ["name", "code"]),
-                    "users": ("app.models.user", "User", ["name", "email"]),
-                    "assets": ("app.models.asset", "Asset", ["name", "asset_code"]),
-                    "evidences": ("app.services.evidence_service", None, None),
-                    "personnel": ("app.models.personnel", "Personnel", ["name", "email"]),
-                    "roles": ("app.models.user", "Role", ["name"]),
-                }
-
-                if resource_type in model_map:
-                    module_path, class_name, fields = model_map[resource_type]
-                    if class_name and fields:
-                        import importlib
-                        mod = importlib.import_module(module_path)
-                        model_class = getattr(mod, class_name)
-                        obj = db.query(model_class).filter(model_class.id == resource_id).first()
-                        if obj:
-                            for f in fields:
-                                val = getattr(obj, f, None)
-                                if val is not None:
-                                    info[f] = str(val)
-
-                return info if len(info) > 1 else {"id": resource_id, "resource": resource_type}
+                for f in fields:
+                    val = getattr(obj, f, None)
+                    if val is not None:
+                        info[f] = str(val)
+                return info
             finally:
                 db.close()
         except Exception:
             return None
+
+    def _capture_delete_target(self, path: str) -> dict | None:
+        """DELETE 요청 전 삭제 대상 리소스 정보를 캡처"""
+        resource_type, resource_id = self._parse_resource_and_id(path)
+        if resource_type is None or resource_id is None:
+            return None
+        info = self._lookup_target_info(resource_type, resource_id)
+        if info:
+            return info
+        return {"id": resource_id, "resource": resource_type}
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         # 제외 경로 확인
@@ -328,7 +356,8 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
 
         # 요청 바디 캡처 (감사 로그용)
         request_body = None
-        delete_info = None
+        target_info = None
+        parsed_resource_type, parsed_resource_id = (None, None)
         if request.method in self.AUDIT_METHODS and path.startswith("/api/"):
             try:
                 body_bytes = await request.body()
@@ -337,9 +366,13 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
             except Exception:
                 pass
 
-            # DELETE 요청: 삭제 전 리소스 정보 캡처
-            if request.method == "DELETE":
-                delete_info = self._capture_delete_target(path)
+            # 경로에서 리소스 타입과 ID 추출 (예: /api/v1/isms-scope/personnel/54)
+            parsed_resource_type, parsed_resource_id = self._parse_resource_and_id(path)
+
+            # 대상 리소스 정보 캡처 (PUT/PATCH/DELETE 모두).
+            # DELETE는 삭제 전 상태를, PUT/PATCH는 "누구에게 적용했는지" 표시용.
+            if request.method in ("PUT", "PATCH", "DELETE") and parsed_resource_type and parsed_resource_id:
+                target_info = self._lookup_target_info(parsed_resource_type, parsed_resource_id)
 
         # 요청 처리
         response = await call_next(request)
@@ -400,22 +433,28 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
                         pass
 
                 # 요청 바디에서 민감 정보 제거 (비밀번호 등)
-                sanitized_body = None
+                body_dict: Optional[dict] = None
                 if request_body:
                     try:
                         body_dict = json.loads(request_body)
-                        # 민감 필드 마스킹
                         sensitive_keys = {"password", "hashed_password", "mfa_secret", "otp_code", "current_password", "new_password"}
                         for key in sensitive_keys:
                             if key in body_dict:
                                 body_dict[key] = "***"
-                        sanitized_body = json.dumps(body_dict, ensure_ascii=False, default=str)[:2000]
                     except Exception:
-                        sanitized_body = None
+                        body_dict = None
 
-                # DELETE 요청은 삭제 대상 정보를 old_value에 저장
-                if delete_info:
-                    sanitized_body = sanitized_body or json.dumps(delete_info, ensure_ascii=False, default=str)[:2000]
+                # 대상 리소스 정보(이름 등)를 바디에 합쳐서 UI에서 "누구에게" 식별 가능하게 함
+                payload: dict = {}
+                if target_info:
+                    payload["_target"] = target_info
+                if body_dict is not None:
+                    payload.update(body_dict)
+
+                if payload:
+                    sanitized_body = json.dumps(payload, ensure_ascii=False, default=str)[:2000]
+                else:
+                    sanitized_body = None
 
                 db = SessionLocal()
                 try:
@@ -431,6 +470,7 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
                         user_name=user_name or "",
                         action=action,
                         resource_type=resource_type,
+                        resource_id=parsed_resource_id,
                         new_value=sanitized_body,
                         ip_address=client_ip,
                         user_agent=request.headers.get("User-Agent", "")[:500],

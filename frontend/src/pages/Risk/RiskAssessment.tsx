@@ -71,6 +71,7 @@ import type {
   Vulnerability,
 } from '@/types'
 import { RISK_LEVELS } from '@/types/risk'
+import { usePermissions } from '@/hooks'
 
 const { Option } = Select
 
@@ -83,6 +84,10 @@ interface RiskAssessmentFilterParams {
 const RiskAssessmentPage = () => {
   const { message, modal } = App.useApp()
   const { scenarioId } = useParams<{ scenarioId: string }>()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('risk:create')
+  const canUpdate = hasPermission('risk:update')
+  const canDelete = hasPermission('risk:delete')
   // 상태 관리
   const [scenario, setScenario] = useState<RiskScenario | null>(null)
   const [assessments, setAssessments] = useState<RiskAssessment[]>([])
@@ -517,25 +522,29 @@ const RiskAssessmentPage = () => {
       align: 'center',
       render: (_: unknown, record: RiskAssessment) => (
         <Space>
-          <Tooltip title="수정">
-            <Button
-              type="link"
-              icon={<EditOutlined />}
-              onClick={() => handleEditClick(record)}
-            >
-              수정
-            </Button>
-          </Tooltip>
-          <Tooltip title="삭제">
-            <Button
-              type="link"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDeleteClick(record)}
-            >
-              삭제
-            </Button>
-          </Tooltip>
+          {canUpdate && (
+            <Tooltip title="수정">
+              <Button
+                type="link"
+                icon={<EditOutlined />}
+                onClick={() => handleEditClick(record)}
+              >
+                수정
+              </Button>
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip title="삭제">
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteClick(record)}
+              >
+                삭제
+              </Button>
+            </Tooltip>
+          )}
         </Space>
       ),
     },
@@ -613,12 +622,16 @@ const RiskAssessmentPage = () => {
         title="위험 평가 목록"
         extra={
           <Space>
-            <Button icon={<ThunderboltOutlined />} onClick={handleBulkClick}>
-              대량 평가
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddClick}>
-              평가 추가
-            </Button>
+            {canCreate && (
+              <Button icon={<ThunderboltOutlined />} onClick={handleBulkClick}>
+                대량 평가
+              </Button>
+            )}
+            {canCreate && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleAddClick}>
+                평가 추가
+              </Button>
+            )}
           </Space>
         }
       >

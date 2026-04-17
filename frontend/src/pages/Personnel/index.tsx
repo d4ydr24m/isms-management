@@ -28,6 +28,7 @@ import type { UploadFile } from 'antd/es/upload/interface'
 import DataTable from '@/components/common/DataTable'
 import SearchInput from '@/components/common/SearchInput'
 import { apiClient } from '@/services/api'
+import { usePermissions } from '@/hooks'
 
 const { Dragger } = Upload
 const { Text } = Typography
@@ -78,6 +79,10 @@ interface BulkUploadResult {
 
 function PersonnelPage() {
   const { message, modal } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('user:create')
+  const canUpdate = hasPermission('user:update')
+  const canDelete = hasPermission('user:delete')
   const [personnel, setPersonnel] = useState<Personnel[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -101,13 +106,18 @@ function PersonnelPage() {
   const [templateDownloading, setTemplateDownloading] = useState(false)
   const [updateExisting, setUpdateExisting] = useState(false)
 
-  const fetchPersonnel = async (p: number, ps: number, s: string, df?: number, sf?: boolean) => {
+  const [sorter, setSorter] = useState<{ sort?: string; order?: string }>({})
+
+  const fetchPersonnel = async (p: number, ps: number, s: string, df?: number, sf?: boolean, sortParams?: { sort?: string; order?: string }) => {
     setLoading(true)
     try {
       const params: Record<string, any> = { page: p, page_size: ps }
       if (s) params.name = s
       if (df !== undefined) params.department_id = df
       if (sf !== undefined) params.is_active = sf
+      const sp = sortParams ?? sorter
+      if (sp.sort) params.sort = sp.sort
+      if (sp.order) params.order = sp.order
 
       const response = await apiClient.get<{ items: any[]; total: number }>('/personnel', { params })
       setPersonnel(response.data.items || [])
@@ -306,12 +316,14 @@ function PersonnelPage() {
       dataIndex: 'name',
       key: 'name',
       width: 120,
+      sorter: true,
     },
     {
       title: '이메일',
       dataIndex: 'email',
       key: 'email',
       width: 200,
+      sorter: true,
       render: (email: string | null) => email || '-',
     },
     {
@@ -326,6 +338,7 @@ function PersonnelPage() {
       dataIndex: 'position',
       key: 'position',
       width: 100,
+      sorter: true,
       render: (position: string | null) => position || '-',
     },
     {
@@ -333,6 +346,7 @@ function PersonnelPage() {
       dataIndex: 'departmentName',
       key: 'departmentName',
       width: 120,
+      sorter: true,
       render: (departmentName: string | null) => departmentName || '-',
     },
     {
@@ -357,21 +371,25 @@ function PersonnelPage() {
       width: 150,
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            수정
-          </Button>
-          <Button
-            type="link"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.id)}
-          >
-            삭제
-          </Button>
+          {canUpdate && (
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            >
+              수정
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDelete(record.id)}
+            >
+              삭제
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -421,19 +439,23 @@ function PersonnelPage() {
           </Select>
         </Space>
         <Space>
-          <Button
-            icon={<UploadOutlined />}
-            onClick={() => setBulkModalOpen(true)}
-          >
-            일괄 등록
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleAdd}
-          >
-            담당자 추가
-          </Button>
+          {canCreate && (
+            <Button
+              icon={<UploadOutlined />}
+              onClick={() => setBulkModalOpen(true)}
+            >
+              일괄 등록
+            </Button>
+          )}
+          {canCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAdd}
+            >
+              담당자 추가
+            </Button>
+          )}
         </Space>
       </div>
 
@@ -445,6 +467,22 @@ function PersonnelPage() {
         bordered
         locale={{ emptyText: '데이터가 없습니다' }}
         pagination={false}
+        onChange={(_pagination, _filters, sorterResult) => {
+          const s = Array.isArray(sorterResult) ? sorterResult[0] : sorterResult
+          const fieldMap: Record<string, string> = {
+            name: 'name',
+            email: 'email',
+            position: 'position',
+            departmentName: 'department_name',
+          }
+          const newSorter = (s?.field && s?.order) ? {
+            sort: fieldMap[s.field as string] || s.field as string,
+            order: s.order === 'ascend' ? 'asc' as const : 'desc' as const,
+          } : {}
+          setSorter(newSorter)
+          setPage(1)
+          fetchPersonnel(1, pageSize, search, departmentFilter, statusFilter, newSorter)
+        }}
       />
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
         <Pagination

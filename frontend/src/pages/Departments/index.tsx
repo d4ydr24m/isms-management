@@ -35,6 +35,7 @@ import {
 import type { DataNode, TreeProps } from 'antd/es/tree'
 import type { UploadFile } from 'antd/es/upload/interface'
 import { apiClient } from '@/services/api'
+import { usePermissions } from '@/hooks'
 
 const { Text } = Typography
 const { Dragger } = Upload
@@ -71,6 +72,10 @@ interface BulkUploadResult {
 
 function DepartmentsPage() {
   const { message } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('user:create')
+  const canUpdate = hasPermission('user:update')
+  const canDelete = hasPermission('user:delete')
   const [treeData, setTreeData] = useState<DepartmentTreeNode[]>([])
   const [flatDepartments, setFlatDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(false)
@@ -295,38 +300,44 @@ function DepartmentsPage() {
             </Tag>
           </Space>
           <Space size="small" onClick={(e) => e.stopPropagation()}>
-            <Tooltip title="하위 부서 추가">
-              <Button
-                type="text"
-                size="small"
-                icon={<PlusOutlined />}
-                onClick={() => handleAdd(dept.id)}
-              />
-            </Tooltip>
-            <Tooltip title="수정">
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => handleEdit(dept)}
-              />
-            </Tooltip>
-            <Popconfirm
-              title="부서를 삭제하시겠습니까?"
-              description="삭제된 부서는 복구할 수 없습니다."
-              onConfirm={() => handleDelete(dept.id)}
-              okText="삭제"
-              cancelText="취소"
-            >
-              <Tooltip title="삭제">
+            {canCreate && (
+              <Tooltip title="하위 부서 추가">
                 <Button
                   type="text"
                   size="small"
-                  danger
-                  icon={<DeleteOutlined />}
+                  icon={<PlusOutlined />}
+                  onClick={() => handleAdd(dept.id)}
                 />
               </Tooltip>
-            </Popconfirm>
+            )}
+            {canUpdate && (
+              <Tooltip title="수정">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => handleEdit(dept)}
+                />
+              </Tooltip>
+            )}
+            {canDelete && (
+              <Popconfirm
+                title="부서를 삭제하시겠습니까?"
+                description="삭제된 부서는 복구할 수 없습니다."
+                onConfirm={() => handleDelete(dept.id)}
+                okText="삭제"
+                cancelText="취소"
+              >
+                <Tooltip title="삭제">
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            )}
           </Space>
         </div>
       ),
@@ -355,12 +366,16 @@ function DepartmentsPage() {
         }
         extra={
           <Space>
-            <Button icon={<UploadOutlined />} onClick={() => setBulkModalOpen(true)}>
-              일괄 등록
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => handleAdd()}>
-              부서 추가
-            </Button>
+            {canCreate && (
+              <Button icon={<UploadOutlined />} onClick={() => setBulkModalOpen(true)}>
+                일괄 등록
+              </Button>
+            )}
+            {canCreate && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => handleAdd()}>
+                부서 추가
+              </Button>
+            )}
           </Space>
         }
       >

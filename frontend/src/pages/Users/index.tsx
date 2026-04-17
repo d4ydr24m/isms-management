@@ -8,6 +8,7 @@ import DataTable from '@/components/common/DataTable'
 import SearchInput from '@/components/common/SearchInput'
 import { userService } from '@/services/users'
 import { apiClient } from '@/services/api'
+import { usePermissions } from '@/hooks'
 import type { UserListItem } from '@/types'
 
 const { Dragger } = Upload
@@ -24,6 +25,10 @@ interface BulkUploadResult {
 function UserList() {
   const { message, modal } = App.useApp()
   const navigate = useNavigate()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('user:create')
+  const canUpdate = hasPermission('user:update')
+  const canDelete = hasPermission('user:delete')
   const [users, setUsers] = useState<UserListItem[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -159,7 +164,7 @@ function UserList() {
     { title: '오류 내용', dataIndex: 'message', key: 'message' },
   ]
 
-  const columns: ColumnsType<UserListItem> = [
+  const baseColumns: ColumnsType<UserListItem> = [
     {
       title: '이름',
       dataIndex: 'name',
@@ -218,12 +223,15 @@ function UserList() {
       render: (date: string | null) =>
         date ? new Date(date.endsWith('Z') ? date : date + 'Z').toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '-',
     },
-    {
-      title: '작업',
-      key: 'action',
-      width: 150,
-      render: (_, record) => (
-        <Space size="small">
+  ]
+
+  const actionColumn: ColumnsType<UserListItem>[number] = {
+    title: '작업',
+    key: 'action',
+    width: 150,
+    render: (_, record) => (
+      <Space size="small">
+        {canUpdate && (
           <Button
             type="link"
             icon={<EditOutlined />}
@@ -231,6 +239,8 @@ function UserList() {
           >
             수정
           </Button>
+        )}
+        {canDelete && (
           <Button
             type="link"
             danger
@@ -239,10 +249,14 @@ function UserList() {
           >
             삭제
           </Button>
-        </Space>
-      ),
-    },
-  ]
+        )}
+      </Space>
+    ),
+  }
+
+  const columns: ColumnsType<UserListItem> = canUpdate || canDelete
+    ? [...baseColumns, actionColumn]
+    : baseColumns
 
   return (
     <div style={{ padding: '24px' }}>
@@ -266,19 +280,23 @@ function UserList() {
           </Select>
         </Space>
         <Space>
-          <Button
-            icon={<UploadOutlined />}
-            onClick={() => setBulkModalOpen(true)}
-          >
-            일괄 등록
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/users/create')}
-          >
-            사용자 추가
-          </Button>
+          {canCreate && (
+            <Button
+              icon={<UploadOutlined />}
+              onClick={() => setBulkModalOpen(true)}
+            >
+              일괄 등록
+            </Button>
+          )}
+          {canCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/users/create')}
+            >
+              사용자 추가
+            </Button>
+          )}
         </Space>
       </div>
 

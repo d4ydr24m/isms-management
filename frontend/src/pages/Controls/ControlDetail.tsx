@@ -25,6 +25,7 @@ import {
 } from '@ant-design/icons'
 import { controlService } from '@/services/controls'
 import { EvidenceLinks } from './components'
+import { usePermissions } from '@/hooks'
 import type { ControlItemDetail, EvidenceSummary } from '@/types'
 
 const { Title, Text, Paragraph } = Typography
@@ -40,6 +41,8 @@ const ControlDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
+  const { hasPermission } = usePermissions()
+  const canCreateEvidence = hasPermission('evidence:create')
   const fromState = location.state as { page?: number; pageSize?: number } | null
   const [control, setControl] = useState<ControlItemDetail | null>(null)
   const [evidences, setEvidences] = useState<any[]>([])
@@ -178,14 +181,16 @@ const ControlDetailPage = () => {
                 </Space>
               }
               extra={
-                <Button
-                  type="primary"
-                  icon={<LinkOutlined />}
-                  onClick={handleLinkEvidence}
-                  aria-label="증적 연결"
-                >
-                  증적 연결
-                </Button>
+                canCreateEvidence ? (
+                  <Button
+                    type="primary"
+                    icon={<LinkOutlined />}
+                    onClick={handleLinkEvidence}
+                    aria-label="증적 연결"
+                  >
+                    증적 연결
+                  </Button>
+                ) : null
               }
             >
               {evidences.length > 0 ? (

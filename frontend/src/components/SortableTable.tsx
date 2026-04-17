@@ -69,12 +69,14 @@ const SortableRow: React.FC<SortableRowProps> = (props) => {
 
 export interface SortableTableProps<T> extends Omit<TableProps<T>, 'components'> {
   onSortEnd: (activeId: string | number, overId: string | number) => void
+  dragDisabled?: boolean
 }
 
 function SortableTable<T extends { id: number }>({
   onSortEnd,
   columns,
   dataSource,
+  dragDisabled = false,
   ...rest
 }: SortableTableProps<T>) {
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -90,6 +92,7 @@ function SortableTable<T extends { id: number }>({
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null)
+    if (dragDisabled) return
     const { active, over } = event
     if (over && active.id !== over.id) {
       onSortEnd(active.id, over.id)
@@ -104,7 +107,7 @@ function SortableTable<T extends { id: number }>({
     render: () => <DragHandle />,
   }
 
-  const allColumns = [dragColumn, ...(columns || [])]
+  const allColumns = dragDisabled ? (columns || []) : [dragColumn, ...(columns || [])]
 
   const ids = (dataSource || []).map((item) => String(item.id))
 

@@ -40,6 +40,7 @@ import AssetHistory from './components/AssetHistory'
 import EolLookup from './components/EolLookup'
 import { assetService } from '@/services/assets'
 import { eolService } from '@/services/eol'
+import { usePermissions } from '@/hooks'
 import type {
   Asset,
   AssetValuation,
@@ -77,6 +78,10 @@ const AssetDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const assetId = Number(id)
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('asset:create')
+  const canUpdate = hasPermission('asset:update')
+  const canDelete = hasPermission('asset:delete')
 
   const [asset, setAsset] = useState<Asset | null>(null)
   const [valuation, setValuation] = useState<AssetValuation | null>(null)
@@ -373,16 +378,18 @@ const AssetDetailPage = () => {
           <Card
             title="담당자 목록"
             extra={
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  loadUsers()
-                  setAssignModalVisible(true)
-                }}
-              >
-                담당자 추가
-              </Button>
+              canUpdate ? (
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    loadUsers()
+                    setAssignModalVisible(true)
+                  }}
+                >
+                  담당자 추가
+                </Button>
+              ) : null
             }
           >
             {assignments.filter(a => a.isActive).length > 0 ? (
@@ -391,7 +398,7 @@ const AssetDetailPage = () => {
                 dataSource={assignments.filter(a => a.isActive)}
                 renderItem={(item) => (
                   <List.Item
-                    actions={[
+                    actions={canUpdate ? [
                       <Button
                         type="link"
                         danger
@@ -400,7 +407,7 @@ const AssetDetailPage = () => {
                       >
                         제거
                       </Button>,
-                    ]}
+                    ] : []}
                   >
                     <List.Item.Meta
                       avatar={<Avatar icon={<UserOutlined />} />}
@@ -529,18 +536,24 @@ const AssetDetailPage = () => {
         }
         extra={
           <Space>
-            <Button
-              icon={<CopyOutlined />}
-              onClick={() => navigate('/assets/create', { state: { copyFrom: asset } })}
-            >
-              복제
-            </Button>
-            <Link to={`/assets/${assetId}/edit`}>
-              <Button icon={<EditOutlined />}>수정</Button>
-            </Link>
-            <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-              삭제
-            </Button>
+            {canCreate && (
+              <Button
+                icon={<CopyOutlined />}
+                onClick={() => navigate('/assets/create', { state: { copyFrom: asset } })}
+              >
+                복제
+              </Button>
+            )}
+            {canUpdate && (
+              <Link to={`/assets/${assetId}/edit`}>
+                <Button icon={<EditOutlined />}>수정</Button>
+              </Link>
+            )}
+            {canDelete && (
+              <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
+                삭제
+              </Button>
+            )}
           </Space>
         }
       >

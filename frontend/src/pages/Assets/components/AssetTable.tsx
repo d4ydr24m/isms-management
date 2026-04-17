@@ -21,6 +21,8 @@ interface AssetTableProps {
   onStatusChange?: (id: number, status: string) => void
   selectedRowKeys?: React.Key[]
   onSelectionChange?: (keys: React.Key[]) => void
+  canUpdate?: boolean
+  canDelete?: boolean
 }
 
 /** 자산 상태 태그 색상 매핑 (DB에 한국어로 저장됨) */
@@ -71,6 +73,8 @@ const AssetTable = ({
   onStatusChange,
   selectedRowKeys,
   onSelectionChange,
+  canUpdate = true,
+  canDelete = true,
 }: AssetTableProps) => {
   const columns: TableProps<Asset>['columns'] = [
     {
@@ -151,7 +155,7 @@ const AssetTable = ({
       key: 'status',
       width: 110,
       sorter: true,
-      render: (status: string, record: Asset) => onStatusChange ? (
+      render: (status: string, record: Asset) => onStatusChange && canUpdate ? (
         <Select
           value={statusLabelMap[status] ? (Object.entries(statusLabelMap).find(([k, v]) => k === status)?.[0] || status) : status}
           size="small"
@@ -180,30 +184,34 @@ const AssetTable = ({
         return <Tag color={color}>{label}</Tag>
       },
     },
-    {
+    ...(canUpdate || canDelete ? [{
       title: '액션',
       key: 'actions',
       width: 90,
-      align: 'center',
+      align: 'center' as const,
       render: (_: unknown, record: Asset) => (
         <Space size="small">
-          <Tooltip title="수정">
-            <Link to={`/assets/${record.id}/edit`}>
-              <Button type="text" icon={<EditOutlined />} size="small" />
-            </Link>
-          </Tooltip>
-          <Tooltip title="삭제">
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              size="small"
-              onClick={() => onDelete(record.id)}
-            />
-          </Tooltip>
+          {canUpdate && (
+            <Tooltip title="수정">
+              <Link to={`/assets/${record.id}/edit`}>
+                <Button type="text" icon={<EditOutlined />} size="small" />
+              </Link>
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip title="삭제">
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                size="small"
+                onClick={() => onDelete(record.id)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
-    },
+    }] : []),
   ]
 
   const paginationConfig: TablePaginationConfig = {

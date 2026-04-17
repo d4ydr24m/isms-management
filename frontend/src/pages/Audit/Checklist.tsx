@@ -27,6 +27,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import { auditService } from '@/services/audits'
 import { evidenceService } from '@/services/evidences'
+import { usePermissions } from '@/hooks'
 import type {
   AuditPlan,
   AuditChecklist,
@@ -64,6 +65,9 @@ const ChecklistPage = () => {
   const { message, modal } = App.useApp()
   const navigate = useNavigate()
   const { auditId } = useParams<{ auditId: string }>()
+  const { hasPermission } = usePermissions()
+  const canUpdate = hasPermission('audit:update')
+  const canCreate = hasPermission('audit:create')
   const [audit, setAudit] = useState<AuditPlan | null>(null)
   const [checklist, setChecklist] = useState<AuditChecklist[]>([])
   const [editedItems, setEditedItems] = useState<Map<number, ChecklistItemEdit>>(new Map())
@@ -352,14 +356,16 @@ const ChecklistPage = () => {
                 <Tag>{e.title}</Tag>
               </Tooltip>
             ))}
-            <Button
-              size="small"
-              icon={<PaperClipOutlined />}
-              onClick={() => handleOpenEvidenceModal(record.id)}
-              aria-label="증적 첨부"
-            >
-              증적 첨부
-            </Button>
+            {canUpdate && (
+              <Button
+                size="small"
+                icon={<PaperClipOutlined />}
+                onClick={() => handleOpenEvidenceModal(record.id)}
+                aria-label="증적 첨부"
+              >
+                증적 첨부
+              </Button>
+            )}
           </Space>
         )
       },
@@ -370,7 +376,7 @@ const ChecklistPage = () => {
       width: 150,
       render: (_, record) => {
         const edited = editedItems.get(record.id)
-        if (edited?.result === 'non_conformity') {
+        if (edited?.result === 'non_conformity' && canCreate) {
           return (
             <Button
               type="link"
@@ -404,22 +410,26 @@ const ChecklistPage = () => {
             </Col>
             <Col>
               <Space>
-                <Button
-                  type="primary"
-                  icon={<SaveOutlined />}
-                  onClick={handleSave}
-                  loading={saving}
-                  aria-label="저장"
-                >
-                  저장
-                </Button>
-                <Button
-                  icon={<CheckCircleOutlined />}
-                  onClick={handleComplete}
-                  aria-label="감사 완료"
-                >
-                  감사 완료
-                </Button>
+                {canUpdate && (
+                  <Button
+                    type="primary"
+                    icon={<SaveOutlined />}
+                    onClick={handleSave}
+                    loading={saving}
+                    aria-label="저장"
+                  >
+                    저장
+                  </Button>
+                )}
+                {canUpdate && (
+                  <Button
+                    icon={<CheckCircleOutlined />}
+                    onClick={handleComplete}
+                    aria-label="감사 완료"
+                  >
+                    감사 완료
+                  </Button>
+                )}
               </Space>
             </Col>
           </Row>

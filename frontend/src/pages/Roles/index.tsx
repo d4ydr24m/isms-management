@@ -3,6 +3,7 @@ import { App, Card, Table, Tag, Checkbox, Button, Space, Typography, Tooltip } f
 import { SaveOutlined, UndoOutlined } from '@ant-design/icons'
 import { roleService } from '@/services/roles'
 import type { RoleDetail, Permission } from '@/services/roles'
+import { usePermissions } from '@/hooks'
 
 const { Title, Text } = Typography
 
@@ -32,6 +33,8 @@ function roleHasPermission(rolePerms: string[], permCode: string): boolean {
 
 export default function RolePermissions() {
   const { message } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canUpdate = hasPermission('role:update')
   const [roles, setRoles] = useState<RoleDetail[]>([])
   const [allPermissions, setAllPermissions] = useState<Permission[]>([])
   const [loading, setLoading] = useState(false)
@@ -252,6 +255,7 @@ export default function RolePermissions() {
               <Checkbox
                 checked={allChecked}
                 indeterminate={someChecked}
+                disabled={!canUpdate}
                 onChange={(e) => handleToggleWildcard(role.id, categoryPerms, e.target.checked)}
               />
             )
@@ -263,6 +267,7 @@ export default function RolePermissions() {
           return (
             <Checkbox
               checked={checked}
+              disabled={!canUpdate}
               onChange={(e) => handleToggle(role.id, permCode, e.target.checked)}
             />
           )

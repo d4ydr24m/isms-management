@@ -4,6 +4,7 @@ import { App, Card, Button, Space, Select, Input, Row, Col } from 'antd'
 import { PlusOutlined, SearchOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { EvidenceTable } from './components'
 import { evidenceService } from '@/services/evidences'
+import { usePermissions } from '@/hooks'
 import type { EvidenceListItem, EvidenceStatus, EvidenceFilterParams } from '@/types'
 import type { TableProps } from 'antd'
 
@@ -11,6 +12,10 @@ const { Option } = Select
 
 const EvidenceListPage = () => {
   const { message, modal } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('evidence:create')
+  const canUpdate = hasPermission('evidence:update')
+  const canDelete = hasPermission('evidence:delete')
   const [evidences, setEvidences] = useState<EvidenceListItem[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
@@ -125,11 +130,13 @@ const EvidenceListPage = () => {
       <Card
         title="증적 관리"
         extra={
-          <Link to="/evidence/create">
-            <Button type="primary" icon={<PlusOutlined />}>
-              증적 등록
-            </Button>
-          </Link>
+          canCreate ? (
+            <Link to="/evidence/create">
+              <Button type="primary" icon={<PlusOutlined />}>
+                증적 등록
+              </Button>
+            </Link>
+          ) : null
         }
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -163,8 +170,8 @@ const EvidenceListPage = () => {
             loading={loading}
             pagination={pagination}
             onTableChange={handleTableChange}
-            onDelete={handleDelete}
-            onArchive={handleArchive}
+            onDelete={canDelete ? handleDelete : undefined}
+            onArchive={canUpdate ? handleArchive : undefined}
             onDownload={handleDownload}
           />
         </Space>

@@ -30,6 +30,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import { auditService } from '@/services/audits'
+import { usePermissions } from '@/hooks'
 import { ncTypeLabels, ncTypeColors, ncStatusLabels, ncStatusColors, formatDateTime } from '@/utils/format'
 import type { AuditPlan, AuditChecklist, NonConformity, AuditStatus } from '@/types'
 
@@ -66,6 +67,9 @@ const AuditDetail = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams<{ id: string }>()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('audit:create')
+  const canUpdate = hasPermission('audit:update')
   const [audit, setAudit] = useState<AuditPlan | null>(null)
   const [checklist, setChecklist] = useState<AuditChecklist[]>([])
   const [nonConformities, setNonConformities] = useState<NonConformity[]>([])
@@ -279,9 +283,11 @@ const AuditDetail = () => {
                   </>
                 ) : (
                   <>
-                    <Button icon={<EditOutlined />} onClick={handleEdit} aria-label="수정">
-                      수정
-                    </Button>
+                    {canUpdate && (
+                      <Button icon={<EditOutlined />} onClick={handleEdit} aria-label="수정">
+                        수정
+                      </Button>
+                    )}
                     <Button
                       type="primary"
                       icon={<FileTextOutlined />}
@@ -290,13 +296,15 @@ const AuditDetail = () => {
                     >
                       체크리스트 보기
                     </Button>
-                    <Button
-                      icon={<ExclamationCircleOutlined />}
-                      onClick={handleRegisterNonConformity}
-                      aria-label="부적합 등록"
-                    >
-                      부적합 등록
-                    </Button>
+                    {canCreate && (
+                      <Button
+                        icon={<ExclamationCircleOutlined />}
+                        onClick={handleRegisterNonConformity}
+                        aria-label="부적합 등록"
+                      >
+                        부적합 등록
+                      </Button>
+                    )}
                   </>
                 )}
               </Space>

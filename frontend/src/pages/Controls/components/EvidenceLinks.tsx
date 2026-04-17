@@ -35,6 +35,7 @@ import {
   SecurityScanOutlined,
 } from '@ant-design/icons'
 import { controlService } from '@/services/controls'
+import { usePermissions } from '@/hooks'
 import type { ControlEvidenceLink, EvidenceLinkSource } from '@/types'
 
 const { Text } = Typography
@@ -88,6 +89,8 @@ interface EvidenceLinksProps {
 const EvidenceLinks = ({ controlId }: EvidenceLinksProps) => {
   const { message } = App.useApp()
   const navigate = useNavigate()
+  const { hasPermission } = usePermissions()
+  const canUpdate = hasPermission('control:update')
   const [links, setLinks] = useState<ControlEvidenceLink[]>([])
   const [sources, setSources] = useState<EvidenceLinkSource[]>([])
   const [loading, setLoading] = useState(false)
@@ -178,14 +181,16 @@ const EvidenceLinks = ({ controlId }: EvidenceLinksProps) => {
         </Space>
       }
       extra={
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setModalOpen(true)}
-          size="small"
-        >
-          출처 연결
-        </Button>
+        canUpdate ? (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setModalOpen(true)}
+            size="small"
+          >
+            출처 연결
+          </Button>
+        ) : null
       }
     >
       <Spin spinning={loading}>
@@ -201,7 +206,7 @@ const EvidenceLinks = ({ controlId }: EvidenceLinksProps) => {
             renderItem={(link) => (
               <List.Item
                 key={link.id}
-                actions={[
+                actions={canUpdate ? [
                   <Popconfirm
                     key="delete"
                     title="연결을 해제하시겠습니까?"
@@ -216,7 +221,7 @@ const EvidenceLinks = ({ controlId }: EvidenceLinksProps) => {
                       icon={<DeleteOutlined />}
                     />
                   </Popconfirm>,
-                ]}
+                ] : []}
               >
                 <List.Item.Meta
                   avatar={
@@ -291,7 +296,7 @@ const EvidenceLinks = ({ controlId }: EvidenceLinksProps) => {
               ))}
             </Select>
           </div>
-          <div>
+          <div style={{ marginBottom: 16 }}>
             <Text strong style={{ display: 'block', marginBottom: 8 }}>
               설명 (선택)
             </Text>

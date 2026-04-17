@@ -8,11 +8,16 @@ import { App, Card, Button, Space, Modal } from 'antd'
 import { PlusOutlined, UploadOutlined, DownloadOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { AssetTable, AssetFilter } from './components'
 import { assetService } from '@/services/assets'
+import { usePermissions } from '@/hooks'
 import type { Asset, AssetType, AssetStatus, AssetFilterParams } from '@/types'
 import type { TableProps } from 'antd'
 
 const AssetListPage = () => {
   const { message, modal } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('asset:create')
+  const canUpdate = hasPermission('asset:update')
+  const canDelete = hasPermission('asset:delete')
   const [assets, setAssets] = useState<Asset[]>([])
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([])
   const [loading, setLoading] = useState(false)
@@ -202,7 +207,7 @@ const AssetListPage = () => {
         title="정보자산 관리"
         extra={
           <Space>
-            {selectedRowKeys.length > 0 && (
+            {canDelete && selectedRowKeys.length > 0 && (
               <Button danger icon={<DeleteOutlined />} onClick={handleBulkDelete}>
                 선택 삭제 ({selectedRowKeys.length})
               </Button>
@@ -210,14 +215,18 @@ const AssetListPage = () => {
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
               내보내기
             </Button>
-            <Link to="/assets/import">
-              <Button icon={<UploadOutlined />}>일괄 등록</Button>
-            </Link>
-            <Link to="/assets/create">
-              <Button type="primary" icon={<PlusOutlined />}>
-                자산 등록
-              </Button>
-            </Link>
+            {canCreate && (
+              <Link to="/assets/import">
+                <Button icon={<UploadOutlined />}>일괄 등록</Button>
+              </Link>
+            )}
+            {canCreate && (
+              <Link to="/assets/create">
+                <Button type="primary" icon={<PlusOutlined />}>
+                  자산 등록
+                </Button>
+              </Link>
+            )}
           </Space>
         }
       >
@@ -241,6 +250,8 @@ const AssetListPage = () => {
             onStatusChange={handleAssetStatusChange}
             selectedRowKeys={selectedRowKeys}
             onSelectionChange={setSelectedRowKeys}
+            canUpdate={canUpdate}
+            canDelete={canDelete}
           />
         </Space>
       </Card>

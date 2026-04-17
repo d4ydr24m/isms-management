@@ -19,10 +19,13 @@ import {
 import { EditOutlined, ArrowLeftOutlined, PlusOutlined, SafetyOutlined } from '@ant-design/icons'
 import { userService } from '@/services/users'
 import { apiClient } from '@/services/api'
+import { usePermissions } from '@/hooks'
 import type { User, Role } from '@/types'
 
 function UserDetail() {
   const { message, modal } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canUpdate = hasPermission('user:update')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [user, setUser] = useState<User | null>(null)
@@ -166,18 +169,20 @@ function UserDetail() {
       <Card
         title="사용자 정보"
         extra={
-          <Space>
-            <Button icon={<EditOutlined />} onClick={() => setEditModalVisible(true)}>
-              수정
-            </Button>
-            <Button
-              danger={user.isActive}
-              type={user.isActive ? 'default' : 'primary'}
-              onClick={handleToggleActive}
-            >
-              {user.isActive ? '비활성화' : '활성화'}
-            </Button>
-          </Space>
+          canUpdate ? (
+            <Space>
+              <Button icon={<EditOutlined />} onClick={() => setEditModalVisible(true)}>
+                수정
+              </Button>
+              <Button
+                danger={user.isActive}
+                type={user.isActive ? 'default' : 'primary'}
+                onClick={handleToggleActive}
+              >
+                {user.isActive ? '비활성화' : '활성화'}
+              </Button>
+            </Space>
+          ) : null
         }
       >
         <Descriptions column={2} bordered>
@@ -212,13 +217,15 @@ function UserDetail() {
         title="할당된 역할"
         style={{ marginTop: '16px' }}
         extra={
-          <Button
-            icon={<PlusOutlined />}
-            onClick={() => setAddRoleModalVisible(true)}
-            disabled={availableRoles.length === 0}
-          >
-            역할 추가
-          </Button>
+          canUpdate ? (
+            <Button
+              icon={<PlusOutlined />}
+              onClick={() => setAddRoleModalVisible(true)}
+              disabled={availableRoles.length === 0}
+            >
+              역할 추가
+            </Button>
+          ) : null
         }
       >
         <Space wrap>
@@ -226,8 +233,11 @@ function UserDetail() {
             <Tag
               key={role.id}
               color="blue"
-              closable
-              onClose={() => handleRemoveRole(role.id)}
+              closable={canUpdate}
+              onClose={(e) => {
+                e.preventDefault()
+                handleRemoveRole(role.id)
+              }}
             >
               {role.name}
             </Tag>
@@ -250,6 +260,7 @@ function UserDetail() {
             <Space>
               <Switch
                 checked={user.ipWhitelistEnabled}
+                disabled={!canUpdate}
                 onChange={async (checked) => {
                   try {
                     await userService.updateUser(parseInt(id!), { ipWhitelistEnabled: checked })
@@ -271,7 +282,7 @@ function UserDetail() {
               rows={4}
               placeholder={'예시:\n192.168.1.1\n10.0.0.0/24'}
               value={(user.allowedIps || '').replace(/,/g, '\n')}
-              disabled={!user.ipWhitelistEnabled}
+              disabled={!canUpdate || !user.ipWhitelistEnabled}
               onChange={(e) => {
                 // 로컬 상태 업데이트 (저장은 버튼 클릭 시)
                 setUser({ ...user, allowedIps: e.target.value.replace(/\n/g, ',') })
@@ -281,7 +292,7 @@ function UserDetail() {
           </div>
           <Button
             type="primary"
-            disabled={!user.ipWhitelistEnabled}
+            disabled={!canUpdate || !user.ipWhitelistEnabled}
             onClick={async () => {
               try {
                 await userService.updateUser(parseInt(id!), { allowedIps: user.allowedIps || '' })

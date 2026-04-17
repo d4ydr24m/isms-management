@@ -188,6 +188,8 @@ def list_personnel(
     name: Optional[str] = Query(None, description="이름 필터"),
     department_id: Optional[int] = Query(None, description="부서 ID 필터"),
     is_active: Optional[bool] = Query(None, description="활성 상태 필터"),
+    sort: Optional[str] = Query(None, description="정렬 필드"),
+    order: Optional[str] = Query(None, description="정렬 순서 (asc/desc)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("user:read")),
 ):
@@ -205,9 +207,22 @@ def list_personnel(
     if is_active is not None:
         query = query.filter(Personnel.is_active == is_active)
 
+    # 정렬
+    sort_column_map = {
+        'name': Personnel.name,
+        'email': Personnel.email,
+        'position': Personnel.position,
+        'department_name': Personnel.department_id,
+    }
+    sort_col = sort_column_map.get(sort, Personnel.name)
+    if order == 'desc':
+        query = query.order_by(sort_col.desc().nullslast())
+    else:
+        query = query.order_by(sort_col.asc().nullslast())
+
     total = query.count()
     items = (
-        query.order_by(Personnel.name)
+        query
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()

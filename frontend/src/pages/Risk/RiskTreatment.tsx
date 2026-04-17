@@ -60,6 +60,7 @@ import {
   getRiskTreatmentProgress,
 } from '@/services/risks'
 import { apiClient } from '@/services/api'
+import { usePermissions } from '@/hooks'
 import type {
   RiskScenario,
   RiskAssessment,
@@ -91,6 +92,10 @@ interface TreatmentFilters {
 
 const RiskTreatmentPage = () => {
   const { message, modal } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('risk:create')
+  const canUpdate = hasPermission('risk:update')
+  const canDelete = hasPermission('risk:delete')
   // 목록 상태
   const [plans, setPlans] = useState<RiskTreatmentPlan[]>([])
   const [loading, setLoading] = useState(false)
@@ -499,32 +504,38 @@ const RiskTreatmentPage = () => {
               상세
             </Button>
           </Tooltip>
-          <Tooltip title="수정">
-            <Button
-              type="link"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEditClick(record)}
-            />
-          </Tooltip>
-          <Tooltip title="조치 등록">
-            <Button
-              type="link"
-              size="small"
-              icon={<FileAddOutlined />}
-              onClick={() => handleActionClick(record)}
-              disabled={record.status === 'completed' || record.status === 'cancelled'}
-            />
-          </Tooltip>
-          <Tooltip title="삭제">
-            <Button
-              type="link"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDeleteClick(record)}
-            />
-          </Tooltip>
+          {canUpdate && (
+            <Tooltip title="수정">
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEditClick(record)}
+              />
+            </Tooltip>
+          )}
+          {canCreate && (
+            <Tooltip title="조치 등록">
+              <Button
+                type="link"
+                size="small"
+                icon={<FileAddOutlined />}
+                onClick={() => handleActionClick(record)}
+                disabled={record.status === 'completed' || record.status === 'cancelled'}
+              />
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip title="삭제">
+              <Button
+                type="link"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteClick(record)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
@@ -596,9 +607,11 @@ const RiskTreatmentPage = () => {
         title="위험 처리 계획"
         extra={
           <Space>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateClick}>
-              처리 계획 생성
-            </Button>
+            {canCreate && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateClick}>
+                처리 계획 생성
+              </Button>
+            )}
             <Select
               placeholder="전략"
               allowClear

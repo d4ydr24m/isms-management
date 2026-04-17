@@ -8,11 +8,15 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined } from '@ant-d
 import { Link } from 'react-router-dom'
 import { assetService } from '@/services/assets'
 import SortableTable from '@/components/SortableTable'
+import { usePermissions } from '@/hooks'
 import type { AssetType, AssetTypeCreate } from '@/types'
 import type { TableProps } from 'antd'
 
 const AssetTypesPage = () => {
   const { message } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('asset:create')
+  const canDelete = hasPermission('asset:delete')
   const [types, setTypes] = useState<AssetType[]>([])
   const [loading, setLoading] = useState(true)
   const [modalVisible, setModalVisible] = useState(false)
@@ -163,15 +167,17 @@ const AssetTypesPage = () => {
       align: 'center',
       render: (custom: boolean) => custom ? <Tag color="blue">커스텀</Tag> : <Tag>기본</Tag>,
     },
-    {
+    ...(canCreate || canDelete ? [{
       title: '액션',
       key: 'actions',
       width: 100,
-      align: 'center',
+      align: 'center' as const,
       render: (_: unknown, record: AssetType) => (
         <Space size="small">
-          <Button type="text" icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
-          {record.isActive && (
+          {canCreate && (
+            <Button type="text" icon={<EditOutlined />} size="small" onClick={() => handleEdit(record)} />
+          )}
+          {canDelete && record.isActive && (
             <Popconfirm
               title="이 유형을 비활성화하시겠습니까?"
               onConfirm={() => handleDelete(record.id)}
@@ -183,7 +189,7 @@ const AssetTypesPage = () => {
           )}
         </Space>
       ),
-    },
+    }] : []),
   ]
 
   return (
@@ -200,9 +206,11 @@ const AssetTypesPage = () => {
       <Card
         title="자산 유형 관리"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-            유형 추가
-          </Button>
+          canCreate ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              유형 추가
+            </Button>
+          ) : null
         }
       >
         <SortableTable<AssetType>
@@ -213,6 +221,7 @@ const AssetTypesPage = () => {
           size="middle"
           pagination={false}
           onSortEnd={handleSortEnd}
+          dragDisabled={!canCreate}
         />
       </Card>
 

@@ -40,6 +40,7 @@ import {
 } from '@ant-design/icons'
 import type { TableProps } from 'antd'
 import { getThreats, createThreat, updateThreat, deleteThreat } from '@/services/risks'
+import { usePermissions } from '@/hooks'
 import type { Threat, ThreatCreate, ThreatUpdate } from '@/types'
 import { THREAT_LEVELS as THREAT_LEVEL_OPTIONS } from '@/types'
 import dayjs from 'dayjs'
@@ -55,6 +56,10 @@ interface ThreatFilterParams {
 
 const ThreatDBPage = () => {
   const { message, modal } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('risk:create')
+  const canUpdate = hasPermission('risk:update')
+  const canDelete = hasPermission('risk:delete')
   const [threats, setThreats] = useState<Threat[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
@@ -309,29 +314,33 @@ const ThreatDBPage = () => {
           >
             상세
           </Button>
-          <Tooltip title={!record.isCustom ? '기본 위협은 수정할 수 없습니다' : ''}>
-            <Button
-              type="link"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEditClick(record)}
-              disabled={!record.isCustom}
-            >
-              수정
-            </Button>
-          </Tooltip>
-          <Tooltip title={!record.isCustom ? '기본 위협은 삭제할 수 없습니다' : ''}>
-            <Button
-              type="link"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDeleteClick(record)}
-              disabled={!record.isCustom}
-            >
-              삭제
-            </Button>
-          </Tooltip>
+          {canUpdate && (
+            <Tooltip title={!record.isCustom ? '기본 위협은 수정할 수 없습니다' : ''}>
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEditClick(record)}
+                disabled={!record.isCustom}
+              >
+                수정
+              </Button>
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip title={!record.isCustom ? '기본 위협은 삭제할 수 없습니다' : ''}>
+              <Button
+                type="link"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteClick(record)}
+                disabled={!record.isCustom}
+              >
+                삭제
+              </Button>
+            </Tooltip>
+          )}
         </Space>
       ),
     },
@@ -347,9 +356,11 @@ const ThreatDBPage = () => {
           </Typography.Title>
         </Col>
         <Col>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddClick}>
-            위협 추가
-          </Button>
+          {canCreate && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddClick}>
+              위협 추가
+            </Button>
+          )}
         </Col>
       </Row>
 
@@ -530,7 +541,7 @@ const ThreatDBPage = () => {
         }}
         width={500}
         extra={
-          selectedThreat?.isCustom && (
+          canUpdate && selectedThreat?.isCustom && (
             <Button
               type="primary"
               size="small"

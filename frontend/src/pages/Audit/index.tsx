@@ -5,6 +5,7 @@ import { PlusOutlined, SearchOutlined, EyeOutlined } from '@ant-design/icons'
 import type { ColumnsType, TableProps } from 'antd/es/table'
 import DataTable from '@/components/common/DataTable'
 import { auditService } from '@/services/audits'
+import { usePermissions } from '@/hooks'
 import type { AuditPlan, AuditStatus } from '@/types'
 
 const { Option } = Select
@@ -38,6 +39,8 @@ const auditTypeLabels: Record<string, string> = {
 
 const AuditListPage = () => {
   const navigate = useNavigate()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('audit:create')
   const [audits, setAudits] = useState<AuditPlan[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
@@ -193,9 +196,11 @@ const AuditListPage = () => {
       <Card
         title="감사 관리"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-            감사 계획 등록
-          </Button>
+          canCreate ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              감사 계획 등록
+            </Button>
+          ) : null
         }
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>

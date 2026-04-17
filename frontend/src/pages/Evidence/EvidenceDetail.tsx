@@ -29,6 +29,7 @@ import dayjs from 'dayjs'
 import { FilePreview, ControlMapping, VersionHistory } from './components'
 import { evidenceService } from '@/services/evidences'
 import { controlService } from '@/services/controls'
+import { usePermissions } from '@/hooks'
 import type { Evidence, EvidenceVersion, ControlItem } from '@/types'
 
 const { Title } = Typography
@@ -52,6 +53,8 @@ const EvidenceDetail = () => {
   const { message } = App.useApp()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { hasPermission } = usePermissions()
+  const canUpdate = hasPermission('evidence:update')
   const [evidence, setEvidence] = useState<Evidence | null>(null)
   const [versions, setVersions] = useState<EvidenceVersion[]>([])
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -252,8 +255,12 @@ const EvidenceDetail = () => {
             </Col>
             <Col>
               <Space>
-                <Button icon={<EditOutlined />} onClick={handleEdit}>수정</Button>
-                <Button icon={<UploadOutlined />} onClick={() => setUploadModalVisible(true)}>새 버전 업로드</Button>
+                {canUpdate && (
+                  <Button icon={<EditOutlined />} onClick={handleEdit}>수정</Button>
+                )}
+                {canUpdate && (
+                  <Button icon={<UploadOutlined />} onClick={() => setUploadModalVisible(true)}>새 버전 업로드</Button>
+                )}
                 <Button
                   type="primary"
                   icon={<DownloadOutlined />}
@@ -323,6 +330,7 @@ const EvidenceDetail = () => {
                 }
                 availableControls={availableControls}
                 onChange={handleControlMappingChange}
+                readOnly={!canUpdate}
               />
               <VersionHistory
                 versions={versions}

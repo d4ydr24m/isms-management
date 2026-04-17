@@ -6,6 +6,7 @@ import type { ColumnsType, TableProps } from 'antd/es/table'
 import DataTable from '@/components/common/DataTable'
 import { auditService } from '@/services/audits'
 import { apiClient } from '@/services/api'
+import { usePermissions } from '@/hooks'
 import { formatDateTime } from '@/utils/format'
 import type { NonConformity, AuditPlan } from '@/types'
 
@@ -57,6 +58,8 @@ const statusLabels: Record<string, string> = {
 const NonConformitiesPage = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('audit:create')
   const initialStatus = searchParams.getAll('status')
   const initialDueDateFilter = searchParams.get('dueDateFilter') || undefined
   const [nonConformities, setNonConformities] = useState<NonConformity[]>([])
@@ -260,9 +263,11 @@ const NonConformitiesPage = () => {
       <Card
         title="부적합 관리"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-            부적합 등록
-          </Button>
+          canCreate ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+              부적합 등록
+            </Button>
+          ) : null
         }
       >
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>

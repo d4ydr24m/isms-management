@@ -88,6 +88,21 @@ const methodColors: Record<string, string> = {
   PATCH: 'orange',
 }
 
+// new_value payload에서 대상 엔티티의 사람이 읽을 수 있는 라벨 추출
+function extractTargetLabel(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  try {
+    const data = JSON.parse(raw)
+    const target = data?._target
+    if (!target || typeof target !== 'object') return null
+    const name = target.name || target.title || target.email || target.code
+    if (!name) return null
+    return target.id ? `${name} (#${target.id})` : String(name)
+  } catch {
+    return null
+  }
+}
+
 function AuditLogsPage() {
   const { modal, message } = App.useApp()
   const [logs, setLogs] = useState<AuditLog[]>([])
@@ -188,10 +203,21 @@ function AuditLogsPage() {
     },
     {
       title: '대상',
-      dataIndex: 'resourceType',
       key: 'resourceType',
-      width: 120,
-      render: (type: string) => resourceLabels[type] || type,
+      width: 200,
+      render: (_, record) => {
+        const typeLabel = resourceLabels[record.resourceType] || record.resourceType
+        const targetLabel = extractTargetLabel(record.newValue) ||
+          (record.resourceId ? `#${record.resourceId}` : null)
+        return (
+          <Space direction="vertical" size={0}>
+            <Text>{typeLabel}</Text>
+            {targetLabel && (
+              <Text type="secondary" style={{ fontSize: 12 }}>{targetLabel}</Text>
+            )}
+          </Space>
+        )
+      },
     },
     {
       title: '메서드',
@@ -242,13 +268,26 @@ function AuditLogsPage() {
           <Button type="link" size="small" onClick={() => {
             try {
               const data = JSON.parse(record.newValue)
+              const { _target, ...changes } = data || {}
+              const targetLabel = extractTargetLabel(record.newValue)
               modal.info({
                 title: `${actionLabels[record.action] || record.action} 상세`,
                 width: 600,
                 content: (
-                  <pre style={{ maxHeight: 400, overflow: 'auto', fontSize: 12, background: '#f5f5f5', padding: 12, borderRadius: 4 }}>
-                    {JSON.stringify(data, null, 2)}
-                  </pre>
+                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    {targetLabel && (
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 12 }}>대상</Text>
+                        <div><Text strong>{targetLabel}</Text></div>
+                      </div>
+                    )}
+                    <div>
+                      <Text type="secondary" style={{ fontSize: 12 }}>변경 내용</Text>
+                      <pre style={{ maxHeight: 360, overflow: 'auto', fontSize: 12, background: '#f5f5f5', padding: 12, borderRadius: 4, marginTop: 4 }}>
+                        {JSON.stringify(_target ? changes : data, null, 2)}
+                      </pre>
+                    </div>
+                  </Space>
                 ),
               })
             } catch {

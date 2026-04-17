@@ -60,6 +60,7 @@ import {
   calculateRiskScenario,
   exportRiskReport,
 } from '@/services/risks'
+import { usePermissions } from '@/hooks'
 import type {
   RiskScenario,
   RiskScenarioStatus,
@@ -128,6 +129,10 @@ const RiskScenarioDetailPage = () => {
   const { scenarioId } = useParams<{ scenarioId: string }>()
   const navigate = useNavigate()
   const id = Number(scenarioId)
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('risk:create')
+  const canUpdate = hasPermission('risk:update')
+  const canDelete = hasPermission('risk:delete')
 
   const [scenario, setScenario] = useState<RiskScenario | null>(null)
   const [assessments, setAssessments] = useState<RiskAssessment[]>([])
@@ -589,8 +594,9 @@ const RiskScenarioDetailPage = () => {
     )
   }
 
-  const isEditable = scenario.status !== 'completed' && scenario.status !== 'cancelled'
-  const isDeletable = scenario.status === 'draft'
+  const isEditable = canUpdate && scenario.status !== 'completed' && scenario.status !== 'cancelled'
+  const isDeletable = canDelete && scenario.status === 'draft'
+  const canShowAssess = canCreate
   const statusConfig = STATUS_MAP[scenario.status]
 
   // 위험 분포 계산
@@ -605,6 +611,8 @@ const RiskScenarioDetailPage = () => {
   // 상태 전이 가능 버튼
   const renderStatusActions = () => {
     const actions: React.ReactNode[] = []
+
+    if (!canUpdate) return actions
 
     if (scenario.status === 'draft') {
       actions.push(
@@ -675,21 +683,21 @@ const RiskScenarioDetailPage = () => {
           <Space wrap>
             {renderStatusActions()}
             {isEditable && (
-              <>
-                <Button
-                  icon={<EditOutlined />}
-                  onClick={handleEditClick}
-                >
-                  수정
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<CheckCircleOutlined />}
-                  onClick={() => navigate(`/risk/scenarios/${id}/assessment`)}
-                >
-                  평가 수행
-                </Button>
-              </>
+              <Button
+                icon={<EditOutlined />}
+                onClick={handleEditClick}
+              >
+                수정
+              </Button>
+            )}
+            {canShowAssess && scenario.status !== 'completed' && scenario.status !== 'cancelled' && (
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                onClick={() => navigate(`/risk/scenarios/${id}/assessment`)}
+              >
+                평가 수행
+              </Button>
             )}
             {isDeletable && (
               <Button

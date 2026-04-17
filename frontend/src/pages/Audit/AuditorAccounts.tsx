@@ -18,6 +18,7 @@ import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import DataTable from '@/components/common/DataTable'
 import { apiClient } from '@/services/api'
+import { usePermissions } from '@/hooks'
 
 const { RangePicker } = DatePicker
 const { Text } = Typography
@@ -52,6 +53,10 @@ const accessScopeOptions = [
 
 function AuditorAccountsPage() {
   const { message } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('audit:create')
+  const canUpdate = hasPermission('audit:update')
+  const canDelete = hasPermission('audit:delete')
   const [accounts, setAccounts] = useState<AuditorAccount[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -271,10 +276,12 @@ function AuditorAccountsPage() {
       width: 180,
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleOpenEdit(record)}>
-            수정
-          </Button>
-          {record.isActive && (
+          {canUpdate && (
+            <Button type="link" icon={<EditOutlined />} onClick={() => handleOpenEdit(record)}>
+              수정
+            </Button>
+          )}
+          {canDelete && record.isActive && (
             <Popconfirm
               title="비활성화 확인"
               description="이 심사원 계정을 비활성화하시겠습니까?"
@@ -297,9 +304,11 @@ function AuditorAccountsPage() {
     <div style={{ padding: '24px' }}>
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ margin: 0 }}>외부 심사원 관리</h2>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreate}>
-          외부 심사원 추가
-        </Button>
+        {canCreate && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreate}>
+            외부 심사원 추가
+          </Button>
+        )}
       </div>
 
       <DataTable

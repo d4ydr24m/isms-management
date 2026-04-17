@@ -34,6 +34,7 @@ import {
   type ScopeSummary,
 } from '@/services/ismsScope'
 import { apiClient } from '@/services/api'
+import { usePermissions } from '@/hooks'
 
 const { Text, Title } = Typography
 
@@ -44,6 +45,8 @@ interface Department {
 
 function IsmsScopePage() {
   const { message, modal } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canUpdate = hasPermission('scope:update')
   const [activeTab, setActiveTab] = useState('assets')
   const [stats, setStats] = useState<ScopeSummary | null>(null)
   const [departments, setDepartments] = useState<Department[]>([])
@@ -465,6 +468,7 @@ function IsmsScopePage() {
           checked={record.inIsmsScope}
           checkedChildren="포함"
           unCheckedChildren="제외"
+          disabled={!canUpdate}
           onChange={() => handleAssetScopeToggle(record)}
         />
       ),
@@ -493,6 +497,7 @@ function IsmsScopePage() {
           checked={record.inIsmsScope}
           checkedChildren="포함"
           unCheckedChildren="제외"
+          disabled={!canUpdate}
           onChange={() => handlePersonnelScopeToggle(record)}
         />
       ),
@@ -520,6 +525,7 @@ function IsmsScopePage() {
           checked={record.inIsmsScope}
           checkedChildren="포함"
           unCheckedChildren="제외"
+          disabled={!canUpdate}
           onChange={() => handleDeptScopeToggle(record)}
         />
       ),
@@ -639,7 +645,7 @@ function IsmsScopePage() {
               {deptFilterSelect(assetDeptFilter, (v) => { setAssetDeptFilter(v); setAssetPage(1) })}
             </Space>
             <Space>
-              {selectedAssetKeys.length > 0 && (
+              {canUpdate && selectedAssetKeys.length > 0 && (
                 <>
                   <Text type="secondary">{selectedAssetKeys.length}개 선택됨</Text>
                   <Button size="small" onClick={() => handleBulkAssetScope(true)}>범위 포함</Button>
@@ -691,7 +697,7 @@ function IsmsScopePage() {
               {deptFilterSelect(personnelDeptFilter, (v) => { setPersonnelDeptFilter(v); setPersonnelPage(1) })}
             </Space>
             <Space>
-              {selectedPersonnelKeys.length > 0 && (
+              {canUpdate && selectedPersonnelKeys.length > 0 && (
                 <>
                   <Text type="secondary">{selectedPersonnelKeys.length}명 선택됨</Text>
                   <Button size="small" onClick={() => handleBulkPersonnelScope(true)}>범위 포함</Button>
@@ -742,7 +748,7 @@ function IsmsScopePage() {
               {scopeFilterSelect(deptScopeFilter, (v) => { setDeptScopeFilter(v); setDeptPage(1) })}
             </Space>
             <Space>
-              {selectedDeptKeys.length > 0 && (
+              {canUpdate && selectedDeptKeys.length > 0 && (
                 <>
                   <Text type="secondary">{selectedDeptKeys.length}개 선택됨</Text>
                   <Button size="small" onClick={() => handleBulkDeptScope(true)}>범위 포함</Button>

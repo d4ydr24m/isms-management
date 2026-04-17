@@ -12,6 +12,7 @@ import {
   Upload,
   Progress,
 } from 'antd'
+import type { UploadFile } from 'antd'
 import { InboxOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { evidenceService } from '@/services/evidences'
 import { controlService } from '@/services/controls'
@@ -27,7 +28,7 @@ const EvidenceCreate = () => {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [fileList, setFileList] = useState<File[]>([])
+  const [fileList, setFileList] = useState<UploadFile[]>([])
   const [controls, setControls] = useState<ControlItem[]>([])
   const [controlsLoading, setControlsLoading] = useState(false)
 
@@ -62,15 +63,9 @@ const EvidenceCreate = () => {
     }
   }, [preselectedControlId, controls, form])
 
-  const handleFileChange = (files: File[]) => {
-    setFileList(files)
-    if (files.length > 0) {
-      form.setFieldValue('file', files[0])
-    }
-  }
-
   const handleSubmit = async (values: any) => {
-    if (fileList.length === 0) {
+    const file = fileList[0]?.originFileObj as File | undefined
+    if (!file) {
       message.error('파일을 업로드해 주세요')
       return
     }
@@ -85,7 +80,7 @@ const EvidenceCreate = () => {
         validFrom: values.validFrom ? values.validFrom.format('YYYY-MM-DD') : undefined,
         validUntil: values.validUntil ? values.validUntil.format('YYYY-MM-DD') : undefined,
         controlIds: values.controlIds || [],
-        file: fileList[0],
+        file,
       }
 
       await evidenceService.createEvidence(createData, (progress) => {
@@ -160,18 +155,15 @@ const EvidenceCreate = () => {
           </Form.Item>
 
           <Form.Item
-            name="file"
             label="파일"
-            valuePropName="fileList"
-            getValueFromEvent={(e: any) => (Array.isArray(e) ? e : e?.fileList)}
-            rules={[{ required: true, message: '파일을 업로드해 주세요' }]}
+            required
           >
             <Dragger
               multiple={false}
               beforeUpload={() => false}
+              fileList={fileList}
               onChange={(info) => {
-                const files = info.fileList.map((f) => f.originFileObj as File).filter(Boolean)
-                handleFileChange(files)
+                setFileList(info.fileList.slice(-1))
               }}
               maxCount={1}
             >

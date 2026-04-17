@@ -48,6 +48,7 @@ import {
   getDoAHistory,
   getRisksExceedingDoA,
 } from '@/services/risks'
+import { usePermissions } from '@/hooks'
 import type {
   DoAConfig,
   DoAConfigCreate,
@@ -81,6 +82,8 @@ const sliderMarks: Record<number, { style: React.CSSProperties; label: string }>
 
 const DoASettingsPage = () => {
   const { message } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('risk:create')
   // 상태 관리
   const [currentDoA, setCurrentDoA] = useState<DoAConfig | null>(null)
   const [history, setHistory] = useState<DoAHistory[]>([])
@@ -264,9 +267,11 @@ const DoASettingsPage = () => {
           </Space>
         }
         extra={
-          <Button type="primary" icon={<SettingOutlined />} onClick={handleOpenModal}>
-            DoA 변경
-          </Button>
+          canCreate ? (
+            <Button type="primary" icon={<SettingOutlined />} onClick={handleOpenModal}>
+              DoA 변경
+            </Button>
+          ) : null
         }
         loading={loading}
         style={{ marginBottom: 16 }}

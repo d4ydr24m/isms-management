@@ -33,6 +33,7 @@ import dayjs from 'dayjs'
 import { auditService } from '@/services/audits'
 import { controlService } from '@/services/controls'
 import { apiClient } from '@/services/api'
+import { usePermissions } from '@/hooks'
 import {
   ncTypeLabels as sharedNcTypeLabels,
   severityColors as sharedSeverityColors,
@@ -80,6 +81,10 @@ const NonConformityDetail = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { id, auditId } = useParams<{ id: string; auditId: string }>()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('audit:create')
+  const canUpdate = hasPermission('audit:update')
+  const canDelete = hasPermission('audit:delete')
   const isCreateMode = !id
   const referrer = (location.state as any)?.from || '/non-conformities'
   const [nonConformity, setNonConformity] = useState<NonConformity | null>(null)
@@ -344,7 +349,7 @@ const NonConformityDetail = () => {
               <CheckCircleOutlined /> 검증 완료
             </Text>
           ) : (
-            <>
+            canUpdate && <>
               {record.status === 'planned' && (
                 <Button size="small" onClick={() => handleCAStatusChange(record.id, 'in_progress')}>
                   착수
@@ -376,14 +381,16 @@ const NonConformityDetail = () => {
       width: 160,
       render: (_, record) => (
         <Space size="small">
-          {!record.verifiedAt && (
+          {canUpdate && !record.verifiedAt && (
             <Button size="small" type="text" icon={<EditOutlined />} onClick={() => handleEditCA(record)}>
               수정
             </Button>
           )}
-          <Button size="small" danger type="text" onClick={() => handleCADelete(record.id)}>
-            삭제
-          </Button>
+          {canDelete && (
+            <Button size="small" danger type="text" onClick={() => handleCADelete(record.id)}>
+              삭제
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -435,7 +442,7 @@ const NonConformityDetail = () => {
                     </Button>
                   </>
                 ) : (
-                  <>
+                  canUpdate && <>
                     <Button icon={<EditOutlined />} onClick={handleEdit} aria-label="수정">
                       수정
                     </Button>
@@ -553,14 +560,16 @@ const NonConformityDetail = () => {
         <Card
           title="시정조치"
           extra={
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAddCorrectiveAction}
-              aria-label="시정조치 추가"
-            >
-              시정조치 추가
-            </Button>
+            canCreate ? (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAddCorrectiveAction}
+                aria-label="시정조치 추가"
+              >
+                시정조치 추가
+              </Button>
+            ) : null
           }
         >
           <Table

@@ -51,12 +51,16 @@ import {
   SOA_EXPORT_FORMATS,
   SOA_TEMPLATE_TYPES,
 } from '@/types/risk'
+import { usePermissions } from '@/hooks'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
 
 const SOAManagement = () => {
   const { message } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('risk:create')
+  const canUpdate = hasPermission('risk:update')
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<SOARecordList | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -279,13 +283,13 @@ const SOAManagement = () => {
       ellipsis: true,
       render: (text: string | null) => text || '-',
     },
-    {
+    ...(canUpdate ? [{
       title: '작업',
       key: 'actions',
       width: 80,
-      fixed: 'right',
-      align: 'center',
-      render: (_, record) => (
+      fixed: 'right' as const,
+      align: 'center' as const,
+      render: (_: unknown, record: SOARecord) => (
         <Button
           type="link"
           icon={<EditOutlined />}
@@ -294,7 +298,7 @@ const SOAManagement = () => {
           수정
         </Button>
       ),
-    },
+    }] : []),
   ]
 
   return (
@@ -308,20 +312,22 @@ const SOAManagement = () => {
         </Col>
         <Col>
           <Space>
-            <Popconfirm
-              title="SOA 자동 생성"
-              description="모든 통제항목을 기반으로 SOA를 생성합니다. 기존 데이터가 초기화될 수 있습니다."
-              onConfirm={handleGenerate}
-              okText="생성"
-              cancelText="취소"
-            >
-              <Button
-                icon={<SyncOutlined spin={generating} />}
-                loading={generating}
+            {canCreate && (
+              <Popconfirm
+                title="SOA 자동 생성"
+                description="모든 통제항목을 기반으로 SOA를 생성합니다. 기존 데이터가 초기화될 수 있습니다."
+                onConfirm={handleGenerate}
+                okText="생성"
+                cancelText="취소"
               >
-                SOA 생성
-              </Button>
-            </Popconfirm>
+                <Button
+                  icon={<SyncOutlined spin={generating} />}
+                  loading={generating}
+                >
+                  SOA 생성
+                </Button>
+              </Popconfirm>
+            )}
             <Button
               icon={<DownloadOutlined />}
               onClick={() => {

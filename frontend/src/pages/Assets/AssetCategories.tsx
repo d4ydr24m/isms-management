@@ -7,6 +7,7 @@ import { App, Card, Tree, Button, Space, Modal, Form, Input, InputNumber, Select
 import { PlusOutlined, EditOutlined, DeleteOutlined, HomeOutlined, FolderOutlined, FolderOpenOutlined, FileOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { assetService } from '@/services/assets'
+import { usePermissions } from '@/hooks'
 import type { AssetCategory, AssetCategoryCreate, AssetCategoryUpdate } from '@/types'
 import type { DataNode } from 'antd/es/tree'
 
@@ -26,6 +27,10 @@ const levelColors: Record<number, string> = {
 
 const AssetCategoriesPage = () => {
   const { message } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('asset:create')
+  const canUpdate = hasPermission('asset:update')
+  const canDelete = hasPermission('asset:delete')
   const [categories, setCategories] = useState<AssetCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [modalVisible, setModalVisible] = useState(false)
@@ -167,7 +172,7 @@ const AssetCategoriesPage = () => {
         <span style={{ color: '#999', fontSize: 12 }}>{cat.code}</span>
         {!cat.isActive && <Tag color="default">비활성</Tag>}
         <span className="tree-actions" style={{ marginLeft: 8, opacity: 0, transition: 'opacity 0.2s' }}>
-          {cat.level < 3 && (
+          {canCreate && cat.level < 3 && (
             <Button
               type="link"
               size="small"
@@ -178,30 +183,34 @@ const AssetCategoriesPage = () => {
               하위 추가
             </Button>
           )}
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={(e) => { e.stopPropagation(); handleEdit(cat) }}
-            style={{ padding: '0 4px', height: 'auto', fontSize: 12 }}
-          />
-          <Popconfirm
-            title="분류 삭제"
-            description={`'${cat.name}' 분류를 삭제하시겠습니까?`}
-            onConfirm={() => handleDelete(cat)}
-            okText="삭제"
-            cancelText="취소"
-            okButtonProps={{ danger: true }}
-          >
+          {canUpdate && (
             <Button
               type="link"
               size="small"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={(e) => e.stopPropagation()}
+              icon={<EditOutlined />}
+              onClick={(e) => { e.stopPropagation(); handleEdit(cat) }}
               style={{ padding: '0 4px', height: 'auto', fontSize: 12 }}
             />
-          </Popconfirm>
+          )}
+          {canDelete && (
+            <Popconfirm
+              title="분류 삭제"
+              description={`'${cat.name}' 분류를 삭제하시겠습니까?`}
+              onConfirm={() => handleDelete(cat)}
+              okText="삭제"
+              cancelText="취소"
+              okButtonProps={{ danger: true }}
+            >
+              <Button
+                type="link"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={(e) => e.stopPropagation()}
+                style={{ padding: '0 4px', height: 'auto', fontSize: 12 }}
+              />
+            </Popconfirm>
+          )}
         </span>
       </div>
     ),
@@ -301,9 +310,11 @@ const AssetCategoriesPage = () => {
           title="분류 체계"
           style={{ flex: 1, minWidth: 400 }}
           extra={
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => handleAdd()}>
-              대분류 추가
-            </Button>
+            canCreate ? (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => handleAdd()}>
+                대분류 추가
+              </Button>
+            ) : null
           }
         >
           {loading ? (
@@ -314,7 +325,7 @@ const AssetCategoriesPage = () => {
             <Tree
               showIcon
               defaultExpandAll
-              draggable
+              draggable={canUpdate}
               treeData={treeData}
               selectedKeys={selectedKey ? [selectedKey] : []}
               onSelect={handleSelect}
@@ -357,14 +368,16 @@ const AssetCategoriesPage = () => {
               </div>
 
               <Space direction="vertical" style={{ width: '100%' }}>
-                <Button
-                  icon={<EditOutlined />}
-                  block
-                  onClick={() => handleEdit(selectedCategory)}
-                >
-                  수정
-                </Button>
-                {selectedCategory.level < 3 && (
+                {canUpdate && (
+                  <Button
+                    icon={<EditOutlined />}
+                    block
+                    onClick={() => handleEdit(selectedCategory)}
+                  >
+                    수정
+                  </Button>
+                )}
+                {canCreate && selectedCategory.level < 3 && (
                   <Button
                     icon={<PlusOutlined />}
                     block
@@ -373,18 +386,20 @@ const AssetCategoriesPage = () => {
                     하위 분류 추가
                   </Button>
                 )}
-                <Popconfirm
-                  title="분류 삭제"
-                  description={`'${selectedCategory.name}' 분류를 삭제하시겠습니까?`}
-                  onConfirm={() => handleDelete(selectedCategory)}
-                  okText="삭제"
-                  cancelText="취소"
-                  okButtonProps={{ danger: true }}
-                >
-                  <Button danger icon={<DeleteOutlined />} block>
-                    삭제
-                  </Button>
-                </Popconfirm>
+                {canDelete && (
+                  <Popconfirm
+                    title="분류 삭제"
+                    description={`'${selectedCategory.name}' 분류를 삭제하시겠습니까?`}
+                    onConfirm={() => handleDelete(selectedCategory)}
+                    okText="삭제"
+                    cancelText="취소"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button danger icon={<DeleteOutlined />} block>
+                      삭제
+                    </Button>
+                  </Popconfirm>
+                )}
               </Space>
             </div>
           ) : (

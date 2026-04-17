@@ -51,6 +51,7 @@ import {
   compareRiskScenarios,
 } from '@/services/risks'
 import { apiClient } from '@/services/api'
+import { usePermissions } from '@/hooks'
 import type {
   RiskScenario,
   RiskScenarioCreate,
@@ -77,6 +78,10 @@ const STATUS_OPTIONS: Array<{ value: RiskScenarioStatus; label: string; color: s
 const RiskIndexPage = () => {
   const { message, modal } = App.useApp()
   const navigate = useNavigate()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('risk:create')
+  const canUpdate = hasPermission('risk:update')
+  const canDelete = hasPermission('risk:delete')
   const [scenarios, setScenarios] = useState<RiskScenario[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({
@@ -387,52 +392,58 @@ const RiskIndexPage = () => {
               상세
             </Button>
           </Tooltip>
-          <Tooltip
-            title={
-              record.status === 'cancelled'
-                ? '취소된 시나리오는 수정할 수 없습니다'
-                : record.status === 'completed' && lockCompleted
-                  ? '완료된 시나리오는 수정이 잠겨 있습니다 (시스템 설정)'
-                  : ''
-            }
-          >
+          {canUpdate && (
+            <Tooltip
+              title={
+                record.status === 'cancelled'
+                  ? '취소된 시나리오는 수정할 수 없습니다'
+                  : record.status === 'completed' && lockCompleted
+                    ? '완료된 시나리오는 수정이 잠겨 있습니다 (시스템 설정)'
+                    : ''
+              }
+            >
+              <Button
+                type="link"
+                icon={<EditOutlined />}
+                onClick={() => handleEditClick(record)}
+                disabled={record.status === 'cancelled' || (record.status === 'completed' && lockCompleted)}
+              >
+                수정
+              </Button>
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip
+              title={
+                record.status === 'cancelled'
+                  ? '취소된 시나리오는 삭제할 수 없습니다'
+                  : record.status === 'completed' && lockCompleted
+                    ? '완료된 시나리오는 삭제가 잠겨 있습니다 (시스템 설정)'
+                    : ''
+              }
+            >
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteClick(record)}
+                disabled={record.status === 'cancelled' || (record.status === 'completed' && lockCompleted)}
+              >
+                삭제
+              </Button>
+            </Tooltip>
+          )}
+          {canCreate && (
             <Button
-              type="link"
-              icon={<EditOutlined />}
-              onClick={() => handleEditClick(record)}
+              type="primary"
+              size="small"
+              icon={<CheckCircleOutlined />}
+              onClick={() => handleAssessClick(record)}
               disabled={record.status === 'cancelled' || (record.status === 'completed' && lockCompleted)}
             >
-              수정
+              평가
             </Button>
-          </Tooltip>
-          <Tooltip
-            title={
-              record.status === 'cancelled'
-                ? '취소된 시나리오는 삭제할 수 없습니다'
-                : record.status === 'completed' && lockCompleted
-                  ? '완료된 시나리오는 삭제가 잠겨 있습니다 (시스템 설정)'
-                  : ''
-            }
-          >
-            <Button
-              type="link"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDeleteClick(record)}
-              disabled={record.status === 'cancelled' || (record.status === 'completed' && lockCompleted)}
-            >
-              삭제
-            </Button>
-          </Tooltip>
-          <Button
-            type="primary"
-            size="small"
-            icon={<CheckCircleOutlined />}
-            onClick={() => handleAssessClick(record)}
-            disabled={record.status === 'cancelled' || (record.status === 'completed' && lockCompleted)}
-          >
-            평가
-          </Button>
+          )}
         </Space>
       ),
     },
@@ -453,9 +464,11 @@ const RiskIndexPage = () => {
                 시나리오 비교
               </Button>
             </Tooltip>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddClick}>
-              시나리오 추가
-            </Button>
+            {canCreate && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleAddClick}>
+                시나리오 추가
+              </Button>
+            )}
           </Space>
         }
       >

@@ -74,6 +74,7 @@ import type {
   ScriptType,
 } from '@/types/vulnCheck'
 import { assetService } from '@/services/assets'
+import { usePermissions } from '@/hooks'
 import type { AssetType, Asset } from '@/types/asset'
 
 const { Search } = Input
@@ -105,6 +106,9 @@ const CRON_PRESETS = [
 // v2 - file upload support
 const VulnCheckScriptsPage = () => {
   const { message } = App.useApp()
+  const { hasPermission } = usePermissions()
+  const canCreate = hasPermission('risk:create')
+  const canDelete = hasPermission('risk:delete')
   const [activeTab, setActiveTab] = useState('scripts')
 
   // 스크립트 상태
@@ -542,24 +546,28 @@ const VulnCheckScriptsPage = () => {
               onClick={() => handleDownloadScript(record)}
             />
           </Tooltip>
-          <Tooltip title="수정">
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEditScript(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="이 스크립트를 삭제하시겠습니까?"
-            onConfirm={() => handleDeleteScript(record.id)}
-            okText="삭제"
-            cancelText="취소"
-          >
-            <Tooltip title="삭제">
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+          {canCreate && (
+            <Tooltip title="수정">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEditScript(record)}
+              />
             </Tooltip>
-          </Popconfirm>
+          )}
+          {canDelete && (
+            <Popconfirm
+              title="이 스크립트를 삭제하시겠습니까?"
+              onConfirm={() => handleDeleteScript(record.id)}
+              okText="삭제"
+              cancelText="취소"
+            >
+              <Tooltip title="삭제">
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+              </Tooltip>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -613,24 +621,28 @@ const VulnCheckScriptsPage = () => {
       width: 120,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="수정">
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => handleEditSchedule(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="이 스케줄을 삭제하시겠습니까?"
-            onConfirm={() => handleDeleteSchedule(record.id)}
-            okText="삭제"
-            cancelText="취소"
-          >
-            <Tooltip title="삭제">
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+          {canCreate && (
+            <Tooltip title="수정">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEditSchedule(record)}
+              />
             </Tooltip>
-          </Popconfirm>
+          )}
+          {canDelete && (
+            <Popconfirm
+              title="이 스케줄을 삭제하시겠습니까?"
+              onConfirm={() => handleDeleteSchedule(record.id)}
+              okText="삭제"
+              cancelText="취소"
+            >
+              <Tooltip title="삭제">
+                <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+              </Tooltip>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -818,22 +830,28 @@ const VulnCheckScriptsPage = () => {
                   style={{ width: 240 }}
                   allowClear
                 />
-                <Button type="primary" icon={<UploadOutlined />} onClick={handleCreateScript}>
-                  스크립트 업로드
-                </Button>
+                {canCreate && (
+                  <Button type="primary" icon={<UploadOutlined />} onClick={handleCreateScript}>
+                    스크립트 업로드
+                  </Button>
+                )}
               </Space>
             ) : activeTab === 'schedules' ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateSchedule}>
-                스케줄 추가
-              </Button>
+              canCreate ? (
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateSchedule}>
+                  스케줄 추가
+                </Button>
+              ) : null
             ) : (
               <Space>
                 <Button icon={<SyncOutlined />} onClick={() => loadExecutions()}>
                   새로고침
                 </Button>
-                <Button type="primary" icon={<PlayCircleOutlined />} onClick={handleManualRun}>
-                  수동 실행
-                </Button>
+                {canCreate && (
+                  <Button type="primary" icon={<PlayCircleOutlined />} onClick={handleManualRun}>
+                    수동 실행
+                  </Button>
+                )}
               </Space>
             )
           }
