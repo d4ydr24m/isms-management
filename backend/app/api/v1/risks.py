@@ -1124,6 +1124,10 @@ def _generate_risk_report_excel(report: dict, service: RiskService) -> bytes:
     ws_risks.auto_filter.ref = "A1:J1"
     ws_risks.freeze_panes = "A2"
 
+    from app.core.excel_utils import apply_banded_rows
+    if ws_risks.max_row > 1:
+        apply_banded_rows(ws_risks, 2, ws_risks.max_row, 10)
+
     # 바이트로 반환
     output = BytesIO()
     wb.save(output)

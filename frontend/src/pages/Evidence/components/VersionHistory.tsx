@@ -1,5 +1,5 @@
-import { Card, Timeline, Button, Tag, Typography, Space, Empty, Spin } from 'antd'
-import { DownloadOutlined, UserOutlined, FileOutlined } from '@ant-design/icons'
+import { Card, Timeline, Button, Tag, Typography, Space, Empty, Spin, Popconfirm } from 'antd'
+import { DownloadOutlined, UserOutlined, FileOutlined, DeleteOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import type { EvidenceVersion } from '@/types'
 
@@ -9,6 +9,8 @@ interface VersionHistoryProps {
   versions: EvidenceVersion[]
   currentVersion: number
   onDownload: (versionId: number, fileName: string) => void
+  onDelete?: (versionId: number) => void
+  canDelete?: boolean
   loading?: boolean
 }
 
@@ -24,6 +26,8 @@ const VersionHistory = ({
   versions,
   currentVersion,
   onDownload,
+  onDelete,
+  canDelete = false,
   loading = false,
 }: VersionHistoryProps) => {
   // Sort versions from newest to oldest
@@ -73,15 +77,37 @@ const VersionHistory = ({
                       </Text>
                     </Space>
 
-                    <Button
-                      type="link"
-                      icon={<DownloadOutlined />}
-                      onClick={() => onDownload(version.id, version.fileName)}
-                      style={{ padding: 0 }}
-                      aria-label="download"
-                    >
-                      다운로드
-                    </Button>
+                    <Space size="small">
+                      <Button
+                        type="link"
+                        icon={<DownloadOutlined />}
+                        onClick={() => onDownload(version.id, version.fileName)}
+                        style={{ padding: 0 }}
+                        aria-label="download"
+                      >
+                        다운로드
+                      </Button>
+                      {canDelete && onDelete && version.version !== currentVersion && (
+                        <Popconfirm
+                          title="버전 삭제"
+                          description={`v${version.version} 파일을 삭제하시겠습니까? 복구할 수 없습니다.`}
+                          onConfirm={() => onDelete(version.id)}
+                          okText="삭제"
+                          okButtonProps={{ danger: true }}
+                          cancelText="취소"
+                        >
+                          <Button
+                            type="link"
+                            danger
+                            icon={<DeleteOutlined />}
+                            style={{ padding: 0 }}
+                            aria-label="delete version"
+                          >
+                            삭제
+                          </Button>
+                        </Popconfirm>
+                      )}
+                    </Space>
                   </Space>
                 </div>
               ),

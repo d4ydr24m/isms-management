@@ -138,6 +138,7 @@ def _execution_to_response(execution) -> VulnCheckExecutionResponse:
         severity_high=execution.severity_high,
         severity_medium=execution.severity_medium,
         severity_low=execution.severity_low,
+        info_count=execution.info_count or 0,
         executed_by=execution.executed_by,
         executor_name=execution.executor.name if execution.executor else None,
         error_message=execution.error_message,
@@ -297,6 +298,71 @@ def update_script(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
+
+
+@router.put("/scripts/{script_id}/file", response_model=VulnCheckScriptResponse)
+async def replace_script_file(
+    script_id: int,
+    file: UploadFile = File(..., description="새 스크립트 파일"),
+    service: VulnCheckService = Depends(get_vuln_check_service),
+    current_user: User = Depends(require_permission("risk:update")),
+) -> VulnCheckScriptResponse:
+    """스크립트 파일 교체 (메타데이터는 유지)"""
+    # 스크립트 존재 확인
+    existing = service.get_script_by_id(script_id)
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="스크립트를 찾을 수 없습니다.",
+        )
+
+    filename = _validate_script_file(file)
+    content = await file.read()
+    if len(content) > MAX_SCRIPT_SIZE_MB * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"스크립트 파일 크기가 {MAX_SCRIPT_SIZE_MB}MB를 초과합니다.",
+        )
+
+    import io
+    import uuid
+    from datetime import datetime as dt
+    file_service = get_file_service()
+    timestamp = dt.utcnow().strftime("%Y/%m/%d")
+    unique_id = uuid.uuid4().hex[:12]
+    safe_name = re.sub(r'[^\w\-.]', '_', os.path.basename(filename))
+    ext = "." + safe_name.rsplit(".", 1)[-1].lower() if "." in safe_name else ""
+    object_path = f"vuln-check-scripts/{timestamp}/{unique_id}{ext}"
+
+    file_service.client.put_object(
+        bucket_name=file_service.bucket_name,
+        object_name=object_path,
+        data=io.BytesIO(content),
+        length=len(content),
+        content_type=file.content_type or "application/octet-stream",
+    )
+
+    try:
+        script, old_file_path = service.replace_script_file(
+            script_id=script_id,
+            file_path=object_path,
+            file_name=safe_name,
+            file_size=len(content),
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+    # 이전 파일 삭제 (실패해도 계속 진행)
+    if old_file_path and old_file_path != object_path:
+        try:
+            file_service.delete_file(old_file_path)
+        except Exception:
+            pass
+
+    return _script_to_response(script)
 
 
 @router.delete("/scripts/{script_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -519,6 +585,7 @@ def update_execution(
             severity_high=data.severity_high,
             severity_medium=data.severity_medium,
             severity_low=data.severity_low,
+            info_count=data.info_count,
             error_message=data.error_message,
         )
         return _execution_to_response(execution)
@@ -527,6 +594,52 @@ def update_execution(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
+
+
+@router.post("/executions/{execution_id}/parse-result", response_model=VulnCheckExecutionResponse)
+async def parse_execution_result_text(
+    execution_id: int,
+    payload: dict,
+    service: VulnCheckService = Depends(get_vuln_check_service),
+    current_user: User = Depends(require_permission("risk:update")),
+) -> VulnCheckExecutionResponse:
+    """
+    상세 결과 텍스트(붙여넣기) 자동 파싱
+
+    요청 본문: { "content": "<scan output>", "format": "txt" | "json" | "csv" }
+    format 미지정 시 "txt"로 처리합니다.
+    """
+    from app.services.vuln_result_parser import parse_result_file
+
+    content = payload.get("content")
+    if not isinstance(content, str) or not content.strip():
+        raise HTTPException(status_code=400, detail="분석할 결과 텍스트가 없습니다.")
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="텍스트 크기가 10MB를 초과합니다.")
+
+    fmt = (payload.get("format") or "txt").lower()
+    if fmt not in {"txt", "json", "csv"}:
+        fmt = "txt"
+    pseudo_filename = f"pasted_result.{fmt}"
+
+    parsed = parse_result_file(content, pseudo_filename)
+
+    try:
+        execution = service.update_execution_result(
+            execution_id=execution_id,
+            status=parsed.status,
+            result_summary=parsed.result_summary,
+            result_detail=parsed.result_detail,
+            vulnerabilities_found=parsed.vulnerabilities_found,
+            severity_high=parsed.severity_high,
+            severity_medium=parsed.severity_medium,
+            severity_low=parsed.severity_low,
+            info_count=parsed.info_count,
+            error_message=parsed.error_message,
+        )
+        return _execution_to_response(execution)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.post("/executions/{execution_id}/upload-result", response_model=VulnCheckExecutionResponse)
@@ -589,6 +702,7 @@ async def upload_execution_result(
             severity_high=parsed.severity_high,
             severity_medium=parsed.severity_medium,
             severity_low=parsed.severity_low,
+            info_count=parsed.info_count,
             error_message=parsed.error_message,
         )
         return _execution_to_response(execution)

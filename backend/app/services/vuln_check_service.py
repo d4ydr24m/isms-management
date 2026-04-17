@@ -113,6 +113,26 @@ class VulnCheckService:
         self.db.refresh(script)
         return script
 
+    def replace_script_file(
+        self,
+        script_id: int,
+        file_path: str,
+        file_name: str,
+        file_size: int,
+    ) -> tuple[VulnCheckScript, str]:
+        """스크립트 파일 교체. (업데이트된 스크립트, 이전 파일 경로) 반환"""
+        script = self.get_script_by_id(script_id)
+        if not script:
+            raise ValueError("스크립트를 찾을 수 없습니다.")
+
+        old_file_path = script.file_path
+        script.file_path = file_path
+        script.file_name = file_name
+        script.file_size = file_size
+        self.db.commit()
+        self.db.refresh(script)
+        return script, old_file_path
+
     def delete_script(self, script_id: int) -> str:
         """스크립트 삭제 (비활성화) - 파일 경로 반환"""
         script = self.get_script_by_id(script_id)
@@ -311,6 +331,7 @@ class VulnCheckService:
         severity_high: int = 0,
         severity_medium: int = 0,
         severity_low: int = 0,
+        info_count: int = 0,
         error_message: Optional[str] = None,
     ) -> VulnCheckExecution:
         execution = self.get_execution_by_id(execution_id)
@@ -324,6 +345,7 @@ class VulnCheckService:
         execution.severity_high = severity_high
         execution.severity_medium = severity_medium
         execution.severity_low = severity_low
+        execution.info_count = info_count
         execution.error_message = error_message
 
         now = utc_now()
@@ -371,6 +393,9 @@ class VulnCheckService:
         total_low = self.db.query(
             func.coalesce(func.sum(VulnCheckExecution.severity_low), 0)
         ).scalar() or 0
+        total_info = self.db.query(
+            func.coalesce(func.sum(VulnCheckExecution.info_count), 0)
+        ).scalar() or 0
 
         return {
             "total_scripts": total_scripts,
@@ -384,5 +409,6 @@ class VulnCheckService:
                 "high": total_high,
                 "medium": total_medium,
                 "low": total_low,
+                "info": total_info,
             },
         }

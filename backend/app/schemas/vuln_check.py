@@ -160,10 +160,11 @@ class VulnCheckExecutionUpdate(BaseModel):
     status: str = Field(..., description="실행 상태 (completed/failed/cancelled)")
     result_summary: Optional[str] = Field(None, description="결과 요약")
     result_detail: Optional[str] = Field(None, description="상세 결과")
-    vulnerabilities_found: int = Field(default=0, ge=0, description="발견된 취약점 수")
-    severity_high: int = Field(default=0, ge=0, description="고위험 취약점 수")
-    severity_medium: int = Field(default=0, ge=0, description="중위험 취약점 수")
-    severity_low: int = Field(default=0, ge=0, description="저위험 취약점 수")
+    vulnerabilities_found: int = Field(default=0, ge=0, description="발견된 취약점 수 (취약+경고)")
+    severity_high: int = Field(default=0, ge=0, description="취약 (VULN) 항목 수")
+    severity_medium: int = Field(default=0, ge=0, description="경고 (WARN) 항목 수")
+    severity_low: int = Field(default=0, ge=0, description="미사용 (현행 점검 스크립트는 Low 티어 없음)")
+    info_count: int = Field(default=0, ge=0, description="정보 (INFO) 항목 수 - 참조용")
     error_message: Optional[str] = Field(None, description="에러 메시지")
 
     @field_validator("status")
@@ -194,6 +195,7 @@ class VulnCheckExecutionResponse(BaseModel):
     severity_high: Optional[int] = 0
     severity_medium: Optional[int] = 0
     severity_low: Optional[int] = 0
+    info_count: Optional[int] = 0
     executed_by: Optional[int] = None
     executor_name: Optional[str] = None
     error_message: Optional[str] = None
@@ -224,4 +226,4 @@ class VulnCheckStats(BaseModel):
     total_executions: int = 0
     recent_executions: int = 0
     total_vulnerabilities_found: int = 0
-    severity_distribution: dict = Field(default_factory=lambda: {"high": 0, "medium": 0, "low": 0})
+    severity_distribution: dict = Field(default_factory=lambda: {"high": 0, "medium": 0, "low": 0, "info": 0})

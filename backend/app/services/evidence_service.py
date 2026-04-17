@@ -250,6 +250,42 @@ class EvidenceService:
 
         return evidence
 
+    def delete_version(self, evidence_id: int, version_id: int) -> None:
+        """
+        증적의 특정 버전 삭제 (현재 버전은 삭제 불가)
+
+        Args:
+            evidence_id: 증적 ID
+            version_id: 버전 ID
+        """
+        from app.models.evidence import EvidenceVersion
+
+        evidence = self.db.query(Evidence).filter(Evidence.id == evidence_id).first()
+        if not evidence:
+            raise ValueError("증적을 찾을 수 없습니다.")
+
+        version = (
+            self.db.query(EvidenceVersion)
+            .filter(EvidenceVersion.id == version_id, EvidenceVersion.evidence_id == evidence_id)
+            .first()
+        )
+        if not version:
+            raise ValueError("버전을 찾을 수 없습니다.")
+
+        # 현재 버전은 삭제 불가 (버전 문자열 비교)
+        if version.version == evidence.version:
+            raise ValueError("현재 버전은 삭제할 수 없습니다.")
+
+        # MinIO 파일 삭제 (현재 evidence와 같은 파일이면 스킵)
+        if version.file_path and version.file_path != evidence.file_path:
+            try:
+                self.file_service.delete_file(version.file_path)
+            except Exception:
+                pass
+
+        self.db.delete(version)
+        self.db.commit()
+
     def delete_evidence(self, evidence_id: int) -> None:
         """
         증적 완전 삭제 (hard delete)

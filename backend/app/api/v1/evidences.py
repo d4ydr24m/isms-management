@@ -3,6 +3,7 @@
 증적 CRUD, 버전 관리, 통제항목 매핑
 """
 import json
+import logging
 from datetime import date
 from typing import List, Optional
 from urllib.parse import quote
@@ -30,6 +31,8 @@ from app.schemas.evidence import (
 from app.services.evidence_service import EvidenceService
 from app.services.file_service import FileService
 from app.services.audit_log_service import log_user_activity
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -328,6 +331,27 @@ def delete_evidence(
     return {"message": "증적이 삭제되었습니다."}
 
 
+@router.delete("/{evidence_id}/versions/{version_id}")
+def delete_evidence_version(
+    evidence_id: int,
+    version_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("evidence:delete")),
+):
+    """
+    증적 특정 버전 삭제 (현재 버전은 삭제 불가)
+    """
+    service = EvidenceService(db)
+    try:
+        service.delete_version(evidence_id, version_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    return {"message": "버전이 삭제되었습니다."}
+
+
 @router.post("/{evidence_id}/versions", response_model=EvidenceResponse, status_code=status.HTTP_201_CREATED)
 def create_evidence_version(
     evidence_id: int,
@@ -406,6 +430,7 @@ def get_evidence_versions(
 @router.get("/{evidence_id}/download")
 def download_evidence(
     evidence_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("evidence:read")),
 ):
@@ -435,6 +460,11 @@ def download_evidence(
             detail=f"파일 다운로드 실패: {str(e)}",
         )
 
+    # 클라이언트 IP 추출 (X-Forwarded-For / X-Real-IP 우선)
+    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or \
+                request.headers.get("X-Real-IP", "") or \
+                (request.client.host if request.client else "")
+
     # 감사 로그 기록 (다운로드)
     log_user_activity(
         db=db,
@@ -446,8 +476,11 @@ def download_evidence(
             "evidence_title": evidence.title,
             "file_name": evidence.file_name,
         },
+        ip_address=client_ip,
+        user_agent=request.headers.get("User-Agent", "")[:500],
         request_method="GET",
         request_path=f"/api/v1/evidences/{evidence_id}/download",
+        status_code=200,
     )
 
     # 파일명 인코딩 (한글 파일명 지원)
@@ -467,6 +500,7 @@ def download_evidence(
 def download_evidence_version(
     evidence_id: int,
     version_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("evidence:read")),
 ):
@@ -495,6 +529,29 @@ def download_evidence_version(
             detail="파일을 찾을 수 없습니다.",
         )
 
+    # 클라이언트 IP 추출
+    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or \
+                request.headers.get("X-Real-IP", "") or \
+                (request.client.host if request.client else "")
+
+    # 감사 로그 기록 (버전 다운로드)
+    log_user_activity(
+        db=db,
+        user=current_user,
+        action="download",
+        resource_type="evidence",
+        resource_id=evidence_id,
+        new_value={
+            "version_id": version_id,
+            "file_name": version.file_name,
+        },
+        ip_address=client_ip,
+        user_agent=request.headers.get("User-Agent", "")[:500],
+        request_method="GET",
+        request_path=f"/api/v1/evidences/{evidence_id}/versions/{version_id}/download",
+        status_code=200,
+    )
+
     encoded_filename = quote(version.file_name)
 
     return StreamingResponse(
@@ -516,7 +573,13 @@ def get_preview_url(
 ):
     """
     파일 미리보기 (백엔드를 통한 프록시 스트리밍)
+
+    - PDF / 이미지: 원본 바이트를 inline으로 반환
+    - Office 문서(docx, xlsx, pptx, odt 등): LibreOffice로 PDF 변환 후 반환 (해시 기반 캐시)
+    - 기타: 원본 바이트를 반환 (브라우저 미리보기는 클라이언트에서 판정)
     """
+    from app.services.preview_service import ensure_preview, is_office_document
+
     service = EvidenceService(db)
     evidence = service.get_evidence_by_id(evidence_id)
 
@@ -526,9 +589,41 @@ def get_preview_url(
             detail="증적을 찾을 수 없습니다.",
         )
 
+    file_service = FileService()
+    source_mime = evidence.mime_type or "application/octet-stream"
+    preview_bytes: bytes
+    response_mime: str
+    response_filename: str
+
     try:
-        file_service = FileService()
-        file_data = file_service.get_file(evidence.file_path)
+        if is_office_document(source_mime, evidence.file_name):
+            # Office 문서 → PDF 또는 HTML 변환 (스프레드시트는 HTML)
+            try:
+                preview_bytes, response_mime = ensure_preview(
+                    file_service=file_service,
+                    source_file_path=evidence.file_path,
+                    file_hash=evidence.file_hash,
+                    filename=evidence.file_name,
+                )
+                # 브라우저 힌트용 가상 확장자 부여
+                ext_map = {"application/pdf": "pdf", "text/html; charset=utf-8": "html"}
+                target_ext = ext_map.get(response_mime, "bin")
+                base_name = evidence.file_name.rsplit(".", 1)[0] if "." in evidence.file_name else evidence.file_name
+                response_filename = f"{base_name}.{target_ext}"
+            except Exception as conv_err:
+                logger.warning(f"Office 변환 실패, 원본 반환: {conv_err}")
+                preview_bytes = file_service.get_file(evidence.file_path)
+                response_mime = source_mime
+                response_filename = evidence.file_name
+        else:
+            preview_bytes = file_service.get_file(evidence.file_path)
+            response_mime = source_mime
+            response_filename = evidence.file_name
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="파일을 찾을 수 없습니다.",
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -550,6 +645,7 @@ def get_preview_url(
         new_value={
             "evidence_title": evidence.title,
             "file_name": evidence.file_name,
+            "preview_mime": response_mime,
         },
         ip_address=client_ip,
         user_agent=request.headers.get("User-Agent", "")[:500],
@@ -558,20 +654,22 @@ def get_preview_url(
         status_code=200,
     )
 
-    from fastapi.responses import StreamingResponse
-    from io import BytesIO
-    from urllib.parse import quote
-
-    content_type = evidence.mime_type or "application/octet-stream"
-    encoded_filename = quote(evidence.file_name)
+    encoded_filename = quote(response_filename)
+    # ETag은 원본 파일 해시에 렌더링 대상 확장자를 더해 동일 원본+동일 포맷을 공유
+    etag_ext = response_filename.rsplit(".", 1)[-1] if "." in response_filename else "raw"
+    etag = f'W/"{evidence.file_hash}-{etag_ext}"'
     return StreamingResponse(
-        BytesIO(file_data),
-        media_type=content_type,
+        io.BytesIO(preview_bytes),
+        media_type=response_mime,
         headers={
             "Content-Disposition": f"inline; filename*=UTF-8''{encoded_filename}",
-            "Content-Length": str(len(file_data)),
+            "Content-Length": str(len(preview_bytes)),
             "X-Frame-Options": "SAMEORIGIN",
             "Content-Security-Policy": "frame-ancestors 'self'",
+            # 브라우저가 같은 세션 내에서 동일 미리보기를 재요청하지 않도록 캐싱.
+            # private: 프록시 캐싱 금지 (사용자별 권한 검증 결과이므로)
+            "Cache-Control": "private, max-age=3600",
+            "ETag": etag,
         },
     )
 

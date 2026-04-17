@@ -1533,6 +1533,11 @@ class AssetService:
         ws.auto_filter.ref = f"A1:{last_col_letter}1"
         ws.freeze_panes = "A2"
 
+        # 줄무늬 배경 — 빈 템플릿은 미리 100행, 데이터 포함은 실제 데이터 범위
+        from app.core.excel_utils import apply_banded_rows
+        band_end_row = data_start_row + max(len(assets), 100) - 1
+        apply_banded_rows(ws, data_start_row, band_end_row, len(headers))
+
         # 바이트로 반환
         output = BytesIO()
         wb.save(output)

@@ -4,9 +4,13 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # 시스템 의존성 설치
+# libreoffice: Office 문서(docx/xlsx/pptx/odt 등) → PDF 변환 (증적 미리보기)
+# fonts-noto-cjk: 한글/CJK 문서 렌더링용 폰트
 RUN apt-get update && apt-get install -y \
     gcc \
     postgresql-client \
+    libreoffice \
+    fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/*
 
 # Python 의존성 설치

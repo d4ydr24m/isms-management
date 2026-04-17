@@ -332,6 +332,72 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         except Exception:
             return None
 
+    async def _read_and_rewrap_response(self, response: Response) -> tuple[Response, Optional[dict]]:
+        """
+        스트리밍 응답 바디를 읽어 JSON으로 파싱하고, 동일 내용으로 응답을 재구성한다.
+        파싱 실패 또는 비-JSON 응답이면 원본 응답을 그대로 돌려준다.
+
+        주의: raw_headers를 그대로 보존해 Set-Cookie 등 동일 키 다중 값 헤더를 유지한다.
+        """
+        from starlette.responses import Response as StarletteResponse
+
+        body_iterator = getattr(response, "body_iterator", None)
+        if body_iterator is None:
+            return response, None
+
+        try:
+            chunks: list[bytes] = []
+            total = 0
+            async for chunk in body_iterator:
+                chunks.append(chunk if isinstance(chunk, bytes) else chunk.encode("utf-8"))
+                total += len(chunks[-1])
+                if total > 100_000:  # 100KB 초과 시 파싱 포기 (바이너리/대용량 방지)
+                    break
+            # 남은 청크가 있으면 드레인
+            async for chunk in body_iterator:
+                chunks.append(chunk if isinstance(chunk, bytes) else chunk.encode("utf-8"))
+            body = b"".join(chunks)
+        except Exception:
+            return response, None
+
+        # 새 Response는 빈 headers로 만들고, 원본 raw_headers를 직접 복사해서
+        # Set-Cookie 같이 동일 키가 여러 번 등장하는 헤더를 손실 없이 보존한다.
+        new_response = StarletteResponse(
+            content=body,
+            status_code=response.status_code,
+            media_type=response.media_type,
+        )
+        # Content-Length는 새 Response가 설정한 값을 유지하고, 나머지 헤더만 덮어쓴다
+        original_raw = getattr(response, "raw_headers", [])
+        preserved: list[tuple[bytes, bytes]] = []
+        # 새 Response가 이미 설정한 content-type / content-length 유지
+        for k, v in new_response.raw_headers:
+            preserved.append((k, v))
+        existing_keys = {k.lower() for k, _ in preserved}
+        for k, v in original_raw:
+            # bytes 키/값 처리
+            key_bytes = k if isinstance(k, bytes) else str(k).encode("latin-1")
+            val_bytes = v if isinstance(v, bytes) else str(v).encode("latin-1")
+            kl = key_bytes.lower()
+            if kl == b"content-length":
+                continue  # 새 응답이 자동 설정
+            if kl == b"content-type" and b"content-type" in existing_keys:
+                continue  # 이미 media_type 기반으로 설정됨
+            preserved.append((key_bytes, val_bytes))
+        new_response.raw_headers = preserved
+
+        parsed: Optional[dict] = None
+        content_type = response.headers.get("content-type", "")
+        if "application/json" in content_type and body:
+            try:
+                data = json.loads(body.decode("utf-8", errors="ignore"))
+                if isinstance(data, dict):
+                    parsed = data
+            except Exception:
+                parsed = None
+
+        return new_response, parsed
+
     def _capture_delete_target(self, path: str) -> dict | None:
         """DELETE 요청 전 삭제 대상 리소스 정보를 캡처"""
         resource_type, resource_id = self._parse_resource_and_id(path)
@@ -376,6 +442,47 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
 
         # 요청 처리
         response = await call_next(request)
+
+        # POST 2xx: 응답 바디에서 생성된 리소스의 ID/이름 추출
+        # 클라이언트로 보낼 스트림을 소모해야 하므로, 읽은 후 반드시 새 Response로 교체
+        # 인증 엔드포인트는 Set-Cookie 헤더가 중요하므로 제외 (대상 리소스 개념이 없음)
+        if (
+            target_info is None
+            and request.method == "POST"
+            and path.startswith("/api/")
+            and not path.startswith("/api/v1/auth/")
+            and 200 <= response.status_code < 300
+            and parsed_resource_type is None  # 경로에 이미 ID가 있는 서브액션은 제외
+        ):
+            response, created = await self._read_and_rewrap_response(response)
+            if created and isinstance(created, dict):
+                created_id = created.get("id")
+                # resource_type을 경로 첫 세그먼트에서 유도 (parsed가 없으므로)
+                resource_type_from_path = self._get_resource_type(path)
+                label_fields = ("name", "title", "email", "code", "asset_code")
+                target_info = {}
+                if created_id is not None:
+                    try:
+                        parsed_resource_id = int(created_id)
+                        target_info["id"] = parsed_resource_id
+                    except (TypeError, ValueError):
+                        target_info["id"] = created_id
+                for f in label_fields:
+                    val = created.get(f)
+                    if val is not None:
+                        target_info[f] = str(val)
+                # 아무 라벨 필드도 못 찾았으면 빈 dict로 남지 않게 처리
+                if len(target_info) <= 1 and resource_type_from_path:
+                    # 모델 룩업으로 보강
+                    if created_id is not None and resource_type_from_path in self._TARGET_MODEL_MAP:
+                        try:
+                            lookup = self._lookup_target_info(resource_type_from_path, int(created_id))
+                            if lookup:
+                                target_info = lookup
+                        except (TypeError, ValueError):
+                            pass
+                if not target_info:
+                    target_info = None
 
         # 처리 시간 계산
         process_time = (datetime.utcnow() - start_time).total_seconds()

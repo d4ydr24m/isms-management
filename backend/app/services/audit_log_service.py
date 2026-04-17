@@ -398,6 +398,10 @@ class AuditLogService:
             ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{len(logs) + 1}"
         ws.freeze_panes = "A2"
 
+        if logs:
+            from app.core.excel_utils import apply_banded_rows
+            apply_banded_rows(ws, 2, len(logs) + 1, len(headers))
+
         output = BytesIO()
         wb.save(output)
         output.seek(0)

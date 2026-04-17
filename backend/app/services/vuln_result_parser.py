@@ -19,14 +19,25 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ParsedResult:
-    """파싱된 결과"""
+    """파싱된 결과
+
+    severity 매핑 (현행 ISMS-P 점검 스크립트 기준):
+      [VULN] -> severity_high (취약)
+      [WARN] -> severity_medium (경고)
+      [INFO] -> info_count (참조용). vulnerabilities_found 에 합산하지 않음.
+      [PASS] -> 취약점 아님. 카운트만 보존.
+
+    severity_low 는 미사용 (현행 점검 스크립트가 Low 티어를 내보내지 않음).
+    호환을 위해 필드는 유지하되 항상 0.
+    """
     status: str = "completed"
     result_summary: str = ""
     result_detail: str = ""
     vulnerabilities_found: int = 0
-    severity_high: int = 0     # VULN (Critical)
-    severity_medium: int = 0   # WARN (Warning)
-    severity_low: int = 0      # INFO
+    severity_high: int = 0     # VULN (취약)
+    severity_medium: int = 0   # WARN (경고)
+    severity_low: int = 0      # 미사용 (Low 티어 없음)
+    info_count: int = 0        # INFO (참조용)
     error_message: Optional[str] = None
     checks: List[Dict] = field(default_factory=list)
 
@@ -54,13 +65,13 @@ def parse_result_file(content: str, file_name: str) -> ParsedResult:
 
 def _parse_txt(content: str) -> ParsedResult:
     """
-    ISMS-P Windows Vulnerability Check Report TXT 형식 파싱
+    ISMS-P Windows/macOS Vulnerability Check Report TXT 형식 파싱
 
-    태그 기반 파싱:
-    - [VULN] = Critical (high)
-    - [WARN] = Warning (medium)
-    - [PASS] = Good (통과)
-    - [INFO] = Info (low)
+    태그 기반 파싱 (현행 점검 스크립트는 Low 티어 미사용):
+    - [VULN] = 취약   -> severity_high
+    - [WARN] = 경고   -> severity_medium
+    - [PASS] = 통과   -> 카운트만 보존
+    - [INFO] = 참조   -> 취약점 수에 미반영
 
     SUMMARY 섹션에서 정확한 카운트 추출
     """
@@ -124,8 +135,10 @@ def _parse_txt(content: str) -> ParsedResult:
 
     result.severity_high = vuln_count
     result.severity_medium = warn_count
-    result.severity_low = info_count
-    result.vulnerabilities_found = vuln_count + warn_count + info_count
+    result.severity_low = 0
+    result.info_count = info_count
+    # 취약점 수에서 INFO 제외 (참조 데이터일 뿐, 취약점이 아님).
+    result.vulnerabilities_found = vuln_count + warn_count
     result.checks = checks
 
     # 총 체크 수 추출
@@ -136,11 +149,11 @@ def _parse_txt(content: str) -> ParsedResult:
     score_match = re.search(r'Security Score:\s*~?(\d+)%', content)
     score = score_match.group(1) if score_match else "N/A"
 
-    # 요약 생성
+    # 요약 생성 (Info 는 참조 항목임을 명시)
     result.result_summary = (
         f"총 {total_checks}개 점검 항목 | "
-        f"Critical: {vuln_count}, Warning: {warn_count}, "
-        f"Pass: {pass_count}, Info: {info_count} | "
+        f"취약: {vuln_count}, 경고: {warn_count}, "
+        f"통과: {pass_count}, 정보(참조): {info_count} | "
         f"보안 점수: {score}%"
     )
 
@@ -175,16 +188,20 @@ def _parse_json(content: str) -> ParsedResult:
     summary = data.get("summary", {})
     result.severity_high = summary.get("vuln", 0) + summary.get("critical", 0) + summary.get("high", 0)
     result.severity_medium = summary.get("warn", 0) + summary.get("warning", 0) + summary.get("medium", 0)
-    result.severity_low = summary.get("info", 0) + summary.get("low", 0)
-    result.vulnerabilities_found = result.severity_high + result.severity_medium + result.severity_low
+    # severity_low 미사용 — Low 티어 없음. INFO 는 info_count 로 분리.
+    result.severity_low = 0
+    result.info_count = summary.get("info", 0)
+    info_count = result.info_count
+    # 취약점 수에서 INFO 제외.
+    result.vulnerabilities_found = result.severity_high + result.severity_medium
 
-    total = data.get("total_checks", result.vulnerabilities_found + summary.get("pass", 0))
+    total = data.get("total_checks", result.vulnerabilities_found + summary.get("pass", 0) + info_count)
     score = data.get("security_score", "N/A")
 
     result.result_summary = (
         f"총 {total}개 점검 항목 | "
-        f"Critical: {result.severity_high}, Warning: {result.severity_medium}, "
-        f"Info: {result.severity_low} | "
+        f"취약: {result.severity_high}, 경고: {result.severity_medium}, "
+        f"정보(참조): {info_count} | "
         f"보안 점수: {score}%"
     )
 
@@ -224,10 +241,11 @@ def _parse_csv(content: str) -> ParsedResult:
                 vuln_count += 1
             elif severity in ("WARN", "WARNING", "MEDIUM"):
                 warn_count += 1
-            elif severity in ("INFO", "LOW"):
+            elif severity in ("INFO",):
                 info_count += 1
             elif severity in ("PASS", "GOOD", "OK"):
                 pass_count += 1
+            # "LOW" 는 의도적으로 무시 — 점검 스크립트가 Low 티어를 사용하지 않음.
     except Exception as e:
         result.status = "failed"
         result.error_message = f"CSV 파싱 오류: {e}"
@@ -235,15 +253,18 @@ def _parse_csv(content: str) -> ParsedResult:
 
     result.severity_high = vuln_count
     result.severity_medium = warn_count
-    result.severity_low = info_count
-    result.vulnerabilities_found = vuln_count + warn_count + info_count
+    # severity_low 미사용 — Low 티어 없음.
+    result.severity_low = 0
+    result.info_count = info_count
+    # 취약점 수에서 INFO 제외.
+    result.vulnerabilities_found = vuln_count + warn_count
     result.checks = checks
 
     total = vuln_count + warn_count + pass_count + info_count
     result.result_summary = (
         f"총 {total}개 점검 항목 | "
-        f"Critical: {vuln_count}, Warning: {warn_count}, "
-        f"Pass: {pass_count}, Info: {info_count}"
+        f"취약: {vuln_count}, 경고: {warn_count}, "
+        f"통과: {pass_count}, 정보(참조): {info_count}"
     )
 
     return result

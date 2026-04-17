@@ -55,6 +55,7 @@ const EvidenceDetail = () => {
   const navigate = useNavigate()
   const { hasPermission } = usePermissions()
   const canUpdate = hasPermission('evidence:update')
+  const canDelete = hasPermission('evidence:delete')
   const [evidence, setEvidence] = useState<Evidence | null>(null)
   const [versions, setVersions] = useState<EvidenceVersion[]>([])
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -149,6 +150,20 @@ const EvidenceDetail = () => {
     } catch (err: any) {
       const detail = err?.response?.data?.detail || err?.message
       message.error(detail || '파일 다운로드에 실패했습니다')
+    }
+  }
+
+  const handleVersionDelete = async (versionId: number) => {
+    if (!evidence) return
+    try {
+      await evidenceService.deleteVersion(evidence.id, versionId)
+      message.success('버전이 삭제되었습니다')
+      // 버전 목록 갱신
+      const fresh = await evidenceService.getVersions(evidence.id)
+      setVersions(fresh)
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || err?.message
+      message.error(detail || '버전 삭제에 실패했습니다')
     }
   }
 
@@ -336,6 +351,8 @@ const EvidenceDetail = () => {
                 versions={versions}
                 currentVersion={evidence.version}
                 onDownload={handleVersionDownload}
+                onDelete={handleVersionDelete}
+                canDelete={canDelete}
                 loading={versionsLoading}
               />
             </Space>

@@ -241,6 +241,10 @@ def _generate_soa_excel(items, template_type: str) -> bytes:
     ws.auto_filter.ref = "A1:I1"
     ws.freeze_panes = "A2"
 
+    from app.core.excel_utils import apply_banded_rows
+    if ws.max_row > 1:
+        apply_banded_rows(ws, 2, ws.max_row, 9)
+
     # 바이트로 반환
     output = BytesIO()
     wb.save(output)

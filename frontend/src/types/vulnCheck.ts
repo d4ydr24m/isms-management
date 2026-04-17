@@ -120,6 +120,7 @@ export interface VulnCheckExecution {
   severityHigh: number
   severityMedium: number
   severityLow: number
+  infoCount: number
   executedBy: number | null
   executorName: string | null
   errorMessage: string | null
@@ -155,5 +156,6 @@ export interface VulnCheckStats {
     high: number
     medium: number
     low: number
+    info: number
   }
 }

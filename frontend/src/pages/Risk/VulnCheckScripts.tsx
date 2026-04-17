@@ -54,6 +54,7 @@ import {
   getVulnCheckScripts,
   createVulnCheckScript,
   updateVulnCheckScript,
+  replaceVulnCheckScriptFile,
   deleteVulnCheckScript,
   downloadVulnCheckScript,
   getVulnCheckSchedules,
@@ -64,6 +65,7 @@ import {
   createVulnCheckExecution,
   updateVulnCheckExecution,
   uploadVulnCheckResult,
+  parseVulnCheckResultText,
   getVulnCheckStats,
 } from '@/services/vulnCheck'
 import type {
@@ -148,6 +150,7 @@ const VulnCheckScriptsPage = () => {
   const [resultForm] = Form.useForm()
   const [resultFile, setResultFile] = useState<UploadFile | null>(null)
   const [resultUploading, setResultUploading] = useState(false)
+  const [resultParsing, setResultParsing] = useState(false)
 
   // 자산 선택 (수동 실행용)
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([])
@@ -234,6 +237,7 @@ const VulnCheckScriptsPage = () => {
 
   const handleEditScript = (script: VulnCheckScript) => {
     setEditingScript(script)
+    setUploadFile(null)  // 이전 업로드 파일 상태 초기화
     scriptForm.setFieldsValue({
       name: script.name,
       description: script.description,
@@ -249,7 +253,13 @@ const VulnCheckScriptsPage = () => {
 
       if (editingScript) {
         await updateVulnCheckScript(editingScript.id, values)
-        message.success('스크립트가 수정되었습니다.')
+        // 파일이 선택되어 있으면 파일도 교체
+        if (uploadFile) {
+          await replaceVulnCheckScriptFile(editingScript.id, uploadFile as unknown as File)
+          message.success('스크립트 정보와 파일이 수정되었습니다.')
+        } else {
+          message.success('스크립트가 수정되었습니다.')
+        }
       } else {
         if (!uploadFile) {
           message.error('스크립트 파일을 선택해주세요.')
@@ -414,7 +424,7 @@ const VulnCheckScriptsPage = () => {
       vulnerabilitiesFound: execution.vulnerabilitiesFound || 0,
       severityHigh: execution.severityHigh || 0,
       severityMedium: execution.severityMedium || 0,
-      severityLow: execution.severityLow || 0,
+      infoCount: execution.infoCount || 0,
       errorMessage: '',
     })
     setResultModalVisible(true)
@@ -437,6 +447,36 @@ const VulnCheckScriptsPage = () => {
       message.error('결과 파일 업로드 실패')
     } finally {
       setResultUploading(false)
+    }
+  }
+
+  const handleParseResultText = async () => {
+    if (!resultTargetExecution) return
+    const content = (resultForm.getFieldValue('resultDetail') as string | undefined) || ''
+    if (!content.trim()) {
+      message.warning('상세 결과에 분석할 텍스트를 붙여넣어 주세요.')
+      return
+    }
+    setResultParsing(true)
+    try {
+      const updated = await parseVulnCheckResultText(resultTargetExecution.id, content, 'txt')
+      resultForm.setFieldsValue({
+        status: updated.status,
+        resultSummary: updated.resultSummary || '',
+        resultDetail: updated.resultDetail || content,
+        vulnerabilitiesFound: updated.vulnerabilitiesFound || 0,
+        severityHigh: updated.severityHigh || 0,
+        severityMedium: updated.severityMedium || 0,
+        infoCount: updated.infoCount || 0,
+      })
+      message.success('텍스트가 분석되어 카운트가 자동 입력되었습니다.')
+      setExecutionDetailOpen(false)
+      loadExecutions(executionPagination.current)
+      loadStats()
+    } catch {
+      message.error('텍스트 분석 실패')
+    } finally {
+      setResultParsing(false)
     }
   }
 
@@ -682,19 +722,19 @@ const VulnCheckScriptsPage = () => {
       },
     },
     {
-      title: '발견 취약점',
+      title: '점검 결과',
       dataIndex: 'vulnerabilitiesFound',
       key: 'vulnerabilitiesFound',
-      width: 180,
+      width: 220,
       align: 'center',
       render: (_: number, record) => {
-        const { severityHigh, severityMedium, severityLow } = record
-        if (!severityHigh && !severityMedium && !severityLow) return '-'
+        const { severityHigh, severityMedium, infoCount } = record
+        if (!severityHigh && !severityMedium && !infoCount) return '-'
         return (
           <Space size={4}>
-            {severityHigh > 0 && <Tag color="red">상 {severityHigh}</Tag>}
-            {severityMedium > 0 && <Tag color="orange">중 {severityMedium}</Tag>}
-            {severityLow > 0 && <Tag color="blue">하 {severityLow}</Tag>}
+            {severityHigh > 0 && <Tag color="red">취약 {severityHigh}</Tag>}
+            {severityMedium > 0 && <Tag color="orange">경고 {severityMedium}</Tag>}
+            {infoCount > 0 && <Tag color="blue">정보 {infoCount}</Tag>}
           </Space>
         )
       },
@@ -786,7 +826,7 @@ const VulnCheckScriptsPage = () => {
           <Col span={4}>
             <Card size="small">
               <Statistic
-                title="고위험"
+                title="취약"
                 value={stats.severityDistribution.high}
                 valueStyle={{ color: '#cf1322' }}
                 prefix={<WarningOutlined />}
@@ -796,7 +836,7 @@ const VulnCheckScriptsPage = () => {
           <Col span={4}>
             <Card size="small">
               <Statistic
-                title="중위험"
+                title="경고"
                 value={stats.severityDistribution.medium}
                 valueStyle={{ color: '#fa8c16' }}
               />
@@ -805,8 +845,8 @@ const VulnCheckScriptsPage = () => {
           <Col span={4}>
             <Card size="small">
               <Statistic
-                title="저위험"
-                value={stats.severityDistribution.low}
+                title="정보"
+                value={stats.severityDistribution.info}
                 valueStyle={{ color: '#1890ff' }}
               />
             </Card>
@@ -959,25 +999,25 @@ const VulnCheckScriptsPage = () => {
             </Col>
           </Row>
 
-          {!editingScript && (
-            <Form.Item
-              label="스크립트 파일"
-              required
-              help="허용 형식: .py, .sh, .ps1, .bat, .rb, .pl, .yaml, .yml, .json, .xml, .txt (최대 10MB)"
+          <Form.Item
+            label={editingScript ? '스크립트 파일 (선택사항 — 교체 시에만 업로드)' : '스크립트 파일'}
+            required={!editingScript}
+            help={editingScript
+              ? `현재 파일: ${editingScript.fileName}. 새 파일을 업로드하면 기존 파일이 교체됩니다.`
+              : '허용 형식: .py, .sh, .ps1, .bat, .rb, .pl, .yaml, .yml, .json, .xml, .txt (최대 10MB)'}
+          >
+            <Upload
+              beforeUpload={(file) => {
+                setUploadFile(file as unknown as UploadFile)
+                return false
+              }}
+              maxCount={1}
+              fileList={uploadFile ? [uploadFile] : []}
+              onRemove={() => setUploadFile(null)}
             >
-              <Upload
-                beforeUpload={(file) => {
-                  setUploadFile(file as unknown as UploadFile)
-                  return false
-                }}
-                maxCount={1}
-                fileList={uploadFile ? [uploadFile] : []}
-                onRemove={() => setUploadFile(null)}
-              >
-                <Button icon={<UploadOutlined />}>파일 선택</Button>
-              </Upload>
-            </Form.Item>
-          )}
+              <Button icon={<UploadOutlined />}>파일 선택</Button>
+            </Upload>
+          </Form.Item>
         </Form>
       </Modal>
 
@@ -1144,12 +1184,12 @@ const VulnCheckScriptsPage = () => {
                   ? dayjs(selectedExecution.completedAt).format('YYYY-MM-DD HH:mm:ss')
                   : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="발견 취약점">
+              <Descriptions.Item label="점검 결과">
                 <Space>
-                  <Text strong>{selectedExecution.vulnerabilitiesFound}건</Text>
-                  <Tag color="red">고위험 {selectedExecution.severityHigh}</Tag>
-                  <Tag color="orange">중위험 {selectedExecution.severityMedium}</Tag>
-                  <Tag color="blue">저위험 {selectedExecution.severityLow}</Tag>
+                  <Text strong>취약점 {selectedExecution.vulnerabilitiesFound}건</Text>
+                  <Tag color="red">취약 {selectedExecution.severityHigh}</Tag>
+                  <Tag color="orange">경고 {selectedExecution.severityMedium}</Tag>
+                  <Tag color="blue">정보 {selectedExecution.infoCount}</Tag>
                 </Space>
               </Descriptions.Item>
             </Descriptions>
@@ -1257,26 +1297,42 @@ const VulnCheckScriptsPage = () => {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="severityHigh" label="고위험">
+              <Form.Item name="severityHigh" label="취약">
                 <Input type="number" min={0} />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="severityMedium" label="중위험">
+              <Form.Item name="severityMedium" label="경고">
                 <Input type="number" min={0} />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="severityLow" label="저위험">
+              <Form.Item name="infoCount" label="정보">
                 <Input type="number" min={0} />
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item name="resultDetail" label="상세 결과">
+          <Form.Item
+            name="resultDetail"
+            label={
+              <Space>
+                <span>상세 결과</span>
+                <Button
+                  size="small"
+                  type="link"
+                  loading={resultParsing}
+                  onClick={handleParseResultText}
+                >
+                  텍스트 자동 분석
+                </Button>
+              </Space>
+            }
+            help="스크립트 출력(예: RTR 실행 결과)을 붙여넣은 뒤 [텍스트 자동 분석]을 누르면 취약점 수가 자동 계산됩니다."
+          >
             <TextArea
               rows={6}
-              placeholder="상세 점검 결과를 입력해주세요. (스크립트 출력 등)"
+              placeholder="상세 점검 결과를 입력하거나 붙여넣어 주세요."
               style={{ fontFamily: 'monospace', fontSize: 12 }}
             />
           </Form.Item>

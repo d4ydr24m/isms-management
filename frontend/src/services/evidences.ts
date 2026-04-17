@@ -91,6 +91,15 @@ export const evidenceService = {
     }
   },
 
+  // 특정 버전 삭제 (현재 버전은 삭제 불가)
+  async deleteVersion(evidenceId: number, versionId: number): Promise<void> {
+    try {
+      await apiClient.delete(`/evidences/${evidenceId}/versions/${versionId}`)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
   // 파일 다운로드
   async downloadEvidence(id: number, fileName: string): Promise<void> {
     try {

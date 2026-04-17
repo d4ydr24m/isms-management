@@ -88,6 +88,22 @@ export const updateVulnCheckScript = async (
   }
 }
 
+export const replaceVulnCheckScriptFile = async (
+  id: number,
+  file: File
+): Promise<VulnCheckScript> => {
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await apiClient.put(`${BASE}/scripts/${id}/file`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return res.data
+  } catch (error) {
+    throw handleApiError(error)
+  }
+}
+
 export const deleteVulnCheckScript = async (id: number): Promise<void> => {
   try {
     await apiClient.delete(`${BASE}/scripts/${id}`)
@@ -213,6 +229,7 @@ export const updateVulnCheckExecution = async (
     severityHigh?: number
     severityMedium?: number
     severityLow?: number
+    infoCount?: number
     errorMessage?: string
   }
 ): Promise<VulnCheckExecution> => {
@@ -233,6 +250,22 @@ export const uploadVulnCheckResult = async (
     formData.append('file', file)
     const res = await apiClient.post(`${BASE}/executions/${executionId}/upload-result`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return res.data
+  } catch (error) {
+    throw handleApiError(error)
+  }
+}
+
+export const parseVulnCheckResultText = async (
+  executionId: number,
+  content: string,
+  format: 'txt' | 'json' | 'csv' = 'txt'
+): Promise<VulnCheckExecution> => {
+  try {
+    const res = await apiClient.post(`${BASE}/executions/${executionId}/parse-result`, {
+      content,
+      format,
     })
     return res.data
   } catch (error) {

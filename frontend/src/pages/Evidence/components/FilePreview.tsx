@@ -11,6 +11,34 @@ interface FilePreviewProps {
   onDownload: () => void
 }
 
+// 서버에서 LibreOffice로 PDF 변환되는 Office 문서 유형
+// (백엔드 preview_service.OFFICE_EXTENSIONS와 동기화)
+const OFFICE_EXTENSIONS = new Set([
+  'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+  'odt', 'ods', 'odp', 'rtf', 'csv',
+])
+const OFFICE_MIME_PREFIXES = [
+  'application/msword',
+  'application/vnd.ms-excel',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.',
+  'application/vnd.oasis.opendocument.',
+  'application/haansoftdocx',
+  'application/haansoftxlsx',
+  'application/haansoftpptx',
+  'application/rtf',
+  'text/rtf',
+  'text/csv',
+]
+
+function isOfficeDocument(mimeType: string, fileName: string): boolean {
+  if (OFFICE_MIME_PREFIXES.some((prefix) => mimeType.startsWith(prefix))) return true
+  const dot = fileName.lastIndexOf('.')
+  if (dot === -1) return false
+  const ext = fileName.slice(dot + 1).toLowerCase()
+  return OFFICE_EXTENSIONS.has(ext)
+}
+
 const FilePreview = ({
   previewUrl,
   fileName,
@@ -20,8 +48,10 @@ const FilePreview = ({
 }: FilePreviewProps) => {
   const isPdf = mimeType === 'application/pdf'
   const isImage = mimeType.startsWith('image/')
+  // Office 문서는 백엔드가 PDF로 변환해 스트리밍하므로 iframe으로 렌더
+  const isOffice = isOfficeDocument(mimeType, fileName)
 
-  const canPreview = (isPdf || isImage) && previewUrl
+  const canPreview = (isPdf || isImage || isOffice) && previewUrl
 
   const renderPreview = () => {
     if (!previewUrl) {
@@ -37,7 +67,7 @@ const FilePreview = ({
       )
     }
 
-    if (isPdf) {
+    if (isPdf || isOffice) {
       return (
         <iframe
           src={previewUrl}

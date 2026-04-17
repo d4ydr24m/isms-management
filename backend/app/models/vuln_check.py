@@ -171,9 +171,10 @@ class VulnCheckExecution(Base):
     vulnerabilities_found = Column(
         Integer, nullable=True, default=0, comment="발견된 취약점 수"
     )
-    severity_high = Column(Integer, nullable=True, default=0, comment="고위험 취약점 수")
-    severity_medium = Column(Integer, nullable=True, default=0, comment="중위험 취약점 수")
-    severity_low = Column(Integer, nullable=True, default=0, comment="저위험 취약점 수")
+    severity_high = Column(Integer, nullable=True, default=0, comment="취약 (VULN) 항목 수")
+    severity_medium = Column(Integer, nullable=True, default=0, comment="경고 (WARN) 항목 수")
+    severity_low = Column(Integer, nullable=True, default=0, comment="미사용 (현행 점검 스크립트는 Low 티어 없음)")
+    info_count = Column(Integer, nullable=True, default=0, comment="정보 (INFO) 항목 수 - 참조용")
     executed_by = Column(
         Integer, ForeignKey("users.id"), nullable=True, comment="실행자 ID (수동 실행 시)"
     )

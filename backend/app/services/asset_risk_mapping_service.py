@@ -500,6 +500,10 @@ class AssetRiskMappingService:
         ws.auto_filter.ref = "A1:G1"
         ws.freeze_panes = "A2"
 
+        # 줄무늬 배경 (빈 템플릿은 100행)
+        from app.core.excel_utils import apply_banded_rows
+        apply_banded_rows(ws, 2, 101, 7)
+
         # 바이트로 변환
         output = BytesIO()
         wb.save(output)
