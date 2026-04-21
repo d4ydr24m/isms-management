@@ -87,7 +87,6 @@ export interface NonConformity {
   title: string
   description: string
   requirement: string
-  evidence: string | null
   responsiblePersonIds: number[]
   responsiblePersonNames: string[]
   responsiblePersonName: string | null
@@ -110,7 +109,6 @@ export interface NonConformityCreate {
   title: string
   description: string
   requirement: string
-  evidence?: string
   responsiblePersonIds: number[]
   dueDate: string
   detectedAt?: string
@@ -123,7 +121,6 @@ export interface NonConformityUpdate {
   severity?: string
   description?: string
   requirement?: string
-  evidence?: string
   responsiblePersonIds?: number[]
   departmentId?: number
   status?: string
@@ -211,4 +208,61 @@ export interface AuditorAccountUpdate {
   scope?: string[]
   canDownload?: boolean
   isActive?: boolean
+}
+
+// 부적합 - 증적 매핑
+export type NcEvidenceRole = 'before' | 'after' | 'support' | 'reference'
+
+export interface NcEvidenceItem {
+  mappingId: number
+  evidenceId: number
+  title: string
+  fileName: string
+  fileSize: number
+  mimeType: string | null
+  mappingNote: string | null
+  role: NcEvidenceRole
+  mappedBy: number | null
+  mappedAt: string
+  uploaderName: string | null
+}
+
+export interface NcEvidenceList {
+  items: NcEvidenceItem[]
+  total: number
+}
+
+export interface NcEvidenceAttachRequest {
+  evidenceIds: number[]
+  mappingNote?: string | null
+  role?: NcEvidenceRole
+}
+
+export interface NcEvidenceNoteUpdate {
+  mappingNote: string | null
+}
+
+export interface NcEvidenceRoleUpdate {
+  role: NcEvidenceRole
+}
+
+// 결함 증적 관리 페이지 (감사 관리 > 결함 증적 관리) 전용
+export interface NcEvidenceRow extends NcEvidenceItem {
+  nonConformityId: number
+  nonConformityTitle: string | null
+}
+
+export interface NcEvidenceListPage {
+  items: NcEvidenceRow[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export interface NcEvidenceListParams {
+  page?: number
+  pageSize?: number
+  nonConformityId?: number
+  search?: string
 }

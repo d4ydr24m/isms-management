@@ -46,7 +46,17 @@
       "Bash(git push:*)",
       "Bash(for f:*)",
       "Bash(for attempt:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec isms_postgres psql -U isms_user -d isms_db -c \"UPDATE llm_suggestions SET status='failed', error_message='orphaned - worker restart' WHERE status='pending';\")",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec isms_backend python //tmp/llm_smoke_test.py)",
+      "Bash(tee /tmp/llm-bench/smoke2.log)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec isms_frontend sh -c \"cd /app && npx vitest run src/test/components/llm/CorrectiveActionAssistant.test.tsx 2>&1\")",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec isms_frontend sh -c \"cd /app && npx vitest run src/test/components/llm/CorrectiveActionAssistant.test.tsx --reporter=verbose 2>&1\")",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec isms_backend alembic upgrade head)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec isms_postgres psql -U isms_user -d isms_db -c \"\\\\d nc_evidence_mappings\")",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec isms_backend pytest tests/test_nc_evidence_service.py -v)",
+      "Bash(curl -s \"https://ollama.com/library/qwen3.5\")",
+      "Bash(curl -s \"https://ollama.com/library/qwen3.5/tags\")"
     ]
   }
 }

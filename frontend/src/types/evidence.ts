@@ -17,6 +17,7 @@ export interface Evidence {
   uploaderId: number
   uploaderName: string
   controlItems: ControlItemMapping[]
+  source: 'library' | 'nc_finding'
   createdAt: string
   updatedAt: string
 }
@@ -92,4 +93,7 @@ export interface EvidenceFilterParams {
   validFrom?: string
   validUntil?: string
   expiringWithinDays?: number
+  // 증적 출처 필터. 기본은 'library' (일반 증적 관리 페이지 전용).
+  // 결함 증적은 'nc_finding', 모두 보려면 'all'.
+  source?: 'library' | 'nc_finding' | 'all'
 }

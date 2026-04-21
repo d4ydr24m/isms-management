@@ -53,6 +53,7 @@ class EvidenceService:
         valid_until: Optional[date] = None,
         control_ids: Optional[List[int]] = None,
         author: Optional[str] = None,
+        source: str = "library",
     ) -> Evidence:
         """
         증적 생성
@@ -96,6 +97,7 @@ class EvidenceService:
             valid_until=valid_until,
             uploader_id=uploader_id,
             author=author,
+            source=source,
         )
         self.db.add(evidence)
         self.db.flush()
@@ -437,6 +439,7 @@ class EvidenceService:
         evidence_type: Optional[str] = None,
         status: Optional[str] = None,
         control_id: Optional[int] = None,
+        source: Optional[str] = "library",
         page: int = 1,
         page_size: int = 20,
     ) -> Dict:
@@ -448,6 +451,8 @@ class EvidenceService:
             evidence_type: 증적 유형
             status: 상태
             control_id: 통제항목 ID
+            source: 증적 출처 필터. 기본값은 'library' 로 '증적 관리' 페이지가
+                    결함 증적과 섞이지 않도록 한다. None 을 넘기면 전체를 반환한다.
             page: 페이지 번호
             page_size: 페이지 크기
 
@@ -455,6 +460,10 @@ class EvidenceService:
             dict: 검색 결과 (items, total, page, page_size, total_pages)
         """
         query = self.db.query(Evidence)
+
+        # 출처 필터 — 기본은 library 만 노출
+        if source is not None:
+            query = query.filter(Evidence.source == source)
 
         # 검색어 필터
         if search:

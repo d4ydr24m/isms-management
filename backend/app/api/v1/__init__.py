@@ -33,6 +33,8 @@ from app.api.v1.vuln_check import router as vuln_check_router
 from app.api.v1.backup import router as backup_router
 from app.api.v1.isms_scope import router as isms_scope_router
 from app.api.v1.eol import router as eol_router
+from app.api.v1.llm_corrective_actions import router as llm_corrective_actions_router
+from app.api.v1.nc_evidences import router as nc_evidences_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router, prefix="/auth", tags=["인증"])
@@ -65,3 +67,5 @@ api_router.include_router(vuln_check_router, prefix="/vuln-check", tags=["취약
 api_router.include_router(backup_router, prefix="/backup", tags=["백업/복원"])
 api_router.include_router(isms_scope_router, prefix="/isms-scope", tags=["인증 범위"])
 api_router.include_router(eol_router, prefix="/eol", tags=["EoL 조회"])
+api_router.include_router(llm_corrective_actions_router)
+api_router.include_router(nc_evidences_router)

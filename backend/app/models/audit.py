@@ -176,7 +176,6 @@ class NonConformity(Base):
     title = Column(String(255), nullable=False, comment="부적합 제목")
     description = Column(Text, nullable=False, comment="부적합 내용")
     requirement = Column(Text, nullable=False, comment="요구사항")
-    evidence = Column(Text, nullable=True, comment="근거")
 
     # 담당자 (하위 호환용, 향후 제거 가능)
     responsible_person_id = Column(
@@ -206,6 +205,11 @@ class NonConformity(Base):
     assignees = relationship("Personnel", secondary=nc_assignees, backref="assigned_non_conformities")
     department = relationship("Department", backref="non_conformities")
     corrective_actions = relationship("CorrectiveAction", back_populates="non_conformity", cascade="all, delete-orphan")
+    evidence_links = relationship(
+        "NonConformityEvidence",
+        back_populates="non_conformity",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<NonConformity(id={self.id}, title={self.title}, status={self.status})>"

@@ -128,6 +128,7 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
         children: [
           { key: '/audits', label: '감사 계획' },
           { key: '/non-conformities', label: '부적합 관리' },
+          { key: '/nc-evidences', label: '결함 증적 관리' },
           { key: '/auditor-accounts', label: '외부 심사원' },
         ],
       })
@@ -190,7 +191,12 @@ const Sidebar = ({ collapsed, onCollapse }: SidebarProps) => {
     const keys: string[] = []
     if (location.pathname.startsWith('/assets')) keys.push('assets-group')
     if (location.pathname.startsWith('/risk')) keys.push('risk-group')
-    if (location.pathname.startsWith('/audits') || location.pathname.startsWith('/auditor-accounts')) keys.push('audit-group')
+    if (
+      location.pathname.startsWith('/audits') ||
+      location.pathname.startsWith('/non-conformities') ||
+      location.pathname.startsWith('/nc-evidences') ||
+      location.pathname.startsWith('/auditor-accounts')
+    ) keys.push('audit-group')
     if (location.pathname.startsWith('/users') || location.pathname.startsWith('/departments') || location.pathname.startsWith('/personnel') || location.pathname.startsWith('/roles')) keys.push('org-group')
     return keys
   }, [location.pathname])

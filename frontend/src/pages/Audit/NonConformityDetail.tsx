@@ -19,13 +19,11 @@ import {
   Select,
   DatePicker,
   Divider,
-  Upload,
 } from 'antd'
 import {
   ArrowLeftOutlined,
   EditOutlined,
   PlusOutlined,
-  UploadOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
@@ -34,6 +32,9 @@ import { auditService } from '@/services/audits'
 import { controlService } from '@/services/controls'
 import { apiClient } from '@/services/api'
 import { usePermissions } from '@/hooks'
+import CorrectiveActionAssistant from '@/components/llm/CorrectiveActionAssistant'
+import NcEvidenceAttachments from '@/components/audit/NcEvidenceAttachments'
+import type { NcEvidenceItem } from '@/types'
 import {
   ncTypeLabels as sharedNcTypeLabels,
   severityColors as sharedSeverityColors,
@@ -75,6 +76,32 @@ const ncStatusLabels = sharedNcStatusLabels
 const caStatusColors = sharedCaStatusColors
 const caStatusLabels = sharedCaStatusLabels
 
+/**
+ * LLM 초안을 섹션별로 분리.
+ * 모델이 '# 2.' 또는 '2.' 두 스타일 중 하나로 번호를 매기므로 둘 다 허용한다.
+ * 섹션 번호가 없거나 매칭되지 않으면 해당 필드는 undefined.
+ */
+function parseDraftSections(text: string): {
+  phenomenon?: string
+  rootCause?: string
+  actionPlan?: string
+  preventive?: string
+} {
+  const picked = (n: number): string | undefined => {
+    const pattern = new RegExp(
+      `(?:^|\\n)\\s*#?\\s*${n}\\.[^\\n]*\\n([\\s\\S]*?)(?=\\n\\s*#?\\s*\\d\\.|$)`,
+    )
+    const match = text.match(pattern)
+    return match?.[1]?.trim() || undefined
+  }
+  return {
+    phenomenon: picked(1),
+    rootCause: picked(2),
+    actionPlan: picked(3),
+    preventive: picked(4),
+  }
+}
+
 
 const NonConformityDetail = () => {
   const { message, modal } = App.useApp()
@@ -88,6 +115,7 @@ const NonConformityDetail = () => {
   const isCreateMode = !id
   const referrer = (location.state as any)?.from || '/non-conformities'
   const [nonConformity, setNonConformity] = useState<NonConformity | null>(null)
+  const [attachedEvidences, setAttachedEvidences] = useState<NcEvidenceItem[]>([])
   const [correctiveActions, setCorrectiveActions] = useState<CorrectiveAction[]>([])
   const [users, setUsers] = useState<PersonnelItem[]>([])
   const [controls, setControls] = useState<ControlItem[]>([])
@@ -160,7 +188,6 @@ const NonConformityDetail = () => {
         severity: nonConformity.severity,
         description: nonConformity.description,
         requirement: nonConformity.requirement,
-        evidence: nonConformity.evidence,
         responsiblePersonIds: nonConformity.responsiblePersonIds,
         dueDate: nonConformity.dueDate ? dayjs(nonConformity.dueDate) : null,
       })
@@ -182,7 +209,6 @@ const NonConformityDetail = () => {
         severity: values.severity,
         description: values.description,
         requirement: values.requirement,
-        evidence: values.evidence,
         responsiblePersonIds: values.responsiblePersonIds,
         dueDate: values.dueDate?.format('YYYY-MM-DD'),
       }
@@ -214,6 +240,23 @@ const NonConformityDetail = () => {
   const handleAddCorrectiveAction = () => {
     setIsAddingAction(true)
     actionForm.resetFields()
+  }
+
+  /**
+   * AI 초안 본문을 '# 2. 결함 원인', '# 3. 개선 조치 내역', '# 4. 재발 방지 대책'
+   * 단위로 나눠 시정조치 추가 모달의 각 필드(근본 원인 / 조치 계획 / 재발 방지 대책)에
+   * 미리 채워 넣는다. 모델이 간혹 '1.' 스타일을 쓰므로 두 패턴을 모두 허용한다.
+   */
+  const handleApplyDraftToCorrectiveAction = (draftText: string) => {
+    const sections = parseDraftSections(draftText)
+    setIsAddingAction(true)
+    // resetFields 이후 set 해야 기존 값이 남지 않는다.
+    actionForm.resetFields()
+    actionForm.setFieldsValue({
+      actionPlan: sections.actionPlan || draftText,
+      rootCause: sections.rootCause,
+      preventiveMeasures: sections.preventive,
+    })
   }
 
   const handleSaveCorrectiveAction = async () => {
@@ -520,9 +563,6 @@ const NonConformityDetail = () => {
               <Form.Item name="requirement" label="요구사항">
                 <TextArea rows={2} />
               </Form.Item>
-              <Form.Item name="evidence" label="증적">
-                <TextArea rows={2} />
-              </Form.Item>
             </Form>
           ) : (
             <Descriptions bordered column={{ xs: 1, sm: 2, md: 3 }}>
@@ -546,9 +586,6 @@ const NonConformityDetail = () => {
               </Descriptions.Item>
               <Descriptions.Item label="설명" span={3}>
                 <Paragraph style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{nonConformity.description}</Paragraph>
-              </Descriptions.Item>
-              <Descriptions.Item label="증적" span={3}>
-                <Paragraph style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{nonConformity.evidence || '-'}</Paragraph>
               </Descriptions.Item>
               <Descriptions.Item label="요구사항" span={3}>
                 <Paragraph style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{nonConformity.requirement || '-'}</Paragraph>
@@ -604,18 +641,26 @@ const NonConformityDetail = () => {
           />
         </Card>
 
-        <Card title="첨부파일">
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Upload
-              listType="text"
-              beforeUpload={() => false}
-            >
-              <Button icon={<UploadOutlined />} aria-label="증적 업로드">
-                증적 업로드
-              </Button>
-            </Upload>
-          </Space>
-        </Card>
+        {nonConformity && (
+          <NcEvidenceAttachments
+            nonConformityId={nonConformity.id}
+            canEdit={canCreate}
+            onChange={setAttachedEvidences}
+          />
+        )}
+
+        {canCreate && nonConformity && (
+          <CorrectiveActionAssistant
+            nonConformityId={nonConformity.id}
+            availableEvidences={attachedEvidences.map((a) => ({
+              id: a.evidenceId,
+              title: a.title,
+              mimeType: a.mimeType,
+              fileName: a.fileName,
+            }))}
+            onApplyToCorrectiveAction={handleApplyDraftToCorrectiveAction}
+          />
+        )}
 
         <Card title="상태 이력">
           <Timeline
@@ -791,7 +836,6 @@ const NonConformityCreateForm = ({
         title: values.title,
         description: values.description,
         requirement: values.requirement || values.description,
-        evidence: values.evidence || undefined,
         responsiblePersonIds: values.responsiblePersonIds,
         dueDate: values.dueDate.format('YYYY-MM-DD'),
       }
@@ -942,10 +986,6 @@ const NonConformityCreateForm = ({
           rules={[{ required: true, message: '요구사항을 입력해주세요' }]}
         >
           <TextArea rows={3} placeholder="위반된 요구사항 기술" />
-        </Form.Item>
-
-        <Form.Item name="evidence" label="증적/근거">
-          <TextArea rows={3} placeholder="근거 자료 설명" />
         </Form.Item>
 
         <Form.Item>

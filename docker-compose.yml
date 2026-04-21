@@ -167,6 +167,31 @@ services:
       - isms_network
     command: npm run dev -- --host
 
+  # Local LLM (Ollama) — serves multimodal model for ISMS corrective-action assistant.
+  # Privacy: no published ports, reachable only via the internal isms_network.
+  # Model data persisted under ./data/ollama to survive container recreation.
+  # Auto-pulls LLM_MODEL on fresh install so `docker compose up -d` just works.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: isms_ollama
+    restart: unless-stopped
+    environment:
+      OLLAMA_KEEP_ALIVE: 24h
+      OLLAMA_NUM_PARALLEL: 1  # laptop CPU — serialize requests
+      LLM_MODEL: ${LLM_MODEL:-qwen3.5:2b}
+    volumes:
+      - ./data/ollama:/root/.ollama
+      - ./scripts/ollama_entrypoint.sh:/usr/local/bin/ollama_entrypoint.sh:ro
+    networks:
+      - isms_network
+    entrypoint: ["/bin/sh", "/usr/local/bin/ollama_entrypoint.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list 2>/dev/null | grep -q $${LLM_MODEL%:*} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # 최초 실행 시 모델 다운로드 시간 고려
+
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine

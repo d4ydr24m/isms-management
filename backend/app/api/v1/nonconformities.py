@@ -6,12 +6,17 @@
 """
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, status, UploadFile, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_db, get_current_active_user, require_permission
 from app.models.user import User
 from app.services.audit_service import AuditService
+from app.services.nc_evidence_service import (
+    NcEvidenceService,
+    NcEvidenceServiceError,
+    NotFoundError as NcEvidenceNotFoundError,
+)
 from app.schemas.audit import (
     NonConformityCreate,
     NonConformityUpdate,
@@ -22,6 +27,14 @@ from app.schemas.audit import (
     CorrectiveActionUpdate,
     CorrectiveActionVerify,
     CorrectiveActionResponse,
+)
+from app.schemas.nc_evidence import (
+    EvidenceRole,
+    NcEvidenceAttachRequest,
+    NcEvidenceItem,
+    NcEvidenceList,
+    NcEvidenceNoteUpdate,
+    NcEvidenceRoleUpdate,
 )
 
 router = APIRouter(prefix="/nonconformities", tags=["부적합"])
@@ -282,6 +295,201 @@ def delete_corrective_action(
     db.commit()
 
 
+# ========== 부적합-증적 매핑 API ==========
+# 왜 별도 라우터가 아닌가: URL prefix 가 /nonconformities 이며 같은 권한 체계를
+# 사용하므로 같은 router 에 묶는다. 로직은 NcEvidenceService 로 분리되어 있다.
+
+def _mapping_to_response(mapping) -> NcEvidenceItem:
+    ev = mapping.evidence
+    # DB 에 저장된 role 문자열을 Enum 으로 안전하게 변환. 알 수 없는 값은 reference 로 떨어뜨린다.
+    try:
+        role_value = EvidenceRole(mapping.role)
+    except ValueError:
+        role_value = EvidenceRole.REFERENCE
+    return NcEvidenceItem(
+        mapping_id=mapping.id,
+        evidence_id=ev.id,
+        title=ev.title,
+        file_name=ev.file_name,
+        file_size=ev.file_size,
+        mime_type=ev.mime_type,
+        mapping_note=mapping.mapping_note,
+        role=role_value,
+        mapped_by=mapping.mapped_by,
+        mapped_at=mapping.created_at,
+        uploader_name=getattr(ev, "uploader_name", None),
+    )
+
+
+@router.get("/{nc_id}/evidences", response_model=NcEvidenceList)
+def list_nc_evidences(
+    nc_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("audit:read")),
+):
+    """부적합에 연결된 증적 목록."""
+    service = NcEvidenceService(db)
+    try:
+        mappings = service.list_mappings(nc_id)
+    except NcEvidenceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    items = [_mapping_to_response(m) for m in mappings]
+    return NcEvidenceList(items=items, total=len(items))
+
+
+@router.post(
+    "/{nc_id}/evidences/attach",
+    response_model=NcEvidenceList,
+    status_code=status.HTTP_201_CREATED,
+)
+def attach_existing_evidences(
+    nc_id: int,
+    payload: NcEvidenceAttachRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("audit:update")),
+):
+    """기존 증적 ID들을 부적합에 연결한다. 이미 연결된 항목은 무시된다."""
+    service = NcEvidenceService(db)
+    try:
+        service.attach_existing(
+            nc_id=nc_id,
+            evidence_ids=payload.evidence_ids,
+            user_id=current_user.id,
+            mapping_note=payload.mapping_note,
+            role=payload.role.value,
+        )
+    except NcEvidenceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except NcEvidenceServiceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    mappings = service.list_mappings(nc_id)
+    items = [_mapping_to_response(m) for m in mappings]
+    return NcEvidenceList(items=items, total=len(items))
+
+
+@router.post(
+    "/{nc_id}/evidences/upload",
+    response_model=NcEvidenceItem,
+    status_code=status.HTTP_201_CREATED,
+)
+def upload_and_attach_evidence(
+    nc_id: int,
+    file: UploadFile = File(..., description="업로드할 증적 파일"),
+    title: str = Form(..., description="증적 제목"),
+    mapping_note: Optional[str] = Form(None, description="매핑 메모"),
+    role: EvidenceRole = Form(
+        EvidenceRole.REFERENCE,
+        description="증적 역할 (before/after/support/reference)",
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("audit:update")),
+):
+    """새 파일을 업로드하여 증적으로 등록한 뒤 부적합에 즉시 연결한다."""
+    service = NcEvidenceService(db)
+    try:
+        mapping = service.upload_and_attach(
+            nc_id=nc_id,
+            file=file.file,
+            filename=file.filename or "unknown",
+            content_type=file.content_type or "application/octet-stream",
+            title=title,
+            uploader_id=current_user.id,
+            mapping_note=mapping_note,
+            role=role.value,
+        )
+    except NcEvidenceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except NcEvidenceServiceError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    # 업로드 직후 evidence 필드 접근을 위해 refresh 체인
+    db.refresh(mapping)
+    return _mapping_to_response(mapping)
+
+
+@router.patch(
+    "/{nc_id}/evidences/{evidence_id}/note",
+    response_model=NcEvidenceItem,
+)
+def update_mapping_note(
+    nc_id: int,
+    evidence_id: int,
+    payload: NcEvidenceNoteUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("audit:update")),
+):
+    """단일 매핑의 mapping_note 만 수정한다."""
+    service = NcEvidenceService(db)
+    from app.models.nc_evidence import NonConformityEvidence
+
+    row = (
+        db.query(NonConformityEvidence)
+        .filter(
+            NonConformityEvidence.non_conformity_id == nc_id,
+            NonConformityEvidence.evidence_id == evidence_id,
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="연결된 증적을 찾을 수 없습니다.")
+    try:
+        updated = service.update_note(
+            mapping_id=row.id, mapping_note=payload.mapping_note
+        )
+    except NcEvidenceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return _mapping_to_response(updated)
+
+
+@router.patch(
+    "/{nc_id}/evidences/{evidence_id}/role",
+    response_model=NcEvidenceItem,
+)
+def update_mapping_role(
+    nc_id: int,
+    evidence_id: int,
+    payload: NcEvidenceRoleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("audit:update")),
+):
+    """단일 매핑의 role 을 수정한다 (조치 전/후/보조/미지정)."""
+    service = NcEvidenceService(db)
+    from app.models.nc_evidence import NonConformityEvidence
+
+    row = (
+        db.query(NonConformityEvidence)
+        .filter(
+            NonConformityEvidence.non_conformity_id == nc_id,
+            NonConformityEvidence.evidence_id == evidence_id,
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="연결된 증적을 찾을 수 없습니다.")
+    try:
+        updated = service.update_role(mapping_id=row.id, role=payload.role.value)
+    except NcEvidenceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return _mapping_to_response(updated)
+
+
+@router.delete(
+    "/{nc_id}/evidences/{evidence_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def detach_evidence(
+    nc_id: int,
+    evidence_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("audit:update")),
+):
+    """연결을 해제한다. 증적 자체는 삭제하지 않는다."""
+    service = NcEvidenceService(db)
+    try:
+        service.detach(nc_id=nc_id, evidence_id=evidence_id)
+    except NcEvidenceNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
 # ========== 헬퍼 함수 ==========
 
 def _nc_to_response(nc) -> NonConformityResponse:
@@ -298,7 +506,6 @@ def _nc_to_response(nc) -> NonConformityResponse:
         title=nc.title,
         description=nc.description,
         requirement=nc.requirement,
-        evidence=nc.evidence,
         responsible_person_ids=[p.id for p in nc.assignees] if nc.assignees else ([nc.responsible_person_id] if nc.responsible_person_id else []),
         responsible_person_names=[p.name for p in nc.assignees] if nc.assignees else ([nc.responsible_person.name] if nc.responsible_person else []),
         responsible_person_name=", ".join(p.name for p in nc.assignees) if nc.assignees else (nc.responsible_person.name if nc.responsible_person else None),

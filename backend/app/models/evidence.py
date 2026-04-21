@@ -52,6 +52,18 @@ class Evidence(Base):
         comment="상태 (active/expired/archived)",
     )
 
+    # 증적 출처 분리
+    # - library: 일반 ISMS 인증 증적 (증적 관리 메뉴)
+    # - nc_finding: 부적합 발견 시 수집된 증적 (결함 증적 관리 메뉴)
+    # 기존 엔드포인트는 default=library 로 동작을 유지하고, NC 업로드 경로에서만 nc_finding 으로 생성한다.
+    source = Column(
+        String(20),
+        default="library",
+        nullable=False,
+        index=True,
+        comment="증적 출처 (library: 일반 증적 / nc_finding: 결함 증적)",
+    )
+
     # 유효기간
     valid_from = Column(Date, nullable=True, comment="유효 시작일")
     valid_until = Column(Date, nullable=True, comment="유효 만료일")

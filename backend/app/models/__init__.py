@@ -58,6 +58,8 @@ from app.models.vuln_check import (
 )
 from app.models.isms_scope import IsmsScopeChange
 from app.models.control_evidence_link import ControlEvidenceLink
+from app.models.nc_evidence import NonConformityEvidence
+from app.models.llm_suggestion import LLMSuggestion
 
 __all__ = [
     "Base",
@@ -118,4 +120,8 @@ __all__ = [
     "IsmsScopeChange",
     # Control Evidence Links
     "ControlEvidenceLink",
+    # NC - Evidence Links
+    "NonConformityEvidence",
+    # LLM
+    "LLMSuggestion",
 ]

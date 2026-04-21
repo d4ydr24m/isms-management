@@ -1,4 +1,4 @@
-import { apiClient, handleApiError } from './api'
+import { apiClient, handleApiError, uploadFile } from './api'
 import type {
   AuditPlan,
   AuditPlanCreate,
@@ -12,6 +12,12 @@ import type {
   CorrectiveActionCreate,
   CorrectiveActionUpdate,
   CorrectiveActionVerify,
+  NcEvidenceAttachRequest,
+  NcEvidenceItem,
+  NcEvidenceList,
+  NcEvidenceListPage,
+  NcEvidenceListParams,
+  NcEvidenceRole,
   ApiResponse,
   PaginatedResponse,
   PaginationParams,
@@ -208,6 +214,108 @@ export const auditService = {
   async deleteCorrectiveAction(nonConformityId: number, actionId: number): Promise<void> {
     try {
       await apiClient.delete(`/nonconformities/${nonConformityId}/corrective-actions/${actionId}`)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  // ========== 부적합 증적 매핑 ==========
+
+  // 부적합에 연결된 증적 목록 조회
+  async listNcEvidences(ncId: number): Promise<NcEvidenceList> {
+    try {
+      const response = await apiClient.get<NcEvidenceList>(`/nonconformities/${ncId}/evidences`)
+      return response.data
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  // 기존 증적 ID들을 부적합에 연결 (중복은 무시됨)
+  async attachExistingEvidences(
+    ncId: number,
+    payload: NcEvidenceAttachRequest,
+  ): Promise<NcEvidenceList> {
+    try {
+      const response = await apiClient.post<NcEvidenceList>(
+        `/nonconformities/${ncId}/evidences/attach`,
+        payload,
+      )
+      return response.data
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  // 새 파일 업로드 + 즉시 NC에 연결
+  async uploadAndAttachEvidence(
+    ncId: number,
+    file: File,
+    meta: { title: string; mappingNote?: string | null; role?: NcEvidenceRole },
+  ): Promise<NcEvidenceItem> {
+    try {
+      return await uploadFile(
+        `/nonconformities/${ncId}/evidences/upload`,
+        file,
+        meta,
+      )
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  // 매핑 role 만 수정
+  async updateNcEvidenceRole(
+    ncId: number,
+    evidenceId: number,
+    role: NcEvidenceRole,
+  ): Promise<NcEvidenceItem> {
+    try {
+      const response = await apiClient.patch<NcEvidenceItem>(
+        `/nonconformities/${ncId}/evidences/${evidenceId}/role`,
+        { role },
+      )
+      return response.data
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  // 매핑 메모만 수정
+  async updateNcEvidenceNote(
+    ncId: number,
+    evidenceId: number,
+    mappingNote: string | null,
+  ): Promise<NcEvidenceItem> {
+    try {
+      const response = await apiClient.patch<NcEvidenceItem>(
+        `/nonconformities/${ncId}/evidences/${evidenceId}/note`,
+        { mappingNote },
+      )
+      return response.data
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  // 증적 연결 해제 (증적 자체는 유지)
+  async detachEvidence(ncId: number, evidenceId: number): Promise<void> {
+    try {
+      await apiClient.delete(`/nonconformities/${ncId}/evidences/${evidenceId}`)
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
+
+  // 결함 증적 관리 페이지: 전체 NC 의 결함 증적 매핑 페이지네이션 조회
+  async listAllNcEvidences(
+    params?: NcEvidenceListParams,
+  ): Promise<NcEvidenceListPage> {
+    try {
+      const response = await apiClient.get<NcEvidenceListPage>('/nc-evidences', {
+        params,
+      })
+      return response.data
     } catch (error) {
       return handleApiError(error)
     }

@@ -21,6 +21,7 @@ import AuditCreate from '@/pages/Audit/AuditCreate'
 import Checklist from '@/pages/Audit/Checklist'
 import NonConformities from '@/pages/Audit/NonConformities'
 import NonConformityDetail from '@/pages/Audit/NonConformityDetail'
+import NcEvidences from '@/pages/Audit/NcEvidences'
 // Search
 import SearchResults from '@/pages/SearchResults'
 // Asset Management
@@ -276,6 +277,16 @@ const AppRouter = () => {
         element={
           <PrivateRoute>
             <NonConformityDetail />
+          </PrivateRoute>
+        }
+      />
+
+      {/* 결함 증적 관리: 전 NC 결함 증적 교차 조회 */}
+      <Route
+        path="/nc-evidences"
+        element={
+          <PrivateRoute>
+            <NcEvidences />
           </PrivateRoute>
         }
       />

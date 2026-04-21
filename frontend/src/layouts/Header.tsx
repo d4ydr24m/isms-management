@@ -10,6 +10,7 @@ import {
 import type { MenuProps } from 'antd'
 import { useAuthStore, useNotificationStore } from '@/stores'
 import { useNavigate } from 'react-router-dom'
+import LLMDraftBadge from '@/components/llm/LLMDraftBadge'
 
 const { Header: AntHeader } = Layout
 
@@ -66,6 +67,8 @@ const Header = () => {
       />
 
       <Space size="large">
+        <LLMDraftBadge />
+
         <Badge count={unreadCount} offset={[-5, 5]}>
           <BellOutlined
             style={{ fontSize: 20, cursor: 'pointer' }}

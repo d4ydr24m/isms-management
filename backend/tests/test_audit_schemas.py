@@ -161,7 +161,6 @@ class TestNonConformitySchemas:
             title="정보보호 정책 미수립",
             description="정보보호 정책이 수립되어 있지 않음",
             requirement="정보보호 정책을 수립하여야 한다",
-            evidence="현장 점검 시 정책 문서 미확인",
             responsible_person_id=5,
             department_id=2,
             due_date=date(2024, 4, 30),

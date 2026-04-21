@@ -16,6 +16,7 @@ celery_app = Celery(
         "app.services.notification_service",
         "app.services.vuln_check_scheduler",
         "app.services.backup_scheduler",
+        "app.services.llm_scheduler",
     ]
 )
 
@@ -72,5 +73,13 @@ celery_app.conf.beat_schedule = {
     "auto-database-backup": {
         "task": "app.services.backup_scheduler.auto_database_backup",
         "schedule": crontab(hour=3, minute=0),
+    },
+    # LLM 초안 자동 청소 (매일 오전 4시)
+    # - 오래된 failed 하드 삭제 (7일)
+    # - 좀비(pending/running >1시간) failed 전이
+    # - succeeded 는 절대 건드리지 않음 (사용자 직접 관리)
+    "cleanup-old-llm-drafts": {
+        "task": "app.services.llm_scheduler.cleanup_old_drafts",
+        "schedule": crontab(hour=4, minute=0),
     },
 }

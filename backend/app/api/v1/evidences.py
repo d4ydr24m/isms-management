@@ -149,20 +149,31 @@ def get_evidences(
     status: Optional[str] = Query(None, description="상태 필터"),
     control_id: Optional[int] = Query(None, description="통제항목 ID 필터"),
     evidence_type: Optional[str] = Query(None, description="증적 유형 필터"),
+    source: Optional[str] = Query(
+        "library",
+        description=(
+            "증적 출처 필터. 기본 'library' (일반 증적 관리 페이지 전용). "
+            "결함 증적은 'nc_finding', 모두 보려면 'all'."
+        ),
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("evidence:read")),
 ):
     """
     증적 목록 조회
 
-    페이지네이션 및 필터링 지원
+    페이지네이션 및 필터링 지원. 기본적으로 일반 증적(source=library)만 반환된다.
+    결함 증적을 포함하려면 source=nc_finding 또는 source=all 로 호출한다.
     """
+    # source='all' 은 서비스 레이어에서 None 으로 해석해 전체 반환.
+    source_filter = None if source == "all" else source
     service = EvidenceService(db)
     result = service.search_evidences(
         search=search,
         evidence_type=evidence_type,
         status=status,
         control_id=control_id,
+        source=source_filter,
         page=page,
         page_size=page_size,
     )

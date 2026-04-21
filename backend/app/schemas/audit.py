@@ -224,7 +224,6 @@ class NonConformityBase(BaseModel):
     severity: Severity
     description: str = Field(..., min_length=1)
     requirement: str = Field(..., min_length=1)
-    evidence: Optional[str] = None
     due_date: date
 
 
@@ -245,7 +244,6 @@ class NonConformityUpdate(BaseModel):
     severity: Optional[Severity] = None
     description: Optional[str] = None
     requirement: Optional[str] = None
-    evidence: Optional[str] = None
     responsible_person_ids: Optional[List[int]] = None
     department_id: Optional[int] = None
     status: Optional[NCStatus] = None
@@ -265,7 +263,6 @@ class NonConformityResponse(BaseModel):
     title: str
     description: str
     requirement: str
-    evidence: Optional[str] = None
     responsible_person_ids: List[int] = []
     responsible_person_names: List[str] = []
     responsible_person_name: Optional[str] = None  # 첫 번째 담당자 (하위 호환)
