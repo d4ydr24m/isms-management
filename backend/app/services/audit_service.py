@@ -418,6 +418,7 @@ class AuditService:
             title=nc_data.title,
             description=nc_data.description,
             requirement=nc_data.requirement,
+            ai_hint=nc_data.ai_hint,
             responsible_person_id=nc_data.responsible_person_ids[0],
             department_id=nc_data.department_id,
             detected_at=nc_data.detected_at,

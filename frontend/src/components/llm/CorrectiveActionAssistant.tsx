@@ -19,6 +19,8 @@ import {
   Alert,
   Button,
   Card,
+  Input,
+  Modal,
   Popconfirm,
   Space,
   Select,
@@ -27,13 +29,16 @@ import {
   Spin,
 } from 'antd'
 import {
+  BulbOutlined,
   CopyOutlined,
   DeleteOutlined,
   RobotOutlined,
+  StopOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons'
 
 import { llmCorrectiveActionService } from '@/services/llmCorrectiveActions'
+import { auditService } from '@/services/audits'
 import { evidenceService } from '@/services/evidences'
 import { emitLLMDraftChanged } from '@/utils/llmDraftEvents'
 import type {
@@ -160,6 +165,13 @@ export interface CorrectiveActionAssistantProps {
   onApplyToCorrectiveAction?: (draftText: string) => void
   /** 폴링 간격(ms). 테스트에서만 짧게 설정한다. 미지정 시 3000ms. */
   pollIntervalMs?: number
+  /**
+   * NC 에 저장된 AI 힌트 (도메인 용어 교정·제약). 'AI 힌트' 모달의 초기값으로 사용된다.
+   * 힌트는 NC 자체의 필드이므로 상위가 소유하며, 저장 결과는 onAiHintSaved 로 전달된다.
+   */
+  aiHint?: string | null
+  /** 'AI 힌트' 모달에서 저장 성공 시 호출. 상위 상태 동기화용. */
+  onAiHintSaved?: (hint: string | null) => void
 }
 
 const CorrectiveActionAssistant = ({
@@ -167,6 +179,8 @@ const CorrectiveActionAssistant = ({
   availableEvidences,
   onApplyToCorrectiveAction,
   pollIntervalMs = POLL_INTERVAL_MS,
+  aiHint = null,
+  onAiHintSaved,
 }: CorrectiveActionAssistantProps) => {
   const { message } = App.useApp()
 
@@ -220,6 +234,15 @@ const CorrectiveActionAssistant = ({
   const [suggestion, setSuggestion] = useState<LLMSuggestion | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const pollTimerRef = useRef<number | null>(null)
+
+  // 'AI 힌트' 모달 — 사용자가 생성 직전에 도메인 용어 교정이나 제약을 NC 에 저장한다.
+  // NC 편집 페이지까지 가지 않고 이 카드에서 즉시 편집 가능해 UX 동선이 짧다.
+  const [hintModalOpen, setHintModalOpen] = useState(false)
+  const [hintDraft, setHintDraft] = useState('')
+  const [savingHint, setSavingHint] = useState(false)
+
+  // 취소 동작 진행 상태. 중복 클릭·race 방지용.
+  const [cancelling, setCancelling] = useState(false)
 
   // 기본 선택: 이미지가 2장 이하면 전부, 3장 이상이면 비워두고 사용자가 고르게 한다.
   useEffect(() => {
@@ -334,6 +357,49 @@ const CorrectiveActionAssistant = ({
     }
   }, [message, nonConformityId, pollOnce, selectedEvidenceIds])
 
+  const handleOpenHintModal = useCallback(() => {
+    setHintDraft(aiHint ?? '')
+    setHintModalOpen(true)
+  }, [aiHint])
+
+  const handleSaveHint = useCallback(async () => {
+    setSavingHint(true)
+    try {
+      const trimmed = hintDraft.trim()
+      // 빈 문자열이면 null 로 저장 — '힌트 제거' 동작을 명시적으로 지원한다.
+      const nextHint = trimmed.length === 0 ? null : trimmed
+      await auditService.updateNonConformity(nonConformityId, {
+        aiHint: nextHint,
+      })
+      message.success(
+        nextHint ? 'AI 힌트를 저장했습니다.' : 'AI 힌트를 비웠습니다.',
+      )
+      onAiHintSaved?.(nextHint)
+      setHintModalOpen(false)
+    } catch {
+      message.error('AI 힌트 저장에 실패했습니다.')
+    } finally {
+      setSavingHint(false)
+    }
+  }, [hintDraft, message, nonConformityId, onAiHintSaved])
+
+  const handleCancelGeneration = useCallback(async () => {
+    if (!suggestion) return
+    setCancelling(true)
+    try {
+      const next = await llmCorrectiveActionService.cancelSuggestion(suggestion.id)
+      // 즉시 반영 — 폴링이 다음 사이클까지 기다리지 않도록.
+      setSuggestion(next)
+      stopPolling()
+      message.success('초안 생성을 취소했습니다.')
+      emitLLMDraftChanged('updated')
+    } catch {
+      message.error('초안 취소에 실패했습니다. 이미 완료되었을 수 있습니다.')
+    } finally {
+      setCancelling(false)
+    }
+  }, [message, stopPolling, suggestion])
+
   const handleCopyToClipboard = useCallback(async () => {
     if (!suggestion?.resultText) return
     try {
@@ -414,15 +480,25 @@ const CorrectiveActionAssistant = ({
               message="이미지 증적이 없어도 텍스트만으로 초안을 생성할 수 있습니다."
               description="결함 제목·설명·요구사항을 근거로 1·2 섹션을 작성하고, 3·4 섹션은 '조치 계획' 관점으로 서술됩니다. 스크린샷이 있으면 품질이 더 좋아집니다."
             />
-            <Button
-              type="primary"
-              icon={<ThunderboltOutlined />}
-              loading={isWorking}
-              onClick={handleGenerate}
-              aria-label="AI 초안 생성"
-            >
-              {isWorking ? '초안 생성 중…' : '텍스트만으로 AI 초안 생성'}
-            </Button>
+            <Space wrap>
+              <Button
+                type="primary"
+                icon={<ThunderboltOutlined />}
+                loading={isWorking}
+                onClick={handleGenerate}
+                aria-label="AI 초안 생성"
+              >
+                {isWorking ? '초안 생성 중…' : '텍스트만으로 AI 초안 생성'}
+              </Button>
+              <Button
+                icon={<BulbOutlined />}
+                onClick={handleOpenHintModal}
+                disabled={isWorking}
+                aria-label="AI 힌트 편집"
+              >
+                AI 힌트{aiHint ? ' (적용됨)' : ''}
+              </Button>
+            </Space>
           </>
         ) : (
           <>
@@ -447,19 +523,29 @@ const CorrectiveActionAssistant = ({
               </Select>
             </div>
 
-            <Button
-              type="primary"
-              icon={<ThunderboltOutlined />}
-              loading={isWorking}
-              onClick={handleGenerate}
-              aria-label="AI 초안 생성"
-            >
-              {isWorking
-                ? '초안 생성 중…'
-                : selectedEvidenceIds.length === 0
-                ? '텍스트만으로 AI 초안 생성'
-                : 'AI 초안 생성'}
-            </Button>
+            <Space wrap>
+              <Button
+                type="primary"
+                icon={<ThunderboltOutlined />}
+                loading={isWorking}
+                onClick={handleGenerate}
+                aria-label="AI 초안 생성"
+              >
+                {isWorking
+                  ? '초안 생성 중…'
+                  : selectedEvidenceIds.length === 0
+                  ? '텍스트만으로 AI 초안 생성'
+                  : 'AI 초안 생성'}
+              </Button>
+              <Button
+                icon={<BulbOutlined />}
+                onClick={handleOpenHintModal}
+                disabled={isWorking}
+                aria-label="AI 힌트 편집"
+              >
+                AI 힌트{aiHint ? ' (적용됨)' : ''}
+              </Button>
+            </Space>
           </>
         )}
 
@@ -537,6 +623,29 @@ const CorrectiveActionAssistant = ({
                     로컬 CPU에서 추론 중입니다. 1~3분 정도 소요될 수 있습니다.
                   </Text>
                 </div>
+                {/* 취소는 진행 중(pending/running) 인 초안 레코드가 있을 때만 보여준다.
+                    제출(submitting) 직후 아직 suggestion 객체가 없는 찰나는 제외. */}
+                {suggestion?.id && (
+                  <div style={{ marginTop: 12 }}>
+                    <Popconfirm
+                      title="초안 생성을 취소하시겠습니까?"
+                      description="진행 중인 생성이 중단됩니다."
+                      okText="취소"
+                      cancelText="닫기"
+                      okButtonProps={{ danger: true, loading: cancelling }}
+                      onConfirm={handleCancelGeneration}
+                    >
+                      <Button
+                        danger
+                        icon={<StopOutlined />}
+                        loading={cancelling}
+                        aria-label="초안 생성 취소"
+                      >
+                        생성 취소
+                      </Button>
+                    </Popconfirm>
+                  </div>
+                )}
               </div>
             )}
 
@@ -560,6 +669,39 @@ const CorrectiveActionAssistant = ({
           </Card>
         )}
       </Space>
+
+      {/* AI 힌트 편집 모달 — NC.ai_hint 필드에 직접 저장한다.
+          NC 편집 페이지까지 가지 않고 생성 직전에 빠르게 용어 교정이 가능하다. */}
+      <Modal
+        title="AI 힌트 편집"
+        open={hintModalOpen}
+        onOk={handleSaveHint}
+        onCancel={() => setHintModalOpen(false)}
+        okText="저장"
+        cancelText="취소"
+        confirmLoading={savingHint}
+        destroyOnClose
+      >
+        <Alert
+          type="info"
+          showIcon
+          message="이 힌트는 부적합에 저장되어 AI 초안 생성 시 모델에게 함께 전달됩니다."
+          description="AI 가 도메인 용어를 잘못 이해하거나 놓치는 경우 교정·제약을 적어 주세요. 예: '이전 비밀번호 기억' 은 password history (동일 비밀번호 재사용 차단) 을 의미함."
+          style={{ marginBottom: 12 }}
+        />
+        {/* showCount 의 카운터는 TextArea 하단에 absolute 로 겹쳐져서 저장/취소 버튼과 충돌한다.
+            래퍼에 하단 padding 을 두어 카운터가 들어갈 자리를 확보한다. */}
+        <div style={{ paddingBottom: 20 }}>
+          <Input.TextArea
+            rows={5}
+            value={hintDraft}
+            onChange={(e) => setHintDraft(e.target.value)}
+            maxLength={2000}
+            showCount
+            placeholder="AI 가 잘못 이해하는 용어를 교정하거나 제약을 추가하세요 (선택)"
+          />
+        </div>
+      </Modal>
     </Card>
   )
 }

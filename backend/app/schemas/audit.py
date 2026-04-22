@@ -225,6 +225,7 @@ class NonConformityBase(BaseModel):
     description: str = Field(..., min_length=1)
     requirement: str = Field(..., min_length=1)
     due_date: date
+    ai_hint: Optional[str] = Field(None, max_length=2000)
 
 
 class NonConformityCreate(NonConformityBase):
@@ -248,6 +249,7 @@ class NonConformityUpdate(BaseModel):
     department_id: Optional[int] = None
     status: Optional[NCStatus] = None
     due_date: Optional[date] = None
+    ai_hint: Optional[str] = Field(None, max_length=2000)
 
 
 class NonConformityResponse(BaseModel):
@@ -263,6 +265,7 @@ class NonConformityResponse(BaseModel):
     title: str
     description: str
     requirement: str
+    ai_hint: Optional[str] = None
     responsible_person_ids: List[int] = []
     responsible_person_names: List[str] = []
     responsible_person_name: Optional[str] = None  # 첫 번째 담당자 (하위 호환)

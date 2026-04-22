@@ -557,7 +557,7 @@ const NonConformityDetail = () => {
                   </Form.Item>
                 </Col>
               </Row>
-              <Form.Item name="description" label="설명" rules={[{ required: true }]}>
+              <Form.Item name="description" label="결함 내용" rules={[{ required: true }]}>
                 <TextArea rows={3} />
               </Form.Item>
               <Form.Item name="requirement" label="요구사항">
@@ -584,7 +584,7 @@ const NonConformityDetail = () => {
                   {nonConformity.auditPlanTitle || '-'}
                 </a>
               </Descriptions.Item>
-              <Descriptions.Item label="설명" span={3}>
+              <Descriptions.Item label="결함 내용" span={3}>
                 <Paragraph style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{nonConformity.description}</Paragraph>
               </Descriptions.Item>
               <Descriptions.Item label="요구사항" span={3}>
@@ -652,6 +652,12 @@ const NonConformityDetail = () => {
         {canCreate && nonConformity && (
           <CorrectiveActionAssistant
             nonConformityId={nonConformity.id}
+            aiHint={nonConformity.aiHint ?? null}
+            onAiHintSaved={(hint) => {
+              // 힌트 저장 성공 → 상위 상태도 즉시 갱신하여, 취소·재저장 시
+              // 또 다른 fetch 없이 모달에 바로 반영되게 한다.
+              setNonConformity((prev) => (prev ? { ...prev, aiHint: hint } : prev))
+            }}
             availableEvidences={attachedEvidences.map((a) => ({
               id: a.evidenceId,
               title: a.title,

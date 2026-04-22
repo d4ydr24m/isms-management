@@ -87,6 +87,7 @@ export interface NonConformity {
   title: string
   description: string
   requirement: string
+  aiHint: string | null
   responsiblePersonIds: number[]
   responsiblePersonNames: string[]
   responsiblePersonName: string | null
@@ -109,6 +110,7 @@ export interface NonConformityCreate {
   title: string
   description: string
   requirement: string
+  aiHint?: string | null
   responsiblePersonIds: number[]
   dueDate: string
   detectedAt?: string
@@ -121,6 +123,7 @@ export interface NonConformityUpdate {
   severity?: string
   description?: string
   requirement?: string
+  aiHint?: string | null
   responsiblePersonIds?: number[]
   departmentId?: number
   status?: string

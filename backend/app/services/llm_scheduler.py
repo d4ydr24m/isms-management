@@ -17,7 +17,8 @@ from typing import Iterable, List
 from app.core.celery_app import celery_app
 from app.core.deps import SessionLocal
 from app.core.llm_prompts import (
-    SYSTEM_PROMPT_CORRECTIVE_ACTION,
+    SYSTEM_PROMPT_CORRECTIVE_ACTION,  # 하위 호환 import 유지
+    build_system_prompt,
     build_user_prompt,
 )
 from app.models.audit import NonConformity
@@ -107,6 +108,7 @@ def generate_corrective_action_draft(self, suggestion_id: int) -> dict:
             support_count=len(ordered.support_bytes),
             reference_count=len(ordered.reference_bytes),
             skipped_non_image_count=ordered.skipped,
+            ai_hint=getattr(nc, "ai_hint", None),
         )
         image_bytes = (
             ordered.before_bytes
@@ -118,7 +120,9 @@ def generate_corrective_action_draft(self, suggestion_id: int) -> dict:
         llm = LLMService()
         try:
             text = llm.generate_corrective_action(
-                system_prompt=SYSTEM_PROMPT_CORRECTIVE_ACTION,
+                system_prompt=build_system_prompt(
+                    after_count=len(ordered.after_bytes),
+                ),
                 user_prompt=user_prompt,
                 images=image_bytes,
             )
@@ -130,6 +134,17 @@ def generate_corrective_action_draft(self, suggestion_id: int) -> dict:
             logger.exception("Unexpected LLM error")
             _finalize_failure(db, suggestion, _GENERIC_FAILURE_MSG)
             return {"status": "failed", "suggestion_id": suggestion_id}
+
+        # 추론 중에 사용자가 취소를 눌렀을 수 있다 — DB 의 현재 status 를 한 번 더 확인해
+        # failed 로 이미 전이된 건이면 결과를 덮어쓰지 않고 조용히 종료한다. 이 체크가
+        # 없으면 취소 UX 가 깨진다 (사용자는 '실패' 배지를 봤는데 뒤늦게 '성공' 으로 변함).
+        db.refresh(suggestion)
+        if suggestion.status == "failed":
+            logger.info(
+                "Suggestion %s was cancelled during inference; discarding result",
+                suggestion_id,
+            )
+            return {"status": "cancelled", "suggestion_id": suggestion_id}
 
         suggestion.result_text = _sanitize_draft(text)
         suggestion.status = "succeeded"

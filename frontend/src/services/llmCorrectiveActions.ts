@@ -68,4 +68,16 @@ export const llmCorrectiveActionService = {
       return handleApiError(error)
     }
   },
+
+  // 진행 중(pending/running) 초안 취소 — failed 로 전이시키고 Celery revoke 시도.
+  async cancelSuggestion(suggestionId: number): Promise<LLMSuggestion> {
+    try {
+      const response = await apiClient.post<LLMSuggestion>(
+        `/llm/corrective-actions/${suggestionId}/cancel`,
+      )
+      return response.data
+    } catch (error) {
+      return handleApiError(error)
+    }
+  },
 }

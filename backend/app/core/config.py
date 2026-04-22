@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     # Local LLM (Ollama) - 보완조치내역서 초안 생성용
     LLM_ENABLED: bool = True
     LLM_BASE_URL: str = "http://ollama:11434"
-    LLM_MODEL: str = "qwen3.5:2b"
+    LLM_MODEL: str = "qwen3.5:4b"
     LLM_TIMEOUT_SECONDS: int = 600
     LLM_IMAGE_MAX_DIM: int = 672  # Qwen2.5-VL 패치(28px) 배수로 내림 정렬됨
     LLM_MAX_IMAGES_PER_REQUEST: int = 4

@@ -506,6 +506,7 @@ def _nc_to_response(nc) -> NonConformityResponse:
         title=nc.title,
         description=nc.description,
         requirement=nc.requirement,
+        ai_hint=nc.ai_hint,
         responsible_person_ids=[p.id for p in nc.assignees] if nc.assignees else ([nc.responsible_person_id] if nc.responsible_person_id else []),
         responsible_person_names=[p.name for p in nc.assignees] if nc.assignees else ([nc.responsible_person.name] if nc.responsible_person else []),
         responsible_person_name=", ".join(p.name for p in nc.assignees) if nc.assignees else (nc.responsible_person.name if nc.responsible_person else None),

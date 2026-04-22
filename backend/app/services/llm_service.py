@@ -116,6 +116,10 @@ class LLMService:
             "options": {
                 # 템플릿 채우기 과제이므로 낮은 온도로 형식 일관성을 높인다.
                 "temperature": 0.1,
+                # num_ctx 는 prompt_eval + generation 합계 상한. 4096 유지.
+                # 실험 결과 8192 로 늘리면 qwen3.5:2b 가 더 많은 after-이미지 내용을
+                # 기억해 #1 결함 현상에 이식하는 역효과가 관측됐다 (NC #7 재현).
+                # 현재 프롬프트 사이즈는 상황별 예시 1개만 주입해 4096 내에 수렴한다.
                 "num_ctx": 4096,
                 "num_predict": 800,
             },

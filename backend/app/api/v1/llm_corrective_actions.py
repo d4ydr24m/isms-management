@@ -5,6 +5,7 @@ LLM 기반 보완조치내역서 초안 생성 API.
 - GET    /llm/corrective-actions/mine                      내 활성/최근 초안 목록 (배지 전용)
 - GET    /llm/corrective-actions/by-nonconformity/{nc_id}  특정 부적합의 생성 이력
 - GET    /llm/corrective-actions/{task_id}                 task_id 로 상태 폴링 (동적)
+- POST   /llm/corrective-actions/{suggestion_id}/cancel    진행 중(pending/running) 초안 취소
 - DELETE /llm/corrective-actions/{suggestion_id}           초안 하드 삭제 (소유자 또는 관리자)
 
 주의: 동적 경로 `{task_id}` 와 정적 경로(`mine`, `by-nonconformity/…`)가 같은 prefix 를
@@ -263,6 +264,86 @@ def list_suggestions_for_nonconformity(
     )
 
 
+def _is_owner_or_admin(row: LLMSuggestion, current_user: User) -> bool:
+    """
+    초안 파괴적 작업(취소/삭제) 의 공통 권한 판정.
+
+    소유자(created_by) 또는 관리자(is_superuser / permissions 에 'all') 만 허용.
+    DELETE 핸들러와 같은 규칙을 따르도록 이 한 곳에서 관리한다.
+    """
+    if row.created_by == current_user.id:
+        return True
+    if bool(getattr(current_user, "is_superuser", False)):
+        return True
+    try:
+        for role in current_user.roles:
+            for perm in (role.permissions or "").split(","):
+                if perm.strip() == "all":
+                    return True
+    except Exception:
+        # roles 관계 접근 실패는 정책상 비관리자로 처리.
+        return False
+    return False
+
+
+@router.post(
+    "/{suggestion_id}/cancel",
+    response_model=LLMSuggestionResponse,
+)
+def cancel_suggestion(
+    suggestion_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("audit:read")),
+):
+    """
+    진행 중(pending/running) 초안을 취소한다.
+
+    - 상태를 'failed' 로 전이하고 `error_message` 에 사용자용 취소 사유를 기록한다.
+    - Celery 워커가 이미 Ollama 추론을 수행 중이라면 해당 추론은 계속 돌고 끝난 뒤
+      `succeeded` 로 덮어쓰지 않고 **이미 failed 로 전이됐는지** 확인 후 no-op 하는
+      책임은 워커가 진다 — 본 엔드포인트는 DB 상태를 단일 진실 공급원으로 보고
+      사용자가 즉시 결과 카드를 없앨 수 있게 한다.
+    - 이미 종료된(succeeded/failed) 초안에 대해서는 409 를 돌려준다 (삭제와 구분).
+
+    권한: 소유자 또는 관리자.
+    """
+    row = (
+        db.query(LLMSuggestion)
+        .filter(LLMSuggestion.id == suggestion_id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="초안을 찾을 수 없습니다.")
+    if not _is_owner_or_admin(row, current_user):
+        raise HTTPException(
+            status_code=403, detail="이 초안을 취소할 권한이 없습니다."
+        )
+    if row.status not in _ACTIVE_STATUSES:
+        raise HTTPException(
+            status_code=409,
+            detail="이미 완료되었거나 실패한 초안은 취소할 수 없습니다.",
+        )
+
+    from datetime import datetime
+
+    row.status = "failed"
+    row.error_message = "사용자가 초안 생성을 취소했습니다."
+    row.completed_at = datetime.utcnow()
+    db.commit()
+    db.refresh(row)
+
+    # Celery 태스크도 베스트-에포트로 취소 시도. Ollama 추론 중간에 즉시 끊는 보장은
+    # 없지만(요청 단위 취소는 지원하지 않음), 큐 대기 중인 pending 건은 바로 제거된다.
+    # 실패해도 사용자 관점의 상태 변경(failed) 은 이미 커밋됐으므로 로그만 남긴다.
+    try:
+        from app.core.celery_app import celery_app
+        celery_app.control.revoke(row.task_id, terminate=False)
+    except Exception:
+        logger.warning("Celery revoke failed for task_id=%s", row.task_id, exc_info=True)
+
+    return _to_response(row)
+
+
 @router.delete(
     "/{suggestion_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -290,25 +371,7 @@ def delete_suggestion(
     if row is None:
         raise HTTPException(status_code=404, detail="초안을 찾을 수 없습니다.")
 
-    is_owner = row.created_by == current_user.id
-    # 관리자 판정은 프로젝트 전역 require_permission() 규칙과 동일하게:
-    # is_superuser 이거나, 역할 권한에 'all' 이 있으면 관리자.
-    # (예: CISO 역할은 is_superuser=False 이지만 permissions='all' 이다.)
-    is_admin = bool(getattr(current_user, "is_superuser", False))
-    if not is_admin:
-        try:
-            for role in current_user.roles:
-                for perm in (role.permissions or "").split(","):
-                    if perm.strip() == "all":
-                        is_admin = True
-                        break
-                if is_admin:
-                    break
-        except Exception:
-            # roles 관계 접근 실패는 정책적으로 비관리자로 처리.
-            is_admin = False
-
-    if not (is_owner or is_admin):
+    if not _is_owner_or_admin(row, current_user):
         # 타인의 초안을 건드리려는 시도. 404 가 아니라 403 — 소유권 문제임을 명확히.
         raise HTTPException(
             status_code=403, detail="이 초안을 삭제할 권한이 없습니다."

@@ -177,6 +177,10 @@ class NonConformity(Base):
     description = Column(Text, nullable=False, comment="부적합 내용")
     requirement = Column(Text, nullable=False, comment="요구사항")
 
+    # AI 초안 생성 시 모델에게 전달할 심사원 추가 지시/용어 교정 (선택).
+    # 예: "'이전 비밀번호 기억' 은 password history (재사용 차단) 을 의미함".
+    ai_hint = Column(Text, nullable=True, comment="AI 초안 생성용 추가 힌트 (선택)")
+
     # 담당자 (하위 호환용, 향후 제거 가능)
     responsible_person_id = Column(
         Integer, ForeignKey("personnel.id"), nullable=True, comment="주 담당자 ID (인력)"
