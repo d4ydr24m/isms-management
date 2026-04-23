@@ -244,9 +244,11 @@ const CorrectiveActionAssistant = ({
   // 취소 동작 진행 상태. 중복 클릭·race 방지용.
   const [cancelling, setCancelling] = useState(false)
 
-  // 기본 선택: 이미지가 2장 이하면 전부, 3장 이상이면 비워두고 사용자가 고르게 한다.
+  // 기본 선택: 첨부된 이미지 증적을 모두 선택한다. 장수가 많아 필요 없는 이미지가
+  // 섞여 있을 때만 사용자가 개별 해제하도록 한다 (기존엔 3장 이상이면 빈 값으로
+  // 남아 있어 매번 수동 선택해야 했다).
   useEffect(() => {
-    if (imageEvidences.length > 0 && imageEvidences.length <= 2) {
+    if (imageEvidences.length > 0) {
       setSelectedEvidenceIds(imageEvidences.map((e) => e.id))
     }
   }, [imageEvidences])
@@ -345,7 +347,7 @@ const CorrectiveActionAssistant = ({
         completedAt: null,
       })
       message.info(
-        '초안 생성을 시작했습니다. 로컬 CPU에서 실행되므로 완료까지 1~3분 소요될 수 있습니다.',
+        '초안 생성을 시작했습니다. 로컬 CPU에서 실행되므로 완료까지 5~10분 소요될 수 있습니다.',
       )
       // 상단 네비 배지가 5초 폴링을 기다리지 않고 즉시 활성 건수를 반영하도록 신호.
       emitLLMDraftChanged('created')
@@ -620,7 +622,7 @@ const CorrectiveActionAssistant = ({
                 <Spin />
                 <div style={{ marginTop: 8 }}>
                   <Text type="secondary">
-                    로컬 CPU에서 추론 중입니다. 1~3분 정도 소요될 수 있습니다.
+                    로컬 CPU에서 추론 중입니다. 5~10분 정도 소요될 수 있습니다.
                   </Text>
                 </div>
                 {/* 취소는 진행 중(pending/running) 인 초안 레코드가 있을 때만 보여준다.

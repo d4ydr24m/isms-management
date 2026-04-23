@@ -2,8 +2,6 @@
 인증 API 라우터
 /api/v1/auth
 """
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
@@ -17,7 +15,6 @@ from app.schemas.auth import (
     PasswordChange,
     OTPSetup,
     OTPVerify,
-    RefreshTokenRequest,
     MFADisableRequest,
     MFAEnableResponse,
     MFABackupCodesResponse,
@@ -183,9 +180,8 @@ def logout(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-def refresh_token(
+async def refresh_token(
     request: Request,
-    refresh_data: Optional[RefreshTokenRequest] = None,
     db: Session = Depends(get_db),
 ):
     """
@@ -193,12 +189,18 @@ def refresh_token(
 
     - **refresh_token**: 리프레시 토큰 (본문 또는 HttpOnly 쿠키에서 읽음)
     """
-    # Try to get refresh token from request body first, then fall back to cookie
-    token = None
-    if refresh_data and refresh_data.refresh_token:
-        token = refresh_data.refresh_token
-    else:
-        token = request.cookies.get("refresh_token")
+    # HttpOnly 쿠키를 우선 사용하고, 없으면 본문을 선택적으로 파싱한다.
+    # (본문을 Optional[PydanticModel]로 바인딩하면 빈 객체 `{}`에서 422가 발생)
+    token = request.cookies.get("refresh_token")
+
+    if not token:
+        try:
+            body = await request.json()
+        except Exception:
+            body = None
+        if isinstance(body, dict):
+            # snake_case / camelCase 둘 다 허용
+            token = body.get("refresh_token") or body.get("refreshToken")
 
     if not token:
         raise HTTPException(

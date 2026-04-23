@@ -302,10 +302,14 @@ class TestBuildUserPrompt:
         assert "1:1 대응" in prompt
 
     def test_ai_hint_block_appears_when_provided(self):
-        """NC.ai_hint 가 제공되면 [심사원 추가 지시] 블록이 요구사항 직후에 나와야 한다.
+        """NC.ai_hint 가 제공되면 [심사원 추가 지시] 블록이 프롬프트 '맨 끝' (마지막
+        ※ 규칙 블록보다도 뒤) 에 주입되어야 한다.
 
         회귀 방지 — NC #1 에서 관찰된 도메인 용어 혼동 ('이전 비밀번호 기억' 을 현재
-        비밀번호 입력 요구로 잘못 이해) 같은 경우 심사원이 힌트로 교정할 수 있어야 한다.
+        비밀번호 입력 요구로 잘못 이해), NC #12 에서 관찰된 지시 약화 (중간 배치 +
+        이후 6개 rule 블록에 묻혀 'A -> B' 지시를 '두 표현 중 선호' 로 오해).
+        작은 모델이 가장 마지막 지시를 가장 강하게 따르는 성향을 이용하기 위해
+        심사원 지시는 반드시 다른 모든 블록 뒤에 와야 한다.
         """
         prompt = build_user_prompt(
             **self._minimal_kwargs(
@@ -314,10 +318,13 @@ class TestBuildUserPrompt:
         )
         assert "[심사원 추가 지시]" in prompt
         assert "password history" in prompt
-        # 요구사항 블록보다 뒤, 첨부 증적보다 앞에 와야 한다.
+        # 첨부 증적 블록 및 마지막 ※ 규칙 블록보다도 뒤에 와야 한다.
         hint_idx = prompt.index("[심사원 추가 지시]")
         attach_idx = prompt.index("[첨부 증적]")
-        assert hint_idx < attach_idx
+        # 마지막 ※ 블록(불릿 규칙) 이후에 오는지 확인.
+        last_rule_idx = prompt.rfind("※")
+        assert hint_idx > attach_idx
+        assert hint_idx > last_rule_idx
 
     def test_ai_hint_block_absent_when_not_provided(self):
         """ai_hint 가 None 이거나 공백이면 블록이 노출되지 않아야 한다."""

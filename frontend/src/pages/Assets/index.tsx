@@ -2,8 +2,8 @@
  * 자산 목록 페이지
  * FR-502: 자산 등록 및 관리
  */
-import { useState, useEffect, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { App, Card, Button, Space, Modal } from 'antd'
 import { PlusOutlined, UploadOutlined, DownloadOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { AssetTable, AssetFilter } from './components'
@@ -12,28 +12,75 @@ import { usePermissions } from '@/hooks'
 import type { Asset, AssetType, AssetStatus, AssetFilterParams } from '@/types'
 import type { TableProps } from 'antd'
 
+const ASSET_STATUSES: AssetStatus[] = ['introduced', 'operating', 'changed', 'disposed']
+const EOL_STATUSES = ['expired', 'soon', 'none'] as const
+type EolStatus = typeof EOL_STATUSES[number]
+
+const parseIntParam = (v: string | null): number | undefined => {
+  if (v === null || v === '') return undefined
+  const n = Number(v)
+  return Number.isFinite(n) ? n : undefined
+}
+
 const AssetListPage = () => {
   const { message, modal } = App.useApp()
   const { hasPermission } = usePermissions()
   const canCreate = hasPermission('asset:create')
   const canUpdate = hasPermission('asset:update')
   const canDelete = hasPermission('asset:delete')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // URL 쿼리스트링에서 초기 상태 복원 (상세→목록 복귀 시 필터 유지)
   const [assets, setAssets] = useState<Asset[]>([])
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([])
   const [loading, setLoading] = useState(false)
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
+  const [pagination, setPagination] = useState(() => ({
+    current: parseIntParam(searchParams.get('page')) ?? 1,
+    pageSize: parseIntParam(searchParams.get('size')) ?? 10,
     total: 0,
-  })
-  const [filters, setFilters] = useState<AssetFilterParams>({
-    search: '',
-    assetTypeId: undefined,
-    status: undefined,
-    importanceLevel: undefined,
+  }))
+  const [filters, setFilters] = useState<AssetFilterParams>(() => {
+    const statusParam = searchParams.get('status')
+    const eolParam = searchParams.get('eolStatus')
+    return {
+      search: searchParams.get('search') ?? '',
+      assetTypeId: parseIntParam(searchParams.get('assetTypeId')),
+      status: ASSET_STATUSES.includes(statusParam as AssetStatus)
+        ? (statusParam as AssetStatus)
+        : undefined,
+      importanceLevel: parseIntParam(searchParams.get('importanceLevel')),
+      eolStatus: (EOL_STATUSES as readonly string[]).includes(eolParam ?? '')
+        ? (eolParam as EolStatus)
+        : undefined,
+    }
   })
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
-  const [sorter, setSorter] = useState<{ sort?: string; order?: string }>({})
+  const [sorter, setSorter] = useState<{ sort?: string; order?: string }>(() => {
+    const sort = searchParams.get('sort') ?? undefined
+    const order = searchParams.get('order') ?? undefined
+    return sort && (order === 'asc' || order === 'desc') ? { sort, order } : {}
+  })
+
+  // 상태 변경 시 URL 쿼리스트링 동기화
+  useEffect(() => {
+    const next = new URLSearchParams()
+    if (filters.search) next.set('search', filters.search)
+    if (filters.assetTypeId !== undefined) next.set('assetTypeId', String(filters.assetTypeId))
+    if (filters.status) next.set('status', filters.status)
+    if (filters.importanceLevel !== undefined) next.set('importanceLevel', String(filters.importanceLevel))
+    if (filters.eolStatus) next.set('eolStatus', filters.eolStatus)
+    if (pagination.current !== 1) next.set('page', String(pagination.current))
+    if (pagination.pageSize !== 10) next.set('size', String(pagination.pageSize))
+    if (sorter.sort) next.set('sort', sorter.sort)
+    if (sorter.order) next.set('order', sorter.order)
+    setSearchParams(next, { replace: true })
+  }, [filters, pagination.current, pagination.pageSize, sorter, setSearchParams])
+
+  // 상세 페이지에 전달할 "목록으로 돌아가기" 검색 문자열
+  const listSearch = useMemo(() => {
+    const s = searchParams.toString()
+    return s ? `?${s}` : ''
+  }, [searchParams])
 
   // 자산 유형 목록 조회
   const fetchAssetTypes = useCallback(async () => {
@@ -252,6 +299,7 @@ const AssetListPage = () => {
             onSelectionChange={setSelectedRowKeys}
             canUpdate={canUpdate}
             canDelete={canDelete}
+            listSearch={listSearch}
           />
         </Space>
       </Card>

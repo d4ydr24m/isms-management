@@ -23,6 +23,8 @@ interface AssetTableProps {
   onSelectionChange?: (keys: React.Key[]) => void
   canUpdate?: boolean
   canDelete?: boolean
+  /** 상세 페이지에서 "뒤로가기" 시 복귀할 목록 URL 검색 문자열 (예: "?page=2&status=operating") */
+  listSearch?: string
 }
 
 /** 자산 상태 태그 색상 매핑 (DB에 한국어로 저장됨) */
@@ -75,7 +77,11 @@ const AssetTable = ({
   onSelectionChange,
   canUpdate = true,
   canDelete = true,
+  listSearch,
 }: AssetTableProps) => {
+  // 상세 페이지에서 목록 복귀 시 필터를 복원할 수 있도록 현재 목록의 검색 문자열을 state로 전달
+  const detailLinkState = listSearch ? { listSearch } : undefined
+
   const columns: TableProps<Asset>['columns'] = [
     {
       title: '자산코드',
@@ -84,7 +90,7 @@ const AssetTable = ({
       width: 180,
       sorter: true,
       render: (code: string, record: Asset) => (
-        <Link to={`/assets/${record.id}`} style={{ fontFamily: 'monospace' }}>
+        <Link to={`/assets/${record.id}`} state={detailLinkState} style={{ fontFamily: 'monospace' }}>
           {code}
         </Link>
       ),
@@ -107,7 +113,7 @@ const AssetTable = ({
         }
         return (
           <span>
-            <Link to={`/assets/${record.id}`}>{name}</Link>
+            <Link to={`/assets/${record.id}`} state={detailLinkState}>{name}</Link>
             {eolTag}
           </span>
         )

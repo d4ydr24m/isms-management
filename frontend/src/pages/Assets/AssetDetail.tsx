@@ -3,7 +3,7 @@
  * FR-502, FR-503, FR-504, FR-505
  */
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   App,
   Card,
@@ -33,6 +33,7 @@ import {
   UserOutlined,
   WarningOutlined,
   SearchOutlined,
+  ArrowLeftOutlined,
 } from '@ant-design/icons'
 import { apiClient } from '@/services/api'
 import CIAEvaluation from './components/CIAEvaluation'
@@ -77,7 +78,15 @@ const AssetDetailPage = () => {
   const { message, modal } = App.useApp()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const assetId = Number(id)
+
+  // 목록에서 전달된 검색 문자열(?page=...&status=...)이 있으면 뒤로가기 시 복원
+  const listSearch = (location.state as { listSearch?: string } | null)?.listSearch ?? ''
+  const listPath = `/assets${listSearch}`
+  const handleBack = () => {
+    navigate(listPath)
+  }
   const { hasPermission } = usePermissions()
   const canCreate = hasPermission('asset:create')
   const canUpdate = hasPermission('asset:update')
@@ -220,7 +229,7 @@ const AssetDetailPage = () => {
         try {
           await assetService.deleteAsset(assetId)
           message.success('자산이 삭제되었습니다')
-          navigate('/assets')
+          navigate(listPath)
         } catch (err: any) {
           const detail = err?.response?.data?.detail || err?.message
           message.error(detail || '자산 삭제에 실패했습니다')
@@ -241,7 +250,7 @@ const AssetDetailPage = () => {
     return (
       <div style={{ textAlign: 'center', padding: '100px 0' }}>
         <p>자산을 찾을 수 없습니다.</p>
-        <Button onClick={() => navigate('/assets')}>목록으로</Button>
+        <Button onClick={handleBack}>목록으로</Button>
       </div>
     )
   }
@@ -522,7 +531,7 @@ const AssetDetailPage = () => {
         style={{ marginBottom: 16 }}
         items={[
           { title: <Link to="/"><HomeOutlined /></Link> },
-          { title: <Link to="/assets">정보자산 관리</Link> },
+          { title: <Link to={listPath}>정보자산 관리</Link> },
           { title: asset.name },
         ]}
       />
@@ -536,6 +545,9 @@ const AssetDetailPage = () => {
         }
         extra={
           <Space>
+            <Button icon={<ArrowLeftOutlined />} onClick={handleBack}>
+              목록으로
+            </Button>
             {canCreate && (
               <Button
                 icon={<CopyOutlined />}
